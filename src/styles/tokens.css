@@ -1,0 +1,21 @@
+/* VerseLight — dusk theme.
+   ground/panel/raise: graphite with a violet cast · line: hairlines · ink/mute: text
+   accent (periwinkle): selection and primary actions · live (coral red): on-air only */
+:root {
+  --ground: #17181f;
+  --panel: #1d1e27;
+  --raise: #262733;
+  --hover: #2d2e3b;
+  --line: #30323f;
+  --ink: #ecebf2;
+  --mute: #8e90a2;
+  --accent: #a3b1ff;
+  --accent-soft: rgba(163, 177, 255, 0.14);
+  --accent-ink: #151733;
+  --live: #ff5d6c;
+  --r-sm: 7px;
+  --r: 12px;
+  --ui: "Manrope Variable", "Noto Sans Malayalam Variable", "Segoe UI", system-ui, sans-serif;
+  --read: "Lora Variable", "Noto Serif Malayalam Variable", Georgia, serif;
+  color-scheme: dark;
+}

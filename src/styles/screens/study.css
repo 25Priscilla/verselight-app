@@ -1,0 +1,42 @@
+/* Word Study screen. */
+
+/* ---------- Word Study ---------- */
+.ws-toolbar { display: flex; flex-direction: column; gap: 10px; }
+.ws-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ws-options .inline-select select { max-width: 260px; }
+.ws-results { padding-top: 14px; }
+.ws-summary { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px; padding: 0 2px 12px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+.ws-summary strong { font-size: 15px; }
+.ws-expand { margin-left: auto; display: inline-flex; gap: 12px; }
+.ws-none { padding: 30px 8px; }
+.ws-none p { margin: 0 0 6px; }
+
+.ws-group h3 { margin: 0; position: sticky; top: -14px; z-index: 1; background: var(--ground); }
+.ws-group h3 button { width: 100%; display: flex; align-items: center; gap: 8px; border: 0; background: none; color: var(--ink); padding: 12px 4px 8px; font: 600 17px/1.3 var(--read); text-align: left; cursor: pointer; }
+.ws-group h3 button:hover { color: var(--accent); }
+.ws-group h3 svg { color: var(--mute); flex: none; }
+.ws-count { margin-left: auto; font: 700 11.5px var(--ui); color: var(--mute); background: var(--raise); border-radius: 999px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.results .ws-list { list-style: none; margin: 0 0 8px; padding: 0 0 0 22px; }
+.ws-row { border-radius: var(--r-sm); padding: 4px 6px 6px; margin-bottom: 2px; }
+.ws-row:hover, .ws-row:focus-within { background: var(--panel); }
+.ws-row.on { background: var(--accent-soft); }
+.results li .ws-open { display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; background: none; border: 0; border-bottom: 0; padding: 6px 4px 2px; cursor: pointer; color: var(--ink); }
+.results li .ws-open:hover { background: none; }
+.ws-ref { font: 700 13px var(--ui); color: var(--accent); display: inline-flex; align-items: center; gap: 8px; }
+.ws-times { font-weight: 700; font-size: 11px; color: var(--mute); }
+.ws-text { font: 16.5px/1.6 var(--read); }
+.ws-text:lang(ml) { line-height: 1.75; font-size: 16px; }
+.ws-actions { display: flex; flex-wrap: wrap; gap: 2px; padding: 2px 0 0; opacity: 0.5; transition: opacity 0.12s; }
+.ws-row:hover .ws-actions, .ws-row:focus-within .ws-actions, .ws-row.on .ws-actions { opacity: 1; }
+.results li .ws-actions .btn { width: auto; flex-direction: row; border-bottom: 0; padding: 3px 9px; font-size: 12px; border-radius: var(--r-sm); gap: 5px; }
+.ws-actions .btn.saved { color: #f5c451; }
+.ws-actions .btn.saved svg { fill: currentColor; }
+.ws-more { padding: 4px 4px 10px; }
+.results li.ws-more .btn { width: auto; border-bottom: 0; flex-direction: row; }
+
+.ws-books { list-style: none; margin: 0; padding: 6px 8px 20px; overflow-y: auto; flex: 1; }
+.ws-books button { width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; background: none; border: 0; padding: 6px 10px; border-radius: var(--r-sm); color: #cfcfda; cursor: pointer; }
+.ws-books button:hover { background: var(--raise); color: var(--ink); }
+.ws-saved button { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; }
+.ws-saved button > span:first-child { font-weight: 700; color: var(--accent); font-size: 13px; }
+.ws-saved-text { font: 13px/1.45 var(--read); color: var(--mute); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
