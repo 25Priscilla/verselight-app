@@ -4,6 +4,7 @@
 .app { display: grid; grid-template-columns: 68px 244px minmax(0, 1fr) 400px; grid-template-rows: 100%; height: 100%; }
 .rail { grid-column: 1; grid-row: 1; }
 .rail-foot { grid-column: 1; grid-row: 1; align-self: end; justify-self: center; position: relative; padding-bottom: 14px; }
+.rail-foot .menu { position: absolute; left: 52px; bottom: 12px; }
 .context { grid-column: 2; grid-row: 1; }
 .work { grid-column: 3; grid-row: 1; }
 .present { grid-column: 4; grid-row: 1; }
@@ -23,7 +24,7 @@
 .book-list { overflow-y: auto; padding: 6px 8px 20px; }
 .book-list h3 { font-size: 11.5px; font-weight: 700; color: var(--mute); padding: 14px 8px 4px; letter-spacing: 0.02em; }
 .book-list ul, .song-list { list-style: none; margin: 0; padding: 0; }
-.book-list button { width: 100%; text-align: left; background: none; border: 0; padding: 5px 10px; border-radius: var(--r-sm); color: #cfcfda; }
+.book-list button { width: 100%; text-align: left; background: none; border: 0; padding: 5px 10px; border-radius: var(--r-sm); color: var(--text-soft); }
 .book-list button:hover { background: var(--raise); color: var(--ink); }
 .book-list button.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .song-list { overflow-y: auto; padding: 6px 8px 20px; flex: 1; }

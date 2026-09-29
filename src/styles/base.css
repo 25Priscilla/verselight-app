@@ -2,17 +2,19 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--ground); color: var(--ink); font: 14px/1.5 var(--ui); -webkit-font-smoothing: antialiased; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font: var(--text-md)/1.5 var(--font-ui); -webkit-font-smoothing: antialiased; overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.boot { display: grid; place-items: center; height: 100%; color: var(--mute); }
-.muted { color: var(--mute); }
+.boot { display: grid; place-items: center; height: 100%; color: var(--text-muted); }
+.muted { color: var(--text-muted); }
 .small { font-size: 12.5px; }
 .pad { padding: 16px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 h1, h2, h3 { margin: 0; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 /* ---------- Malayalam ---------- */
 /* Malayalam script has tall stacked conjuncts and vowel signs, so it needs more line height than Latin text. */
 :lang(ml) { font-feature-settings: normal; }
