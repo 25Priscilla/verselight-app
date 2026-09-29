@@ -14,6 +14,7 @@ import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
 import { Rail, type Mode } from "./Rail";
 import { SongImportDialog } from "./SongImportDialog";
 import { SongsWorkspace } from "./SongsWorkspace";
+import { Toast } from "./ui";
 import { WordStudyWorkspace, type VerseTarget } from "./WordStudyWorkspace";
 
 const isTyping = (el: EventTarget | null) =>
@@ -283,10 +284,7 @@ export function ControlApp() {
       />
 
       {(notice || saveError) && (
-        <div className="toast" role="status">
-          <span>{saveError ?? notice}</span>
-          {!saveError && <button className="icon-btn sm" onClick={() => setNotice(null)} aria-label="Dismiss"><Icon name="x" size={14} /></button>}
-        </div>
+        <Toast message={saveError ?? notice} onDismiss={saveError ? undefined : () => setNotice(null)} />
       )}
     </div>
   );

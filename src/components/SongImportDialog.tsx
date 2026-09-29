@@ -1,8 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { planSongImport, readSongFiles, toSong, type SongFile } from "../lib/songImport";
 import { useLibrary } from "../state/library";
-import { Icon } from "./Icon";
-import { Modal } from "./ui";
+import { Button, Modal } from "./ui";
 
 export function SongImportDialog({ onClose, onImported }: { onClose: () => void; onImported: (count: number) => void }) {
   const { library, update } = useLibrary();
@@ -34,13 +33,19 @@ export function SongImportDialog({ onClose, onImported }: { onClose: () => void;
   };
 
   return (
-    <Modal title="Import songs" onClose={onClose}>
+    <Modal title="Import songs" onClose={onClose}
+      actions={file && plan && <>
+        <Button variant="primary" disabled={!confirmed || plan.fresh.length === 0} onClick={importSongs}>
+          {plan.fresh.length === 0 ? "Nothing new to import" : `Import ${plan.fresh.length} songs`}
+        </Button>
+        <Button variant="quiet" onClick={onClose}>Cancel</Button>
+      </>}>
       <p className="muted small">
         Choose one or more song files: OpenLyrics files (<code>.xml</code>, exported by OpenLP and other worship software) or
         VerseLight song files (<code>.json</code>, such as the one made by <code>npm run fetch-hymns</code>). English and Malayalam
         songs are both supported, and songs are added exactly as they appear in the files.
       </p>
-      <button className="btn" onClick={() => input.current?.click()}><Icon name="plus" />Choose song files</button>
+      <Button icon="plus" onClick={() => input.current?.click()}>Choose song files</Button>
       <input ref={input} type="file" accept=".json,.xml,application/json,application/xml,text/xml" multiple hidden
         onChange={(e) => { onFiles(e.target.files); e.target.value = ""; }} />
 
@@ -66,12 +71,6 @@ export function SongImportDialog({ onClose, onImported }: { onClose: () => void;
             <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
             I've checked these songs can be used and projected where our church is.
           </label>
-          <div className="row">
-            <button className="btn primary" disabled={!confirmed || plan.fresh.length === 0} onClick={importSongs}>
-              {plan.fresh.length === 0 ? "Nothing new to import" : `Import ${plan.fresh.length} songs`}
-            </button>
-            <button className="btn ghost" onClick={onClose}>Cancel</button>
-          </div>
         </div>
       )}
     </Modal>
