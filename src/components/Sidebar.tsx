@@ -8,6 +8,8 @@ export type Mode = "home" | "bible" | "study" | "songs" | "backgrounds" | "setti
 interface Props {
   mode: Mode;
   onMode: (m: Mode) => void;
+  /** Opens Settings → Projector */
+  onProjector: () => void;
   projector: ProjectorStatus;
   displayName: string;
   /** Temporary: the library menu until its items move to Settings */
@@ -17,7 +19,7 @@ interface Props {
 const PROJECTOR_TEXT: Record<ProjectorStatus, string> = { off: "Off", opening: "Connecting…", live: "Live" };
 
 /** The main navigation. Shrinks to icons (names as tooltips) while presenting and on narrow windows; see .nav-compact. */
-export function Sidebar({ mode, onMode, projector, displayName, footer }: Props) {
+export function Sidebar({ mode, onMode, onProjector, projector, displayName, footer }: Props) {
   const item = (m: Mode, icon: IconName, label: string, sub = false) => (
     <li>
       <button className={cx("nav-item", sub && "sub", mode === m && "on")} onClick={() => onMode(m)}
@@ -43,7 +45,7 @@ export function Sidebar({ mode, onMode, projector, displayName, footer }: Props)
       </ul>
       <ul className="nav nav-foot">
         <li>
-          <button className={cx("nav-item", "projector-item", projector)} onClick={() => onMode("settings")}
+          <button className={cx("nav-item", "projector-item", projector)} onClick={onProjector}
             title={`Projector: ${status}`} aria-label={`Projector status: ${status}. Open projector settings`}>
             <span className="projector-icon"><Icon name="monitor" size={20} /><span className="dot" aria-hidden /></span>
             <span className="nav-label">

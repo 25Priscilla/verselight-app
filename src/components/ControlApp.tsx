@@ -13,11 +13,11 @@ import { HelpScreen } from "./HelpScreen";
 import { HomeScreen } from "./HomeScreen";
 import { Icon } from "./Icon";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
-import { SettingsScreen } from "./SettingsScreen";
+import { SettingsScreen, type SettingsSection } from "./SettingsScreen";
 import { Sidebar, type Mode } from "./Sidebar";
 import { SongImportDialog } from "./SongImportDialog";
 import { SongsWorkspace } from "./SongsWorkspace";
-import { Toast, cx } from "./ui";
+import { ConfirmDialog, Toast, cx } from "./ui";
 import { WordStudyWorkspace, type VerseTarget } from "./WordStudyWorkspace";
 
 function useMediaQuery(query: string) {
@@ -37,6 +37,7 @@ const isTyping = (el: EventTarget | null) =>
 export function ControlApp() {
   const { library, update, replace, saveError } = useLibrary();
   const [mode, setMode] = useState<Mode>("home");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("projector");
   const [notice, setNotice] = useState<string | null>(null);
   const [songImport, setSongImport] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -220,17 +221,26 @@ export function ControlApp() {
     const ok = await saveFileAs(`verselight-backup-${date}.json`, JSON.stringify(library, null, 2)).catch(() => false);
     if (ok) setNotice("Library backed up.");
   };
+  // Restoring replaces the whole library, so the file is checked first and then the operator confirms.
+  const [pendingRestore, setPendingRestore] = useState<{ name: string; library: Library } | null>(null);
   const restore = async (file: File) => {
     try {
-      const parsed = JSON.parse(await file.text()) as Library;
-      if (!Array.isArray(parsed.items) || !Array.isArray(parsed.services)) throw new Error("it isn't a VerseLight backup");
-      replace(parsed);
-      dispatch({ type: "end" });
-      setNotice("Library restored. On a new computer, import your Bibles again.");
+      let parsed: Library | null = null;
+      try { parsed = JSON.parse(await file.text()) as Library; } catch { /* not JSON: reported below */ }
+      if (!parsed || !Array.isArray(parsed.items) || !Array.isArray(parsed.services)) throw new Error("it isn't a VerseLight backup file");
+      setPendingRestore({ name: file.name, library: parsed });
     } catch (e) {
-      setNotice(`${file.name} couldn't be restored: ${e instanceof Error ? e.message : e}`);
+      setNotice(`${file.name} couldn't be restored: ${e instanceof Error ? e.message : e}.`);
     }
   };
+  const confirmRestore = () => {
+    if (!pendingRestore) return;
+    replace(pendingRestore.library);
+    dispatch({ type: "end" });
+    setPendingRestore(null);
+    setNotice("Library restored. On a new computer, import your Bibles again.");
+  };
+  const restoreSongs = pendingRestore ? pendingRestore.library.items.filter((i) => i.kind === "song").length : 0;
 
   // ---- looks ----
   const lookFor = useCallback((slide: Slide | null) => lookForSlide(library, slide), [library]);
@@ -245,7 +255,7 @@ export function ControlApp() {
 
   return (
     <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
-      <Sidebar mode={mode} onMode={setMode} projector={projector} displayName={displayName} footer={
+      <Sidebar mode={mode} onMode={setMode} onProjector={() => { setSettingsSection("projector"); setMode("settings"); }} projector={projector} displayName={displayName} footer={
         <div className="library-menu">
           <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Library menu" aria-expanded={menuOpen} title="Import songs and back up">
             <Icon name="more" />
@@ -273,7 +283,18 @@ export function ControlApp() {
       <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} />
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
       {mode === "home" && <HomeScreen />}
-      {mode === "settings" && <SettingsScreen />}
+      {mode === "settings" && (
+        <SettingsScreen section={settingsSection} onSection={setSettingsSection}
+          projector={projector} displayName={displayName} displays={displays} displayIndex={library.displayIndex}
+          onDisplay={(i) => update((lib) => ({ ...lib, displayIndex: i }))} onRefreshDisplays={refreshDisplays}
+          onBackup={backup} onRestore={restore} notify={setNotice} />
+      )}
+      {pendingRestore && (
+        <ConfirmDialog title="Replace your library with this backup?" confirmLabel="Restore backup"
+          message={<>Everything in VerseLight will be replaced with <strong>{pendingRestore.name}</strong> ({restoreSongs} {restoreSongs === 1 ? "song" : "songs"}):
+            songs, backgrounds, saved verses and settings. Anything added since that backup will be lost. To keep what you have now, back it up first.</>}
+          onCancel={() => setPendingRestore(null)} onConfirm={confirmRestore} />
+      )}
       {mode === "help" && <HelpScreen />}
 
       {presenting && <PresentationPanel

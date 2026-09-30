@@ -46,8 +46,8 @@
 /* Compact sidebar (while presenting, or on narrow windows): icons only, names as tooltips */
 .nav-compact .sidebar { padding-left: var(--space-2); padding-right: var(--space-2); }
 .nav-compact .brand { justify-content: center; padding-left: 0; padding-right: 0; }
-.nav-compact .brand-name, .nav-compact .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.nav-compact .nav-item, .nav-compact .nav-item.sub { justify-content: center; padding: 0; }
+.nav-compact .brand-name, .nav-compact .sidebar .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.nav-compact .sidebar .nav-item { justify-content: center; padding: 0; }
 .nav-compact .nav-extra { display: flex; justify-content: center; }
 
 /* ---------- full-width pages (Home, Settings, Help) ---------- */
