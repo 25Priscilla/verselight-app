@@ -275,7 +275,8 @@ export function ControlApp() {
       <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
         onManageBibles={() => openSettings("bibles")} focusSearch={bibleSearch} />
       <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible} />
-      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong} />
+      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong}
+        liveKey={state.session?.kind === "song" && liveSlide ? liveSlide.key : null} notify={setNotice} />
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
       {mode === "home" && (
         <HomeScreen

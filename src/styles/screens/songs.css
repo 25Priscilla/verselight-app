@@ -77,3 +77,34 @@
 .song-names { flex: 1 1 340px; min-width: 0; }
 .song-names input { width: 100%; }
 .song-actions { flex: 0 0 auto; margin-left: auto; }
+
+/* Song library header: New song + Import, and how many songs are showing */
+.song-new { display: flex; gap: var(--space-2); }
+.song-new > .btn:first-child { flex: 1; }
+.song-count { padding: 0 2px; }
+
+/* Empty library */
+.empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.empty-steps { margin: 0; padding-left: 20px; text-align: left; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-md); line-height: 1.55; }
+.empty-steps strong { color: var(--text); }
+
+/* Notes about the song: a possible duplicate, a section written twice, a section left out of the order */
+.song-note { margin: 0; display: flex; gap: var(--space-2); align-items: flex-start; padding: 9px 12px; border-radius: var(--radius-sm);
+  background: rgba(245, 196, 81, 0.08); border: 1px solid rgba(245, 196, 81, 0.3); font-size: var(--text-sm); line-height: 1.5; color: var(--text-soft); }
+.song-note > svg { flex: none; margin-top: 2px; color: var(--warning); }
+.song-note .linklike { font-size: inherit; }
+.slides-pane .song-note { margin-bottom: 10px; }
+.slides-hint { margin: -4px 0 10px; }
+.tag-btn.unused { border-color: rgba(245, 196, 81, 0.5); color: var(--warning); }
+
+/* Slides: left-out slides say so, and the slide on the projector is marked */
+.mini-off { align-content: center; gap: 2px; font-size: var(--text-xs); font-weight: var(--weight-bold); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+.mini-wrap.now .mini .slide { outline: 2px solid var(--live); outline-offset: 1px; }
+
+/* Lyrics and slides sit side by side only when the editor itself is wide enough (the presentation panel takes room too) */
+.song-editor { container-type: inline-size; }
+@container (max-width: 860px) {
+  .song-body { grid-template-columns: minmax(0, 1fr); }
+  .lyrics-pane { position: static; }
+  .lyrics { min-height: 300px; }
+}
