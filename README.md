@@ -82,7 +82,7 @@ Installers are written to `src-tauri/target/release/bundle/`. Windows produces `
 
 The builds are unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch. On macOS, right-click the app and choose **Open**. For wider distribution, set up code signing: https://tauri.app/distribute/
 
-`npm run dev` also runs the UI in a normal browser for quick design work. There, the projector opens as a popup and data is stored in localStorage.
+`npm run dev` also runs the UI in a normal browser for quick design work. There, the projector opens as a popup and data (library, Bibles, cross references) is stored in the browser's IndexedDB. localStorage is too small for this: a Bible is about 4 million characters and the cross references about 7 million, against localStorage's limit of roughly 5 MB per site. Data saved in localStorage by earlier versions moves to IndexedDB automatically the first time it is read. Each browser and each address (for example `localhost:1420`) keeps its own data, so Bibles imported in one browser must be imported again in another.
 
 ## Tests
 
@@ -336,7 +336,7 @@ src/
   data/sections.json        BSB section headings for Chapter Overview
   lib/lyrics.ts             Section tags and automatic slide splitting
   lib/slides.ts             Turns songs and passages into slides
-  lib/storage.ts            Offline storage (Rust commands, or localStorage in a browser)
+  lib/storage.ts            Offline storage (Rust commands, or IndexedDB in a browser)
   lib/bridge.ts             Messages between windows (Tauri events / BroadcastChannel)
   lib/display.ts            List displays, open and close the projector
   lib/session.ts            The presentation session: slides, current slide, chapter run-on

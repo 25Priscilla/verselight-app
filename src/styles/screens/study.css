@@ -62,3 +62,6 @@
 .ws-saved-actions { display: flex; gap: 2px; padding: 0 6px; }
 .ws-books .ws-saved-actions .btn { width: auto; flex-direction: row; align-items: center; padding: 3px 8px; font-size: var(--text-xs); gap: 4px; color: var(--text-muted); }
 .ws-books .ws-saved-actions .btn:hover { color: var(--text); background: var(--surface-hover); }
+/* Long translation names (e.g. the Malayalam Bible 1910) must not push the menu out of a narrow working area. */
+.ws-options .inline-select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.ws-options .inline-select select { flex: 1 1 auto; min-width: 0; text-overflow: ellipsis; }
