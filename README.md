@@ -51,7 +51,7 @@ VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (w
 **Projector** (bottom of the sidebar) shows *Off*, *Connecting…* or *Live on <display name>*. Click it to open Settings → Projector.
 
 **Settings**
-- **Projector:** the projector status, and which screen shows the slides (*Second screen (automatic)* uses the first screen that isn't the main one).
+- **Projector:** the projector status, the screens Windows reports (checked again every few seconds while this page is open or while presenting), and which one shows the slides. *Automatic* uses the first screen that isn't the main one. See [Projector and second screen](#projector-and-second-screen).
 - **Bibles:** import or remove Bibles, and import or replace cross references. Removing a Bible asks first.
 - **Songs:** how many songs you have, and **Import songs** from files.
 - **Backup:** **Back up library** saves one file with your songs, looks, saved verses and settings (not the Bible texts). **Restore from backup** checks the file and asks before replacing your library.
@@ -90,7 +90,7 @@ The builds are unsigned, so Windows SmartScreen and macOS Gatekeeper will warn o
 npm test
 ```
 
-Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, black screen, song order), the presentation keys, the presentation panel's controls and background menu, song lyrics, slides, search and import (including Malayalam), the Songs screen, and presenting a song from the Songs screen through to what the projector is sent.
+Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, black screen, song order), the presentation keys, the presentation panel's controls and background menu, song lyrics, slides, search and import (including Malayalam), the Songs screen, and presenting a song from the Songs screen through to what the projector is sent. The projector tests simulate the screens (choosing one, one window only, Stop and Start, no second screen, a missing or unplugged screen) and the projector window itself; they can't prove a physical projector works, so test with the real projector before a service.
 
 The Bible tests cover reference and keyword search, saved verses and passages, Chapter Overview data, Word Study counts, and the Bible screen end to end: book, chapter and verse navigation, selecting passages, cross references, Overview, Word Study, English and Malayalam, and presenting (one verse, a passage, Previous/Next across a chapter boundary, Black/Show, Stop/Start/Close and the keys). They use made-up placeholder Bibles, never real Bible text.
 
@@ -236,6 +236,19 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 **Stopping and starting again.** **Stop presentation** (or Esc) closes the projector but keeps your place. **Start presenting** reopens it on the same slide. **Close**, next to Stop presentation, clears the presentation.
 
 **How it stays in sync.** There is one presentation state: the slides and the current slide. The laptop preview, the slide list and the projector all read that same state, and the projector is sent exactly the slide the preview shows, with the same background and black-screen setting. The projector reports back when its window opens; that is when the status turns to *Live*.
+
+### Projector and second screen
+
+VerseLight treats the projector as a **second screen** that the operating system provides. Connect it by HDMI or another display cable, or use a wireless display that Windows shows as a second screen (for example through *Project → Connect to a wireless display*, or a projector's own casting kit set to *Extend*). VerseLight doesn't talk to projectors or their casting apps (such as BenQ InstaShare) directly, and has no casting protocol of its own: if Windows shows the projector as a screen, VerseLight can use it.
+
+- **Choosing the screen:** **Settings → Projector** lists the screens Windows reports, with their resolution, and marks the computer's main screen. *Automatic* uses the first screen that isn't the main one. A chosen screen is remembered by its Windows name (such as *Display 2*), so it stays correct when screens are plugged in in a different order.
+- **Presenting:** **Present Now** or **Start presenting** opens one full-screen, borderless window on that screen, with no taskbar entry, cursor, scrollbars or right-click menu. The laptop keeps the VerseLight window and keyboard focus. Pressing Start again never opens a second projector window.
+- **Only one screen:** Automatic never covers the laptop's own screen. The presentation still runs in the preview, and the panel says a second screen is needed. To rehearse full screen on the laptop, choose its screen in Settings on purpose (press Esc to come back).
+- **Chosen screen missing:** the panel and Settings say so, rather than quietly using another screen.
+- **Unplugged while presenting:** VerseLight checks the screens every 2 seconds while presenting. If the projector's screen disappears, it closes the projector window (so Windows can't move it over the laptop), keeps your place and says what happened. Reconnect and choose **Start presenting**.
+- **Stopping and closing:** Stop presentation closes the projector window. Closing VerseLight closes it too, and reloading the control window closes any projector window left from before.
+
+Limitations: display names come from Windows (*Display 1*, *Display 2*), not the projector's model name. Some wireless displays take a few seconds to appear after connecting; choose **Look for screens again** if needed. In the browser preview (`npm run dev`) the projector is a separate browser window that you drag to the second screen and make full screen (F11); choosing a screen needs the desktop app.
 
 ## Presentation backgrounds (Looks)
 

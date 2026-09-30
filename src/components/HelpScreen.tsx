@@ -94,6 +94,18 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
           <p>The <strong>Projector</strong> item at the bottom left shows whether slides are on the screen: <em>Off</em>, <em>Connecting…</em> or <em>Live</em>, with the screen's name.</p>
           <p>Click it to choose which screen shows the slides.</p>
         </Topic>
+
+        <Topic icon="monitor" title="Connect the projector">
+          <ol>
+            <li>Connect the projector before the service, by HDMI or another cable, or with a wireless display that Windows shows as a second screen.</li>
+            <li>In <strong>Settings → Projector</strong>, check it is listed. <em>Automatic</em> uses the screen that isn't this computer's main screen.</li>
+            <li>Press <strong>Present Now</strong> or <strong>Start presenting</strong>. The projector shows only the slide; this computer keeps the controls.</li>
+          </ol>
+          <p className="muted">
+            With no second screen, the slides show in the preview only. If the projector is unplugged while presenting, it turns off and your place is kept:
+            reconnect it and press Start presenting. VerseLight doesn't control the projector's own casting app; set that up so Windows sees the projector as a screen.
+          </p>
+        </Topic>
       </div>
 
       <Card title="Keyboard and clicker">
