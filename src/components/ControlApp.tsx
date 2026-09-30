@@ -17,7 +17,7 @@ import { SettingsScreen, type SettingsSection } from "./SettingsScreen";
 import { Sidebar, type Mode } from "./Sidebar";
 import { SongsWorkspace } from "./SongsWorkspace";
 import { ConfirmDialog, Toast, cx } from "./ui";
-import { WordStudyWorkspace, type VerseTarget } from "./WordStudyWorkspace";
+import { WordStudyWorkspace, type StudyRequest, type VerseTarget } from "./WordStudyWorkspace";
 
 function useMediaQuery(query: string) {
   const [match, setMatch] = useState(() => matchMedia(query).matches);
@@ -45,6 +45,12 @@ export function ControlApp() {
   const openInBible = useCallback((t: VerseTarget) => {
     setOpenRequest({ ...t, nonce: Date.now() });
     setMode("bible");
+  }, []);
+  // Bible → Bible Study: study a word from a keyword search, or see the saved verses.
+  const [studyRequest, setStudyRequest] = useState<StudyRequest | null>(null);
+  const openStudy = useCallback((r: Omit<StudyRequest, "nonce">) => {
+    setStudyRequest({ ...r, nonce: Date.now() });
+    setMode("study");
   }, []);
 
   // ---- Home's shortcuts into the Bible and Songs screens ----
@@ -273,8 +279,10 @@ export function ControlApp() {
 
 
       <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
-        onManageBibles={() => openSettings("bibles")} focusSearch={bibleSearch} />
-      <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible} />
+        onManageBibles={() => openSettings("bibles")} focusSearch={bibleSearch}
+        onStudyWord={(word) => openStudy({ word })} onSaved={() => openStudy({ tab: "saved" })} />
+      <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible}
+        request={studyRequest} onPresent={presentScripture} />
       <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong}
         liveKey={state.session?.kind === "song" && liveSlide ? liveSlide.key : null} notify={setNotice} />
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
@@ -287,7 +295,7 @@ export function ControlApp() {
           onBackgrounds={() => setMode("backgrounds")}
           onManage={() => openSettings("bibles")}
           onOpenSong={(id) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }}
-          onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse })} />
+          onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse, to: b.to })} />
       )}
       {mode === "settings" && (
         <SettingsScreen section={settingsSection} onSection={setSettingsSection}
