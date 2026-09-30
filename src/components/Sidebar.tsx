@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 import type { ProjectorStatus } from "./PresentationPanel";
 import { cx } from "./ui";
@@ -12,14 +11,12 @@ interface Props {
   onProjector: () => void;
   projector: ProjectorStatus;
   displayName: string;
-  /** Temporary: the library menu until its items move to Settings */
-  footer?: ReactNode;
 }
 
 const PROJECTOR_TEXT: Record<ProjectorStatus, string> = { off: "Off", opening: "Connecting…", live: "Live" };
 
 /** The main navigation. Shrinks to icons (names as tooltips) while presenting and on narrow windows; see .nav-compact. */
-export function Sidebar({ mode, onMode, onProjector, projector, displayName, footer }: Props) {
+export function Sidebar({ mode, onMode, onProjector, projector, displayName }: Props) {
   const item = (m: Mode, icon: IconName, label: string, sub = false) => (
     <li>
       <button className={cx("nav-item", sub && "sub", mode === m && "on")} onClick={() => onMode(m)}
@@ -56,7 +53,6 @@ export function Sidebar({ mode, onMode, onProjector, projector, displayName, foo
         </li>
         {item("settings", "settings", "Settings")}
         {item("help", "help", "Help")}
-        {footer && <li className="nav-extra">{footer}</li>}
       </ul>
     </nav>
   );

@@ -11,11 +11,9 @@ import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
 import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
 import { HelpScreen } from "./HelpScreen";
 import { HomeScreen } from "./HomeScreen";
-import { Icon } from "./Icon";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
 import { SettingsScreen, type SettingsSection } from "./SettingsScreen";
 import { Sidebar, type Mode } from "./Sidebar";
-import { SongImportDialog } from "./SongImportDialog";
 import { SongsWorkspace } from "./SongsWorkspace";
 import { ConfirmDialog, Toast, cx } from "./ui";
 import { WordStudyWorkspace, type VerseTarget } from "./WordStudyWorkspace";
@@ -39,9 +37,6 @@ export function ControlApp() {
   const [mode, setMode] = useState<Mode>("home");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("projector");
   const [notice, setNotice] = useState<string | null>(null);
-  const [songImport, setSongImport] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const importRef = useRef<HTMLInputElement>(null);
 
   // ---- Word Study ↔ Bible: which translation is being read, and "open this verse" requests ----
   const [readingBibleId, setReadingBibleId] = useState(library.bibles[0]?.id ?? "");
@@ -216,7 +211,6 @@ export function ControlApp() {
 
   // ---- backup ----
   const backup = async () => {
-    setMenuOpen(false);
     const date = new Date().toISOString().slice(0, 10);
     const ok = await saveFileAs(`verselight-backup-${date}.json`, JSON.stringify(library, null, 2)).catch(() => false);
     if (ok) setNotice("Library backed up.");
@@ -255,30 +249,11 @@ export function ControlApp() {
 
   return (
     <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
-      <Sidebar mode={mode} onMode={setMode} onProjector={() => { setSettingsSection("projector"); setMode("settings"); }} projector={projector} displayName={displayName} footer={
-        <div className="library-menu">
-          <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Library menu" aria-expanded={menuOpen} title="Import songs and back up">
-            <Icon name="more" />
-          </button>
-          {menuOpen && (
-            <div className="menu" role="menu">
-              <button role="menuitem" onClick={() => { setMenuOpen(false); setSongImport(true); }}>Import songs…</button>
-              <button role="menuitem" onClick={backup}>Back up library…</button>
-              <button role="menuitem" onClick={() => { setMenuOpen(false); importRef.current?.click(); }}>Restore from backup…</button>
-            </div>
-          )}
-          <input ref={importRef} type="file" accept=".json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = ""; }} />
-        </div>
-      } />
+      <Sidebar mode={mode} onMode={setMode} onProjector={() => { setSettingsSection("projector"); setMode("settings"); }} projector={projector} displayName={displayName} />
 
-      {songImport && (
-        <SongImportDialog
-          onClose={() => setSongImport(false)}
-          onImported={(n) => { setMode("songs"); setNotice(`Imported ${n} songs.`); }}
-        />
-      )}
 
-      <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest} />
+      <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
+        onManageBibles={() => { setSettingsSection("bibles"); setMode("settings"); }} />
       <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible} />
       <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} />
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
@@ -307,8 +282,6 @@ export function ControlApp() {
         blackout={state.blackout}
         projector={projector}
         displayName={displayName}
-        displays={displays}
-        displayIndex={library.displayIndex}
         onGoto={gotoSlide}
         onPrev={() => nav(-1)}
         onNext={() => nav(1)}
@@ -316,15 +289,11 @@ export function ControlApp() {
         onStart={openProjector}
         onStop={stopPresenting}
         onEnd={() => { stopPresenting(); dispatch({ type: "end" }); }}
-        onDisplay={(i) => update((lib) => ({ ...lib, displayIndex: i }))}
-        onRefreshDisplays={refreshDisplays}
-        theme={library.theme}
-        onTheme={(t) => update((lib) => ({ ...lib, theme: t }))}
+        defaultTheme={library.theme}
         lookFor={lookFor}
         looks={library.looks}
         slideLook={(key) => library.assign.slides[key] ?? null}
         onSlideLook={(key, lookId) => assignLook("slides", key, lookId)}
-        onOpenBackgrounds={() => setMode("backgrounds")}
       />}
 
       {(notice || saveError) && (

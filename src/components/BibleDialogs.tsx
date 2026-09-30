@@ -97,31 +97,6 @@ export function RemoveBibleConfirm({ bible, onDone, onCancel }: { bible: BibleMe
   );
 }
 
-export function ManageBiblesDialog({ onClose }: { onClose: () => void }) {
-  const { library } = useLibrary();
-  const [confirm, setConfirm] = useState<BibleMeta | null>(null);
-  // The confirmation replaces this dialog while it's open, so Esc only closes one of them.
-  if (confirm) return <RemoveBibleConfirm bible={confirm} onDone={() => setConfirm(null)} onCancel={() => setConfirm(null)} />;
-  return (
-    <Modal title="Bibles" onClose={onClose}>
-      {library.bibles.length === 0 ? <p className="muted">No Bibles imported.</p> : (
-        <ul className="bible-list">
-          {library.bibles.map((b) => (
-            <li key={b.id}>
-              <div>
-                <strong>{b.name}</strong> <span className="muted">{b.abbreviation}</span>
-                <div className="muted small">{b.license || "No license notice recorded"}</div>
-              </div>
-              <Button variant="quiet" className="danger" onClick={() => setConfirm(b)}>Remove</Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="muted small">Passages already in a presentation keep their text when a Bible is removed.</p>
-    </Modal>
-  );
-}
-
 /** Imports OpenBible.info cross references (cross_references.txt) and keeps them for offline use. */
 export function ImportCrossRefsDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
   const { update } = useLibrary();

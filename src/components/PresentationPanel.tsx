@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { DisplayInfo } from "../lib/display";
 import type { LookSource } from "../lib/looks";
 import type { Look, Slide, Theme } from "../lib/types";
 import { Icon } from "./Icon";
 import { LookPicker } from "./LookPicker";
 import { SlideRenderer } from "./SlideRenderer";
-import { StylePopover } from "./StylePopover";
 
 export type ProjectorStatus = "off" | "opening" | "live";
 
@@ -21,8 +19,6 @@ interface Props {
   blackout: boolean;
   projector: ProjectorStatus;
   displayName: string;
-  displays: DisplayInfo[];
-  displayIndex: number | null;
   onGoto: (index: number) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -30,20 +26,16 @@ interface Props {
   onStart: () => void;
   onStop: () => void;
   onEnd: () => void;
-  onDisplay: (index: number | null) => void;
-  onRefreshDisplays: () => void;
-  theme: Theme;
-  onTheme: (t: Theme) => void;
+  /** The Default look, shown in the per-slide background picker */
+  defaultTheme: Theme;
   lookFor: (slide: Slide | null) => { id: string; theme: Theme; source: LookSource };
   looks: Look[];
   slideLook: (slideKey: string) => string | null;
   onSlideLook: (slideKey: string, lookId: string | null) => void;
-  onOpenBackgrounds: () => void;
 }
 
 /** The laptop's control screen. The projector shows only the slide; everything else lives here. */
 export function PresentationPanel(p: Props) {
-  const [styleOpen, setStyleOpen] = useState(false);
   const [picker, setPicker] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const live = p.slides[p.index] ?? null;
@@ -72,11 +64,6 @@ export function PresentationPanel(p: Props) {
       <div className="present-head">
         <h2>Presentation</h2>
         <span className={`status ${status.cls}`} role="status"><span className="dot" aria-hidden />{status.text}</span>
-        <button className="icon-btn" onClick={() => setStyleOpen((o) => !o)} aria-label="Default look" title="Text and background"><Icon name="type" /></button>
-        {styleOpen && (
-          <StylePopover theme={p.theme} onChange={p.onTheme} onClose={() => setStyleOpen(false)}
-            onOpenBackgrounds={() => { setStyleOpen(false); p.onOpenBackgrounds(); }} />
-        )}
       </div>
 
       <div className="stage">
@@ -107,14 +94,6 @@ export function PresentationPanel(p: Props) {
         </div>
       )}
 
-      <div className="projector-row">
-        <Icon name="monitor" size={16} />
-        <select value={p.displayIndex ?? ""} onChange={(e) => p.onDisplay(e.target.value === "" ? null : Number(e.target.value))} aria-label="Projector display">
-          <option value="">Second screen (automatic)</option>
-          {p.displays.map((d) => <option key={d.index} value={d.index}>{d.name} · {d.width}×{d.height}{d.primary ? " (this screen)" : ""}</option>)}
-        </select>
-        <button className="icon-btn sm" onClick={p.onRefreshDisplays} aria-label="Refresh displays" title="Refresh displays"><Icon name="refresh" size={14} /></button>
-      </div>
       <div className="session-actions">
         {p.projector === "off" ? (
           <button className="btn present wide" onClick={p.onStart} disabled={!has} title={has ? "Show this on the projector" : "Choose a passage or song first"}>
@@ -124,9 +103,6 @@ export function PresentationPanel(p: Props) {
           <button className="btn stop wide" onClick={p.onStop} title="Close the projector (Esc)"><Icon name="stop" size={13} />Stop presentation</button>
         )}
       </div>
-      {p.displays.length < 2 && p.projector === "off" && (
-        <p className="muted small hint">Only one display found. The presentation will cover this screen; press Esc to come back.</p>
-      )}
 
       <div className="slides-head">
         <h3>{has ? p.title : "Slides"}</h3>
@@ -158,7 +134,7 @@ export function PresentationPanel(p: Props) {
                 <button className={`thumb-look ${p.slideLook(slide.key) ? "set" : ""}`} onClick={() => setPicker(slide.key)}
                   aria-label={`Background for ${slide.label}`} title="Background for this slide"><Icon name="image" size={13} /></button>
                 {picker === slide.key && (
-                  <LookPicker title={`Background for ${slide.label}`} looks={p.looks} defaultTheme={p.theme}
+                  <LookPicker title={`Background for ${slide.label}`} looks={p.looks} defaultTheme={p.defaultTheme}
                     current={p.slideLook(slide.key)} onPick={(id) => p.onSlideLook(slide.key, id)} onClose={() => setPicker(null)} />
                 )}
               </div>

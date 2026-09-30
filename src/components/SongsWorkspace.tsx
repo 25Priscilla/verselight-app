@@ -108,7 +108,7 @@ export function SongsWorkspace({ active, themeFor, onPresent }: Props) {
               {query ? `No songs match “${query}”.`
                 : view === "fav" ? "No favorites yet. Tap the star on a song to keep it here."
                 : view === "recent" ? "Songs you present or add to a presentation will appear here."
-                : lang === "ml" ? "No Malayalam songs yet. Add one with New Malayalam song, or import OpenLyrics files from the ⋯ menu."
+                : lang === "ml" ? "No Malayalam songs yet. Add one with New Malayalam song, or import OpenLyrics files in Settings → Songs."
                 : "No songs yet."}
             </li>
           )}
