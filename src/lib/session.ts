@@ -25,7 +25,16 @@ export interface ScriptureSpec {
 }
 
 export type Session =
-  | { kind: "scripture"; spec: ScriptureSpec; chapters: number[]; slides: Slide[] }
+  | {
+      kind: "scripture";
+      spec: ScriptureSpec;
+      /** The chapters loaded so far, in order */
+      chapters: number[];
+      slides: Slide[];
+      /** The book's name as shown on the slides, and how many chapters it has */
+      bookName: string;
+      chaptersInBook: number;
+    }
   | { kind: "song"; songId: string };
 
 export interface SessionState {
@@ -142,6 +151,20 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     case "end":
       return initialSession;
   }
+}
+
+/** Is a step of `delta` at an end of the loaded slides (where a Bible session may need the next chapter)? */
+export const atEdge = (index: number, count: number, delta: number) => (delta > 0 ? index >= count - 1 : index <= 0);
+
+/** For a Bible session: the chapters it can still run into, named for the operator ("John 4"), or null at the book's ends. */
+export function chapterNeighbours(session: Session | null): { before: string | null; after: string | null } {
+  if (!session || session.kind !== "scripture") return { before: null, after: null };
+  const first = Math.min(...session.chapters);
+  const last = Math.max(...session.chapters);
+  return {
+    before: first > 1 ? `${session.bookName} ${first - 1}` : null,
+    after: last < session.chaptersInBook ? `${session.bookName} ${last + 1}` : null,
+  };
 }
 
 /** For a Bible session: the chapter Next or Previous should load when the operator runs off an end. */

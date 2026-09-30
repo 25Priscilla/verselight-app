@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { loadBible, type BibleData } from "../lib/bible";
 import { on, send, type NavCommand } from "../lib/bridge";
 import { closePresentation, listDisplays, openPresentation, type DisplayInfo } from "../lib/display";
+import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
-import { chapterSlides, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
+import { atEdge, chapterNeighbours, chapterSlides, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
 import { saveFileAs } from "../lib/storage";
 import type { Library, LiveState, Slide, Song } from "../lib/types";
 import { useLibrary } from "../state/library";
@@ -113,7 +114,9 @@ export function ControlApp() {
       // Start at the first selected verse (or the next one this translation has).
       let start = chapter.findIndex((sl) => sl.key === verseKey(spec.book, spec.chapter, spec.from));
       if (start < 0) start = Math.max(0, chapter.findIndex((sl) => Number(sl.key.split(".").pop()) >= spec.from));
-      dispatch({ type: "start", session: { kind: "scripture", spec, chapters: [spec.chapter], slides: chapter }, index: start });
+      const chaptersInBook = src.primary.books[spec.book]?.chapters.length ?? spec.chapter;
+      const bookName = chapter[0].label.replace(/ \d+:\d+$/, "");
+      dispatch({ type: "start", session: { kind: "scripture", spec, chapters: [spec.chapter], slides: chapter, bookName, chaptersInBook }, index: start });
       (document.activeElement as HTMLElement | null)?.blur();
       if (projector === "off") await openProjector();
     } catch (e) {
@@ -131,23 +134,25 @@ export function ControlApp() {
     if (projector === "off") await openProjector();
   }, [update, projector, openProjector]);
 
-  /** Next / Previous: one slide at a time; a Bible session loads the neighbouring chapter at either end. */
+  /**
+   * Next / Previous: one slide at a time. Inside the loaded slides this is immediate; only at an end of a Bible
+   * session does it wait to load the neighbouring chapter (and ignores presses until that chapter is in).
+   */
   const loading = useRef(false);
   const nav = useCallback(async (delta: number) => {
     const session = state.session;
     if (!session || loading.current) return;
-    if (session.kind === "scripture") {
-      const src = await bibleSources(session.spec).catch(() => null);
-      const chaptersInBook = src?.primary.books[session.spec.book]?.chapters.length ?? 0;
-      const n = neighbourChapter(session, index, slides.length, delta, chaptersInBook);
-      if (n && src) {
-        loading.current = true;
-        try {
-          dispatch({ type: "extend", where: n.where, chapter: n.chapter, slides: chapterSlides(session.spec, n.chapter, src), advance: true });
-        } finally {
-          loading.current = false;
-        }
-        return;
+    const n = session.kind === "scripture" && atEdge(index, slides.length, delta)
+      ? neighbourChapter(session, index, slides.length, delta, session.chaptersInBook) : null;
+    if (session.kind === "scripture" && n) {
+      loading.current = true;
+      try {
+        const src = await bibleSources(session.spec);
+        return dispatch({ type: "extend", where: n.where, chapter: n.chapter, slides: chapterSlides(session.spec, n.chapter, src), advance: true });
+      } catch {
+        return setNotice("The next chapter couldn't be loaded: the Bible file is missing.");
+      } finally {
+        loading.current = false;
       }
     }
     dispatch({ type: "step", delta, count: slides.length });
@@ -171,26 +176,21 @@ export function ControlApp() {
   // Operator keyboard. Capture phase, so it works wherever focus is (except while typing), and a
   // focused button can't also react to Space or Enter.
   useEffect(() => {
-    const map: Record<string, NavCommand> = {
-      " ": "next", ArrowRight: "next", ArrowDown: "next", PageDown: "next",
-      ArrowLeft: "prev", ArrowUp: "prev", PageUp: "prev",
-      b: "blackout", B: "blackout", ".": "blackout",
-      Escape: "exit",
-    };
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector(".modal")) return;
-      if (isTyping(e.target)) {
-        // Esc leaves a text field first, so the next Esc (or arrow) controls the presentation.
-        if (e.key === "Escape") (e.target as HTMLElement).blur();
-        return;
-      }
-      const cmd = map[e.key];
-      if (!cmd) return;
-      if (cmd === "exit" && projector === "off") return;
-      if (cmd !== "exit" && !state.session) return;
+      const action = liveKeyAction(e, {
+        typing: isTyping(e.target),
+        modal: !!document.querySelector(".modal"),
+        // An open menu (such as a slide's background menu) handles its own keys: Esc closes it and nothing else.
+        menu: !!document.querySelector(".look-picker, .menu, .popover"),
+        session: !!state.session,
+        projectorOn: projector !== "off",
+      });
+      if (!action) return;
+      // Esc leaves a text field first, so the next Esc (or arrow) controls the presentation.
+      if (action === "blur") return (e.target as HTMLElement).blur();
       e.preventDefault();
       e.stopPropagation();
-      handleNav(cmd);
+      handleNav(action);
     };
     const swallowKeyUp = (e: KeyboardEvent) => {
       if ((e.key === " " || e.key === "Enter") && state.session && !isTyping(e.target) && e.target instanceof HTMLButtonElement) e.preventDefault();
@@ -208,7 +208,7 @@ export function ControlApp() {
     const sp = state.session.spec;
     return new Set(Array.from({ length: sp.to - sp.from + 1 }, (_, i) => verseKey(sp.book, sp.chapter, sp.from + i)));
   }, [state.session]);
-  const canExtend = state.session?.kind === "scripture";
+  const neighbours = useMemo(() => chapterNeighbours(state.session), [state.session]);
 
   // The presentation panel only appears while something is loaded or the projector is on; the rest of the
   // time the workspace gets the full width. While it shows, the sidebar shrinks to icons to make room.
@@ -294,7 +294,7 @@ export function ControlApp() {
         slides={slides}
         index={index}
         selectionKeys={selectionKeys}
-        canExtend={canExtend}
+        neighbours={neighbours}
         blackout={state.blackout}
         projector={projector}
         displayName={displayName}

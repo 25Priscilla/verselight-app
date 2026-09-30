@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BibleData } from "./bible";
 import {
-  chapterSlides, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey,
+  atEdge, chapterNeighbours, chapterSlides, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey,
   type ScriptureSpec, type Session, type SessionState,
 } from "./session";
 import type { Song } from "./types";
@@ -15,7 +15,7 @@ const src = { primary: bible, meta: { abbreviation: "TST", language: "en" as con
 const spec: ScriptureSpec = { primaryId: "t", onScreen: "first", book: 0, chapter: 1, from: 3, to: 4 };
 
 function scripture(chapters = [1]): Session & { kind: "scripture" } {
-  return { kind: "scripture", spec, chapters, slides: chapters.flatMap((c) => chapterSlides(spec, c, src)) };
+  return { kind: "scripture", spec, chapters, slides: chapters.flatMap((c) => chapterSlides(spec, c, src)), bookName: "Genesis", chaptersInBook: 3 };
 }
 const started = (index = 2): SessionState => sessionReducer(initialSession, { type: "start", session: scripture(), index });
 
@@ -82,6 +82,13 @@ describe("sessionReducer", () => {
 });
 
 describe("chapter run-on", () => {
+  it("only asks for a neighbouring chapter at an end of the loaded slides", () => {
+    expect(atEdge(5, 6, 1)).toBe(true);
+    expect(atEdge(4, 6, 1)).toBe(false);
+    expect(atEdge(0, 6, -1)).toBe(true);
+    expect(atEdge(1, 6, -1)).toBe(false);
+  });
+
   it("finds the next and previous chapter within the book", () => {
     expect(neighbourChapter(scripture([1]), 5, 6, 1, 3)).toEqual({ where: "after", chapter: 2 });
     expect(neighbourChapter(scripture([1]), 0, 6, -1, 3)).toBeNull();
@@ -90,6 +97,12 @@ describe("chapter run-on", () => {
     expect(neighbourChapter(scripture([1]), 3, 6, 1, 3)).toBeNull();
   });
 
+  it("names the chapters the operator can still run into", () => {
+    expect(chapterNeighbours(scripture([1]))).toEqual({ before: null, after: "Genesis 2" });
+    expect(chapterNeighbours(scripture([2]))).toEqual({ before: "Genesis 1", after: "Genesis 3" });
+    expect(chapterNeighbours(scripture([2, 3]))).toEqual({ before: "Genesis 1", after: null });
+    expect(chapterNeighbours({ kind: "song", songId: "s" })).toEqual({ before: null, after: null });
+  });
 });
 
 describe("song sessions", () => {
