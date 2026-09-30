@@ -17,6 +17,7 @@
 .slide[data-align="left"] .slide-footer { text-align: left; padding-left: 7cqw; }
 .projector { height: 100vh; width: 100vw; background: #000; cursor: none; overflow: hidden; }
 .projector .slide { aspect-ratio: auto; height: 100vh; }
+html.projector-window, html.projector-window body { overflow: hidden; background: #000; user-select: none; -webkit-user-select: none; }
 .slide[lang="ml"] .slide-body { line-height: 1.5; }
 .slide[lang="ml"] .slide-lines > div { text-wrap: pretty; }
 

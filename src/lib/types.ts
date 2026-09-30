@@ -186,6 +186,9 @@ export interface Library {
   /** The Default look, used wherever no other look is assigned */
   theme: Theme;
   activeServiceId: Id | null;
+  /** Projector screen chosen in Settings, by the display's id; null (or missing) means automatic */
+  displayId?: string | null;
+  /** Projector screen by list position, as saved before display ids. Only used while displayId is missing. */
   displayIndex: number | null;
 }
 

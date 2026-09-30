@@ -1,7 +1,11 @@
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use std::sync::Mutex;
+use tauri::{
+    AppHandle, Emitter, Manager, Monitor, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder, WindowEvent,
+};
 use tauri_plugin_dialog::DialogExt;
 
 const PRESENTATION_LABEL: &str = "presentation";
@@ -52,11 +56,22 @@ fn delete_data(app: AppHandle, name: String) -> Result<(), String> {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DisplayInfo {
+    /// Stable identity (the OS display name). List positions change when screens are plugged in or out.
+    id: String,
     index: usize,
     name: String,
     width: u32,
     height: u32,
+    x: i32,
+    y: i32,
     primary: bool,
+}
+
+/// A monitor's identity: its OS name (e.g. `\\.\DISPLAY2` on Windows), else its desktop position.
+fn monitor_id(m: &Monitor) -> String {
+    m.name()
+        .cloned()
+        .unwrap_or_else(|| format!("{},{}", m.position().x, m.position().y))
 }
 
 #[tauri::command]
@@ -67,6 +82,7 @@ fn list_displays(app: AppHandle) -> Result<Vec<DisplayInfo>, String> {
         .iter()
         .enumerate()
         .map(|(index, m)| DisplayInfo {
+            id: monitor_id(m),
             index,
             name: m
                 .name()
@@ -74,63 +90,95 @@ fn list_displays(app: AppHandle) -> Result<Vec<DisplayInfo>, String> {
                 .unwrap_or_else(|| format!("Display {}", index + 1)),
             width: m.size().width,
             height: m.size().height,
+            x: m.position().x,
+            y: m.position().y,
             primary: primary_pos.map(|p| p == *m.position()).unwrap_or(index == 0),
         })
         .collect())
 }
 
-/// Opens the projector window full screen on the chosen display and returns that display's name.
+/// Only one open or close runs at a time, so pressing Start repeatedly can never make two projector windows.
+static PROJECTOR_LOCK: Mutex<()> = Mutex::new(());
+
+/// Puts the projector window full screen on the given monitor. Uses physical pixels so it lands on the right
+/// screen even when the laptop and projector use different display scaling.
+fn place_on(window: &WebviewWindow, target: &Monitor) -> tauri::Result<()> {
+    if window.is_fullscreen()? {
+        window.set_fullscreen(false)?;
+    }
+    window.set_position(PhysicalPosition::new(target.position().x, target.position().y))?;
+    window.set_size(PhysicalSize::new(target.size().width, target.size().height))?;
+    window.set_fullscreen(true)
+}
+
+/// Opens the projector window full screen on the chosen display (by id), or moves the one already open.
+/// The frontend picks the display; this re-checks it is still connected, since screens can come and go.
 /// Window creation happens in an async command to avoid a deadlock on Windows.
 #[tauri::command]
-async fn open_presentation(app: AppHandle, display_index: Option<usize>) -> Result<String, String> {
-    if let Some(existing) = app.get_webview_window(PRESENTATION_LABEL) {
-        existing.destroy().map_err(|e| e.to_string())?;
-    }
+async fn open_presentation(app: AppHandle, display_id: Option<String>) -> Result<(), String> {
+    let _guard = PROJECTOR_LOCK.lock().unwrap_or_else(|e| e.into_inner());
 
     let monitors = app.available_monitors().map_err(|e| e.to_string())?;
     let primary_pos = app.primary_monitor().ok().flatten().map(|m| *m.position());
-    // Default: the first display that isn't the primary one, else the primary.
-    let target = display_index
-        .and_then(|i| monitors.get(i))
-        .or_else(|| monitors.iter().find(|m| Some(*m.position()) != primary_pos))
-        .or_else(|| monitors.first())
-        .ok_or("No displays found")?;
+    let target = match &display_id {
+        Some(id) => monitors
+            .iter()
+            .find(|m| &monitor_id(m) == id)
+            .ok_or("the chosen screen isn't connected")?,
+        // Automatic: never cover the operator's main screen.
+        None => monitors
+            .iter()
+            .find(|m| Some(*m.position()) != primary_pos)
+            .ok_or("no second screen is connected")?,
+    };
 
-    let target_name = target
-        .name()
-        .cloned()
-        .unwrap_or_else(|| format!("{}×{} display", target.size().width, target.size().height));
-    let scale = target.scale_factor();
-    let pos = target.position().to_logical::<f64>(scale);
-    let size = target.size().to_logical::<f64>(scale);
+    let window = match app.get_webview_window(PRESENTATION_LABEL) {
+        // Reuse the open window: the slide it shows stays in sync, and there is never a second one.
+        Some(existing) => existing,
+        None => WebviewWindowBuilder::new(
+            &app,
+            PRESENTATION_LABEL,
+            WebviewUrl::App("index.html".into()),
+        )
+        .title("VerseLight Projector")
+        // Presentation only: no border, title bar or taskbar entry.
+        .decorations(false)
+        .skip_taskbar(true)
+        .resizable(false)
+        .visible(false)
+        .focused(false)
+        .disable_drag_drop_handler()
+        .build()
+        .map_err(|e| e.to_string())?,
+    };
 
-    let window = WebviewWindowBuilder::new(
-        &app,
-        PRESENTATION_LABEL,
-        WebviewUrl::App("index.html".into()),
-    )
-    .title("VerseLight Projector")
-    // Presentation only: no border, title bar or taskbar entry.
-    .decorations(false)
-    .skip_taskbar(true)
-    .resizable(false)
-    .position(pos.x, pos.y)
-    .inner_size(size.width, size.height)
-    .focused(false)
-    .disable_drag_drop_handler()
-    .build()
-    .map_err(|e| e.to_string())?;
+    let placed = place_on(&window, target).and_then(|_| window.show());
+    // Never leave a full-screen window over the wrong screen (e.g. the operator's) if placing it failed.
+    let landed = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| monitor_id(&m) == monitor_id(target))
+        .unwrap_or(false);
+    if let Err(e) = placed {
+        let _ = window.destroy();
+        return Err(format!("the projector window couldn't be placed on the screen ({e})"));
+    }
+    if !landed {
+        let _ = window.destroy();
+        return Err("the projector window couldn't be moved to the chosen screen".into());
+    }
 
-    window.set_fullscreen(true).map_err(|e| e.to_string())?;
     // Keep keyboard focus with the operator in the control window.
     if let Some(main) = app.get_webview_window("main") {
         let _ = main.set_focus();
     }
-    Ok(target_name)
+    Ok(())
 }
 
 #[tauri::command]
-fn close_presentation(app: AppHandle) -> Result<(), String> {
+async fn close_presentation(app: AppHandle) -> Result<(), String> {
+    let _guard = PROJECTOR_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(window) = app.get_webview_window(PRESENTATION_LABEL) {
         window.destroy().map_err(|e| e.to_string())?;
     }

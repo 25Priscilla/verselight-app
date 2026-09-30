@@ -14,6 +14,15 @@ export function PresentationView() {
     return off;
   }, []);
 
+  // The audience sees only the slide: no page scrollbars, text selection or right-click browser menu.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("projector-window");
+    const noMenu = (e: Event) => e.preventDefault();
+    window.addEventListener("contextmenu", noMenu);
+    return () => { root.classList.remove("projector-window"); window.removeEventListener("contextmenu", noMenu); };
+  }, []);
+
   // Clickers and keyboards pressed while the projector has focus still work.
   useEffect(() => {
     const keys: Record<string, NavCommand> = {

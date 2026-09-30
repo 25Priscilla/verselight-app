@@ -60,6 +60,7 @@ function starterLibrary(): Library {
     assign: { bible: null, songs: null, items: {}, slides: {} },
     bookmarks: [],
     activeServiceId: null,
+    displayId: null,
     displayIndex: null,
   };
 }

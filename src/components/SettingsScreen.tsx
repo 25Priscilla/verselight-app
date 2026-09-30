@@ -3,6 +3,7 @@ import { bibleLang } from "../lib/bible";
 import { XREF_LICENSE_URL, XREF_SOURCE_URL } from "../lib/crossrefs";
 import type { DisplayInfo } from "../lib/display";
 import { songLanguage } from "../lib/malayalam";
+import { chooseDisplay, displayDescription, displayLabel, secondDisplays, type DisplayChoice } from "../lib/projector";
 import type { BibleMeta, Song } from "../lib/types";
 import { useLibrary } from "../state/library";
 import { ImportBibleDialog, ImportCrossRefsDialog, RemoveBibleConfirm } from "./BibleDialogs";
@@ -30,8 +31,13 @@ interface Props {
   projector: ProjectorStatus;
   displayName: string;
   displays: DisplayInfo[];
-  displayIndex: number | null;
-  onDisplay: (index: number | null) => void;
+  /** False in a web browser, where the projector is a separate browser window */
+  canChooseDisplays: boolean;
+  displayChoice: DisplayChoice;
+  /** Why the projector isn't showing the slides, or null */
+  projectorProblem: string | null;
+  /** Choose a screen by id; null is automatic */
+  onDisplay: (id: string | null) => void;
   onRefreshDisplays: () => void;
   onBackup: () => void;
   /** Checks the file, then asks before replacing the library */
@@ -84,30 +90,69 @@ function ProjectorSettings(p: Props) {
     p.projector === "live" ? <StatusChip tone="live">Live on {p.displayName || "projector"}</StatusChip>
       : p.projector === "opening" ? <StatusChip tone="warning">Connecting…</StatusChip>
         : <StatusChip tone="off">Off</StatusChip>;
+  const intro = "The projector is used as a second screen: connect it by HDMI or another cable, or with a wireless display that Windows shows as a screen. " +
+    "This computer keeps the controls, and the projector shows only the slide.";
+  if (!p.canChooseDisplays) {
+    return (
+      <Section title="Projector" intro={intro}>
+        <Card title="Status">
+          <div className="settings-status">{status}</div>
+          <p className="muted small">
+            In a web browser the slides open in a separate browser window. Drag it to the projector screen and make it full
+            screen (F11). The VerseLight desktop app finds the projector screen and opens the slides on it for you.
+          </p>
+        </Card>
+      </Section>
+    );
+  }
+  const chosenId = p.displayChoice.id;
+  // The screen that Automatic (or a setting saved before display ids) would use right now.
+  const pick = chooseDisplay(p.displays, { id: null, index: p.displayChoice.index });
+  const chosenMissing = !!chosenId && !p.displays.some((d) => d.id === chosenId);
+  const onlyOne = secondDisplays(p.displays).length === 0;
+  const chosen = p.displays.find((d) => d.id === chosenId);
   return (
-    <Section title="Projector" intro="Choose which screen shows the slides.">
+    <Section title="Projector" intro={intro}>
       <Card title="Status">
         <div className="settings-status">{status}</div>
-        <p className="muted small">The projector turns on when you choose Present Now on a Bible passage or song.</p>
+        <p className="muted small">The projector turns on when you choose Present Now on a Bible passage or song, or Start presenting.</p>
+        {p.projector === "off" && p.projectorProblem && (
+          <div className="settings-note" role="note"><Icon name="info" size={16} /><span>{p.projectorProblem}</span></div>
+        )}
       </Card>
       <Card title="Show slides on">
         <div className="settings-inline">
-          <select value={p.displayIndex ?? ""} onChange={(e) => p.onDisplay(e.target.value === "" ? null : Number(e.target.value))} aria-label="Projector display">
-            <option value="">Second screen (automatic)</option>
-            {p.displays.map((d) => <option key={d.index} value={d.index}>{d.name} · {d.width}×{d.height}{d.primary ? " (this screen)" : ""}</option>)}
+          <select value={chosenId ?? ""} onChange={(e) => p.onDisplay(e.target.value === "" ? null : e.target.value)} aria-label="Projector display">
+            <option value="">Automatic: the second screen{pick.ok ? ` (now ${displayLabel(pick.display)})` : ""}</option>
+            {p.displays.map((d) => <option key={d.id} value={d.id}>{displayDescription(d)}</option>)}
+            {chosenMissing && <option value={chosenId!}>Chosen screen (not connected)</option>}
           </select>
           <IconButton icon="refresh" label="Look for screens again" onClick={p.onRefreshDisplays} />
         </div>
         <p className="muted small">
-          Automatic uses the first screen that isn't this computer's main screen. Connect the projector or TV first, then choose
-          Look for screens again if it isn't listed.
+          {p.displays.length} {p.displays.length === 1 ? "screen" : "screens"} found. Automatic uses the first screen that isn't this
+          computer's main screen, so the slides never cover your controls. Connect the projector first; new screens appear here by themselves,
+          or choose Look for screens again.
         </p>
-        {p.displays.length < 2 && (
+        {chosenMissing ? (
+          <div className="settings-note warning" role="alert">
+            <Icon name="info" size={16} />
+            <span>The chosen screen isn't connected. Connect it, or choose Automatic or another screen.</span>
+          </div>
+        ) : onlyOne ? (
           <div className="settings-note" role="note">
             <Icon name="info" size={16} />
-            <span>Only one screen found. The presentation will cover this screen; press Esc to come back.</span>
+            <span>
+              No second screen found, so there is nowhere separate to show the slides yet. Present Now still works, with the slides in the
+              preview on this screen. {chosen?.primary && "Because you chose this computer's main screen, the slides will cover it: press Esc to come back."}
+            </span>
           </div>
-        )}
+        ) : chosen?.primary ? (
+          <div className="settings-note" role="note">
+            <Icon name="info" size={16} />
+            <span>This is the computer's main screen, so the slides will cover your controls. Press Esc to come back.</span>
+          </div>
+        ) : null}
       </Card>
     </Section>
   );

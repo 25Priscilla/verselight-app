@@ -3,28 +3,42 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauri } from "./env";
 
 export interface DisplayInfo {
+  /** Stable identity of the screen (the OS display name, e.g. "\\.\DISPLAY2"), unlike its position in the list */
+  id: string;
   index: number;
   name: string;
+  /** Physical pixels */
   width: number;
   height: number;
+  /** Top-left corner on the desktop, in physical pixels */
+  x: number;
+  y: number;
   primary: boolean;
 }
 
+/**
+ * Can VerseLight see and choose the computer's screens? Only in the desktop app. In a web browser the projector is a
+ * separate browser window that the operator drags to the projector screen themselves.
+ */
+export const canChooseDisplays = () => isTauri();
+
+/** The screens the operating system reports now. Empty in a web browser. */
 export async function listDisplays(): Promise<DisplayInfo[]> {
-  if (!isTauri()) {
-    return [{ index: 0, name: "Browser window", width: screen.width, height: screen.height, primary: true }];
-  }
+  if (!isTauri()) return [];
   return invoke<DisplayInfo[]>("list_displays");
 }
 
 let browserWindow: Window | null = null;
 
-/** Opens the full-screen projector window on the chosen display. */
-/** Opens the full-screen projector window; resolves with the name of the display it opened on. */
-export async function openPresentation(displayIndex: number | null): Promise<string> {
-  if (isTauri()) return invoke<string>("open_presentation", { displayIndex });
+/**
+ * Opens the full-screen projector window on the given screen, or moves the one that is already open there
+ * (there is only ever one projector window). In a web browser, opens or reuses a separate browser window.
+ */
+export async function openPresentation(display: DisplayInfo | null): Promise<void> {
+  if (isTauri()) return invoke("open_presentation", { displayId: display?.id ?? null });
+  // The window name makes the browser reuse the same window rather than open another.
   browserWindow = window.open("#/present", "verselight-projector", "width=1280,height=720");
-  return "Browser window";
+  if (!browserWindow) throw new Error("the browser blocked the projector window. Allow pop-ups for VerseLight and try again.");
 }
 
 export async function closePresentation(): Promise<void> {

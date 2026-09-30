@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { loadBible, type BibleData } from "../lib/bible";
 import { on, send, type NavCommand } from "../lib/bridge";
-import { closePresentation, listDisplays, openPresentation, type DisplayInfo } from "../lib/display";
+import { canChooseDisplays, closePresentation, listDisplays, openPresentation, type DisplayInfo } from "../lib/display";
+import { chooseDisplay, displayConnected, displayLabel, sameDisplays } from "../lib/projector";
 import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
 import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
@@ -29,6 +30,11 @@ function useMediaQuery(query: string) {
   }, [query]);
   return match;
 }
+
+/** How often screens are checked while presenting (to notice an unplugged projector) */
+export const DISPLAY_POLL_MS = 2000;
+/** How long the projector window has to load and report back before it is given up on */
+export const PROJECTOR_TIMEOUT_MS = 15000;
 
 const isTyping = (el: EventTarget | null) =>
   el instanceof HTMLElement && !!el.closest("input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, [contenteditable]");
@@ -84,6 +90,10 @@ export function ControlApp() {
   const [projector, setProjector] = useState<ProjectorStatus>("off");
   const [displayName, setDisplayName] = useState("");
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
+  /** Why the projector isn't showing the slides, while that is still true (no second screen, screen unplugged, …) */
+  const [projectorProblem, setProjectorProblem] = useState<string | null>(null);
+  /** The screen the projector window is on, so unplugging it can be noticed */
+  const liveDisplay = useRef<DisplayInfo | null>(null);
 
   const liveState: LiveState = useMemo(
     () => ({ slide: liveSlide, theme: lookForSlide(library, liveSlide).theme, blackout: state.blackout, clear: state.clear }),
@@ -94,27 +104,101 @@ export function ControlApp() {
   stateRef.current = liveState;
   useEffect(() => { send("live-state", liveState); }, [liveState]);
   useEffect(() => on("request-state", () => { setProjector((p) => (p === "off" ? p : "live")); send("live-state", stateRef.current); }), []);
-  useEffect(() => on("presentation-closed", () => setProjector("off")), []);
+  // The projector window was closed some other way (e.g. Alt+F4 on the projector): the place is kept.
+  useEffect(() => on("presentation-closed", () => { liveDisplay.current = null; setProjector("off"); }), []);
 
-  const refreshDisplays = useCallback(() => { listDisplays().then(setDisplays).catch(() => setDisplays([])); }, []);
+  const fetchDisplays = useCallback(async () => {
+    const list = await listDisplays().catch(() => [] as DisplayInfo[]);
+    setDisplays((old) => (sameDisplays(old, list) ? old : list));
+    return list;
+  }, []);
+  const refreshDisplays = useCallback(() => { void fetchDisplays(); }, [fetchDisplays]);
   useEffect(refreshDisplays, [refreshDisplays]);
 
+  // After the control window is reloaded the session is gone, so a projector window left open from before is stale.
+  useEffect(() => { if (canChooseDisplays()) closePresentation().catch(() => undefined); }, []);
+
+  /**
+   * Start presenting: open the projector window on the chosen screen. Only one open runs at a time, and it is
+   * skipped while the window is already open, so repeated presses never make a second projector window.
+   */
+  const opening = useRef(false);
+  const projectorRef = useRef(projector);
+  projectorRef.current = projector;
+  /** Bumped by Stop, so a window that finishes opening after Stop is closed again */
+  const generation = useRef(0);
+  const choice = useMemo(() => ({ id: library.displayId ?? null, index: library.displayIndex }), [library.displayId, library.displayIndex]);
   const openProjector = useCallback(async () => {
+    if (opening.current || projectorRef.current !== "off") return;
+    opening.current = true;
+    const gen = generation.current;
     setProjector("opening");
     try {
-      const name = await openPresentation(library.displayIndex);
-      setDisplayName(name || "");
-      // In a plain browser there is no handshake from a separate window yet; the popup reports back on load.
+      let target: DisplayInfo | null = null;
+      if (canChooseDisplays()) {
+        const pick = chooseDisplay(await fetchDisplays(), choice);
+        if (!pick.ok) {
+          setProjector("off");
+          setProjectorProblem(pick.message);
+          setNotice(pick.message);
+          return;
+        }
+        target = pick.display;
+      }
+      await openPresentation(target);
+      if (gen !== generation.current) { await closePresentation().catch(() => undefined); return; }
+      liveDisplay.current = target;
+      setDisplayName(target ? displayLabel(target) : "browser window");
+      setProjectorProblem(null);
+      // The projector window reports back (request-state) once it has loaded; that turns the status to Live.
     } catch (e) {
       setProjector("off");
-      setNotice(`The projector window didn't open: ${e}`);
+      const message = `The projector window couldn't be opened: ${e instanceof Error ? e.message : e}`;
+      setProjectorProblem(message);
+      setNotice(message);
+    } finally {
+      opening.current = false;
     }
-  }, [library.displayIndex]);
+  }, [choice, fetchDisplays]);
 
   const stopPresenting = useCallback(async () => {
-    await closePresentation().catch(() => undefined);
+    generation.current++;
+    liveDisplay.current = null;
     setProjector("off");
+    await closePresentation().catch(() => undefined);
   }, []);
+
+  // A projector window that never reports back (it failed to load) is closed rather than left "Connecting…" forever.
+  useEffect(() => {
+    if (projector !== "opening") return;
+    const t = window.setTimeout(() => {
+      if (projectorRef.current !== "opening") return;
+      void stopPresenting();
+      const message = "The projector window didn't respond, so it was closed. Choose Start presenting to try again.";
+      setProjectorProblem(message);
+      setNotice(message);
+    }, PROJECTOR_TIMEOUT_MS);
+    return () => window.clearTimeout(t);
+  }, [projector, stopPresenting]);
+
+  // Screens come and go (a cable is unplugged, a wireless display drops). While presenting, and while choosing a
+  // screen in Settings, check the list regularly. If the projector's screen disappears, close its window before
+  // Windows moves it over the operator's screen, and keep the place so Start presenting carries on.
+  const watchDisplays = canChooseDisplays() && (projector !== "off" || !!state.session || mode === "settings");
+  useEffect(() => {
+    if (!watchDisplays) return;
+    const t = window.setInterval(async () => {
+      const list = await fetchDisplays();
+      const on = liveDisplay.current;
+      if (on && projectorRef.current !== "off" && !displayConnected(list, on.id)) {
+        void stopPresenting();
+        const message = `${displayLabel(on)} was disconnected, so the projector was turned off. Your place is kept: reconnect the projector and choose Start presenting.`;
+        setProjectorProblem(message);
+        setNotice(message);
+      }
+    }, DISPLAY_POLL_MS);
+    return () => window.clearInterval(t);
+  }, [watchDisplays, fetchDisplays, stopPresenting]);
 
   // ---- Bible data for scripture sessions ----
   const bibleSources = useCallback(async (spec: ScriptureSpec) => {
@@ -299,8 +383,10 @@ export function ControlApp() {
       )}
       {mode === "settings" && (
         <SettingsScreen section={settingsSection} onSection={setSettingsSection}
-          projector={projector} displayName={displayName} displays={displays} displayIndex={library.displayIndex}
-          onDisplay={(i) => update((lib) => ({ ...lib, displayIndex: i }))} onRefreshDisplays={refreshDisplays}
+          projector={projector} displayName={displayName} displays={displays} canChooseDisplays={canChooseDisplays()}
+          displayChoice={choice} projectorProblem={projectorProblem}
+          onDisplay={(id) => { setProjectorProblem(null); update((lib) => ({ ...lib, displayId: id, displayIndex: null })); }}
+          onRefreshDisplays={refreshDisplays}
           onBackup={backup} onRestore={restore} notify={setNotice} />
       )}
       {pendingRestore && (
@@ -321,13 +407,14 @@ export function ControlApp() {
         blackout={state.blackout}
         projector={projector}
         displayName={displayName}
+        problem={projector === "off" ? projectorProblem : null}
         onGoto={gotoSlide}
         onPrev={() => nav(-1)}
         onNext={() => nav(1)}
         onBlackout={() => dispatch({ type: "blackout" })}
         onStart={openProjector}
         onStop={stopPresenting}
-        onEnd={() => { stopPresenting(); dispatch({ type: "end" }); }}
+        onEnd={() => { stopPresenting(); setProjectorProblem(null); dispatch({ type: "end" }); }}
         defaultTheme={library.theme}
         lookFor={lookFor}
         looks={library.looks}
