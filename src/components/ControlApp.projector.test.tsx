@@ -2,7 +2,7 @@
 // The projector as a second screen: choosing the screen, opening one projector window, keeping it in step with the
 // laptop, and failing gracefully when there is no second screen or it is unplugged. The screens are simulated;
 // this cannot prove a physical projector works, only that VerseLight drives the window correctly.
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DisplayInfo } from "../lib/display";
 import { songSlideKey } from "../lib/slides";
@@ -274,5 +274,53 @@ describe("Settings → Projector", () => {
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     await waitFor(() => expect(screen.getByText(/1 screen found/)).toBeTruthy());
     expect(screen.getByText(/No second screen found, so there is nowhere separate/)).toBeTruthy();
+  });
+});
+
+describe("the projector window's lifetime", () => {
+  it("closes a projector window left over from before the control window was reloaded", async () => {
+    await start();
+    // Nothing has been presented yet: the only close is the clean-up of a stale window.
+    expect(hw.closed).toBe(1);
+    expect(hw.opened).toEqual([]);
+  });
+
+  it("closes the window again if Stop is pressed while it is still opening", async () => {
+    let finish!: () => void;
+    hw.open = () => new Promise<void>((r) => { finish = r; });
+    await start();
+    const panel = await presentSong();
+    expect(panel.getByText("Connecting to projector…")).toBeTruthy();
+    const closedBefore = hw.closed;
+    await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Stop presentation/ })); });
+    expect(panel.getByText("Projector off")).toBeTruthy();
+    // The window finishes opening after Stop: it is closed rather than left on the projector.
+    await act(async () => { finish(); });
+    expect(hw.closed).toBe(closedBefore + 2);
+    expect(panel.getByText("Projector off")).toBeTruthy();
+    // Start presenting afterwards opens it normally.
+    hw.open = async () => undefined;
+    await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Start presenting/ })); });
+    await projectorReportsBack();
+    expect(hw.opened).toHaveLength(2);
+  });
+
+  it("remembers the chosen screen after VerseLight is restarted", async () => {
+    const tv: DisplayInfo = { ...beamer, id: "\\\\.\\DISPLAY3", index: 2, name: "\\\\.\\DISPLAY3", x: -1920 };
+    hw.displays = [laptop, beamer, tv];
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    const select = await screen.findByRole("combobox", { name: "Projector display" }) as HTMLSelectElement;
+    await waitFor(() => expect(select.options).toHaveLength(4));
+    fireEvent.change(select, { target: { value: tv.id } });
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("verselight:library.json")!).displayId).toBe(tv.id));
+
+    // Restart: a fresh control window reading the saved library, with the screens listed in a different order.
+    cleanup();
+    hw.displays = [tv, laptop, beamer];
+    render(<LibraryProvider><ControlApp /></LibraryProvider>);
+    await screen.findByRole("button", { name: "Songs" });
+    await presentSong();
+    expect(hw.opened).toEqual([tv.id]);
   });
 });
