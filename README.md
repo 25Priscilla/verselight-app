@@ -4,7 +4,13 @@ A desktop app for projecting Bible verses and song lyrics in church services. Bu
 
 ## The interface
 
-VerseLight has three areas: a sidebar for **Bible** and **Songs**, a working area for the selected content, and the **Presentation** panel on the right.
+VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (with **Bible Study** under it), **Songs** and **Backgrounds**, and at the bottom the **Projector** status, **Settings** and **Help**. The selected screen fills the rest of the window. While something is being presented, the **Presentation** panel appears on the right and the sidebar shrinks to icons (their names show as tooltips) to leave room. Windows narrower than 1100 px always use the icon sidebar.
+
+**Home**
+- Quick actions: **Find a Bible verse** and **Find a song** open that screen with the search box ready; **Change the background** opens Backgrounds; **Add or manage Bibles and songs** opens Settings → Bibles.
+- Recently used songs and the verses saved in Bible Study; click one to open it.
+- While something is being presented, a *Now presenting* card shows the current slide and the projector status.
+- With no Bible imported yet, a prompt to import one.
 
 **Bible**
 - Choose a translation at the top of the book list. **Manage Bibles…** at the bottom of that menu opens **Settings → Bibles**, where Bible files are imported and removed.
@@ -27,9 +33,20 @@ VerseLight has three areas: a sidebar for **Bible** and **Songs**, a working are
 - **Previous**, **Next** and **Black** screen, and **Stop presentation**. Choose the projector display in **Settings → Projector**.
 - A connection status: *Projector off*, *Connecting to projector…* or *Live on <display name>*.
 - The slide list: click any slide to show it at once. The current slide is marked in red; verses you originally selected are outlined.
-- The panel only appears while something is being presented.
+- **Close**, above the slide list, clears the presentation and hides the panel.
 
-**Backgrounds** sets the default font, text size, colours and background (the Default look) and your other looks.
+**Backgrounds** sets the default font, text size, colours and background (the Default look) and your other looks. See [Presentation backgrounds](#presentation-backgrounds-looks).
+
+**Projector** (bottom of the sidebar) shows *Off*, *Connecting…* or *Live on <display name>*. Click it to open Settings → Projector.
+
+**Settings**
+- **Projector:** the projector status, and which screen shows the slides (*Second screen (automatic)* uses the first screen that isn't the main one).
+- **Bibles:** import or remove Bibles, and import or replace cross references. Removing a Bible asks first.
+- **Songs:** how many songs you have, and **Import songs** from files.
+- **Backup:** **Back up library** saves one file with your songs, looks, saved verses and settings (not the Bible texts). **Restore from backup** checks the file and asks before replacing your library.
+- **Keyboard:** the presentation keys. **About:** version and credits.
+
+**Help** explains how to present in four steps, how to present a verse or a song, Previous and Next, the black screen, stopping and closing, and the keys, with links to the right place in Settings.
 
 **Settings** holds the projector display, Bible and cross-reference files, song import, backup and restore, the keyboard shortcuts and credits.
 
@@ -104,7 +121,7 @@ In **Bible**, choose **English**, **മലയാളം** or **EN + മല**:
 - **Reference search:** accepts English or Malayalam book names (for example `John 3:16` or `യോഹന്നാൻ 3:16`).
 - **Keyword search:** searches both translations and shows each result in both languages.
 - **Presenting:** **Show on screen** chooses what the projector shows: both translations, English only or Malayalam only. Then choose **▶ Present Now**.
-- **Projector layout:** the Looks editor sets it: **Stacked** (English above Malayalam) or **Side by side**. The footer credits both translations, for example "John 3:16 (KJV · MAL1910)".
+- **Projector layout:** the Backgrounds screen sets it: **Stacked** (English above Malayalam) or **Side by side**. The footer credits both translations, for example "John 3:16 (KJV · MAL1910)".
 
 ### Verse numbering
 
@@ -156,7 +173,7 @@ The Read view stays the default, so opening a chapter during a service always sh
 
 ## Word Study
 
-**Study** in the left rail finds every verse where a word appears. It is for Bible study only and never presents anything; to show a verse, open it in the Bible and choose Present Now there.
+**Bible Study** (under Bible in the sidebar) finds every verse where a word appears. It is for Bible study only and never presents anything; to show a verse, open it in the Bible and choose Present Now there.
 
 - **Search:** type a word (for example `grace` or `കൃപ`) and press Enter. Several words find verses that contain all of them.
 - **Translation:** Word Study searches the translation selected on the Bible screen (the English one in the bilingual view). You can pick another in the **Translation** menu.
@@ -197,7 +214,7 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 
 ## Presentation backgrounds (Looks)
 
-A **look** is a saved presentation background plus text style. Open **Looks** in the left rail to create and edit them.
+A **look** is a saved presentation background plus text style. Open **Backgrounds** in the sidebar to create and edit them.
 
 - **Background:** solid colour, gradient (with direction), a built-in gallery, or your own image. Uploaded images are resized to fit a 1920 × 1080 screen and stored inside VerseLight, so they work offline.
 - **Adjust:** brightness, a dark overlay to keep text readable, and blur. Blur is scaled to the screen, so the preview matches the projector at any resolution. Only the background is filtered; text stays sharp.
@@ -206,7 +223,7 @@ A **look** is a saved presentation background plus text style. Open **Looks** in
 - **Where a look is used**, from most to least specific:
   1. one slide: the image button on a slide thumbnail in the presentation panel
   2. one song or passage: the image button in its header in the presentation panel
-  3. all Bible slides or all song slides: **Use this look for** in the Looks editor
+  3. all Bible slides or all song slides: **Use this look for** on the Backgrounds screen
   4. the Default look, edited on the **Backgrounds** screen
 
 The projector, the live preview and every thumbnail work out each slide's look the same way, so the preview always shows exactly what the projector will show.
@@ -263,14 +280,15 @@ Only project lyrics your church is licensed to show, for example under a CCLI Ch
 
 ## Keyboard shortcuts
 
-These work in both the control window (when you're not typing) and the projector window. Most presentation clickers send Page Up/Page Down, so they work too.
+These work in both the control window (when you're not typing) and the projector window. Most presentation clickers send Page Up/Page Down, so they work too. The same list is in **Settings → Keyboard** and on the **Help** screen.
 
 | Key | Action |
 | --- | --- |
 | → ↓ Space Page Down | Next slide |
 | ← ↑ Page Up | Previous slide |
 | B | Black screen on/off |
-| Esc (projector window) | Stop presenting |
+| Esc | Stop presenting (in a text box, Esc leaves the box first) |
+| Enter | Present the selected Bible verses (Bible screen) |
 
 ## Where data is stored
 
@@ -294,12 +312,16 @@ src/
   state/library.tsx         Library state, autosave and migration from v1
   components/
     ControlApp.tsx          Layout, live state, shortcuts
-    Rail.tsx                Bible / Songs switcher
+    Sidebar.tsx             Main navigation and projector status
+    HomeScreen.tsx          Home: quick actions, recent songs, saved verses
+    SettingsScreen.tsx      Projector, Bibles, Songs, Backup, Keyboard, About
+    HelpScreen.tsx          Beginner's guide to presenting
+    Page.tsx                Layout for the full-width screens
     BibleWorkspace.tsx      Translation, books, chapters, reading page, search, add bar
-    BibleDialogs.tsx        Import and manage Bibles
+    BibleDialogs.tsx        Import Bibles and cross references; confirm removing a Bible
     SongsWorkspace.tsx      Song library, lyrics editor, slide arrangement
     PresentationPanel.tsx   Preview, transport, slide list
-    StylePopover.tsx        Text style settings
+    ShortcutTable.tsx       The keyboard shortcut table (list in lib/shortcuts.ts)
     SlideRenderer.tsx       Draws a slide at any size (thumbnails, preview, projector)
     PresentationView.tsx    Projector window
 src-tauri/

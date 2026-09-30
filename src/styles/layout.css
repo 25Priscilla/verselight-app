@@ -75,6 +75,10 @@
 @media (max-width: 1320px) {
   .app { --context-w: 216px; --present-w: 350px; }
 }
+/* Very narrow windows while presenting: a slimmer panel so the workspace keeps a usable width */
+@media (max-width: 1000px) {
+  .app { --present-w: 312px; }
+}
 
 /* ---------- Looks (presentation backgrounds) ---------- */
 .context-title { margin: 0 2px; font-size: 13px; font-weight: 700; color: var(--mute); }
