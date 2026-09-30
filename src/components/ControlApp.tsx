@@ -17,8 +17,19 @@ import { SettingsScreen } from "./SettingsScreen";
 import { Sidebar, type Mode } from "./Sidebar";
 import { SongImportDialog } from "./SongImportDialog";
 import { SongsWorkspace } from "./SongsWorkspace";
-import { Toast } from "./ui";
+import { Toast, cx } from "./ui";
 import { WordStudyWorkspace, type VerseTarget } from "./WordStudyWorkspace";
+
+function useMediaQuery(query: string) {
+  const [match, setMatch] = useState(() => matchMedia(query).matches);
+  useEffect(() => {
+    const mq = matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, [query]);
+  return match;
+}
 
 const isTyping = (el: EventTarget | null) =>
   el instanceof HTMLElement && !!el.closest("input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, [contenteditable]");
@@ -197,6 +208,11 @@ export function ControlApp() {
   }, [state.session]);
   const canExtend = state.session?.kind === "scripture";
 
+  // The presentation panel only appears while something is loaded or the projector is on; the rest of the
+  // time the workspace gets the full width. While it shows, the sidebar shrinks to icons to make room.
+  const presenting = !!state.session || projector !== "off";
+  const narrow = useMediaQuery("(max-width: 1100px)");
+
   // ---- backup ----
   const backup = async () => {
     setMenuOpen(false);
@@ -228,7 +244,7 @@ export function ControlApp() {
     });
 
   return (
-    <div className="app">
+    <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
       <Sidebar mode={mode} onMode={setMode} projector={projector} displayName={displayName} footer={
         <div className="library-menu">
           <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Library menu" aria-expanded={menuOpen} title="Import songs and back up">
@@ -260,7 +276,7 @@ export function ControlApp() {
       {mode === "settings" && <SettingsScreen />}
       {mode === "help" && <HelpScreen />}
 
-      <PresentationPanel
+      {presenting && <PresentationPanel
         title={sessionTitle}
         kind={state.session?.kind ?? null}
         slides={slides}
@@ -288,7 +304,7 @@ export function ControlApp() {
         slideLook={(key) => library.assign.slides[key] ?? null}
         onSlideLook={(key, lookId) => assignLook("slides", key, lookId)}
         onOpenBackgrounds={() => setMode("backgrounds")}
-      />
+      />}
 
       {(notice || saveError) && (
         <Toast message={saveError ?? notice} onDismiss={saveError ? undefined : () => setNotice(null)} />

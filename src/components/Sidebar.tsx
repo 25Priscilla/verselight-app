@@ -16,7 +16,7 @@ interface Props {
 
 const PROJECTOR_TEXT: Record<ProjectorStatus, string> = { off: "Off", opening: "Connecting…", live: "Live" };
 
-/** The main navigation. Labels are always shown, except on narrow windows where it shrinks to icons. */
+/** The main navigation. Shrinks to icons (names as tooltips) while presenting and on narrow windows; see .nav-compact. */
 export function Sidebar({ mode, onMode, projector, displayName, footer }: Props) {
   const item = (m: Mode, icon: IconName, label: string, sub = false) => (
     <li>
