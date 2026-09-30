@@ -46,6 +46,12 @@ export function ControlApp() {
     setMode("bible");
   }, []);
 
+  // ---- Home's shortcuts into the Bible and Songs screens ----
+  const [bibleSearch, setBibleSearch] = useState(0);
+  const [songSearch, setSongSearch] = useState(0);
+  const [openSong, setOpenSong] = useState<{ id: string; nonce: number } | null>(null);
+  const openSettings = (section: SettingsSection) => { setSettingsSection(section); setMode("settings"); };
+
   // ---- the presentation session: the single source of truth for what is shown ----
   const [state, dispatch] = useReducer(sessionReducer, initialSession);
   const songs = useMemo(() => new Map(library.items.filter((i): i is Song => i.kind === "song").map((s) => [s.id, s])), [library.items]);
@@ -249,15 +255,25 @@ export function ControlApp() {
 
   return (
     <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
-      <Sidebar mode={mode} onMode={setMode} onProjector={() => { setSettingsSection("projector"); setMode("settings"); }} projector={projector} displayName={displayName} />
+      <Sidebar mode={mode} onMode={setMode} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName} />
 
 
       <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
-        onManageBibles={() => { setSettingsSection("bibles"); setMode("settings"); }} />
+        onManageBibles={() => openSettings("bibles")} focusSearch={bibleSearch} />
       <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible} />
-      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} />
+      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong} />
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
-      {mode === "home" && <HomeScreen />}
+      {mode === "home" && (
+        <HomeScreen
+          presenting={state.session && liveSlide ? { kind: state.session.kind, title: sessionTitle, slideLabel: liveSlide.label, index, count: slides.length } : null}
+          projector={projector} displayName={displayName} readingBibleId={readingBibleId}
+          onFindVerse={() => { setMode("bible"); setBibleSearch(Date.now()); }}
+          onFindSong={() => { setMode("songs"); setSongSearch(Date.now()); }}
+          onBackgrounds={() => setMode("backgrounds")}
+          onManage={() => openSettings("bibles")}
+          onOpenSong={(id) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }}
+          onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse })} />
+      )}
       {mode === "settings" && (
         <SettingsScreen section={settingsSection} onSection={setSettingsSection}
           projector={projector} displayName={displayName} displays={displays} displayIndex={library.displayIndex}

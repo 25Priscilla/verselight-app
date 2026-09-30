@@ -16,7 +16,7 @@ interface Selection { anchor: number; from: number; to: number }
 /** A request from another screen (Word Study) to open one verse in a given translation. */
 export interface OpenVerseRequest { bibleId: string; book: number; chapter: number; verse: number; nonce: number }
 
-export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, onManageBibles }: {
+export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, onManageBibles, focusSearch }: {
   active: boolean;
   onPresent: (spec: ScriptureSpec) => void;
   /** Reports the translation being read, so Word Study can search the same one */
@@ -24,6 +24,8 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   openRequest?: OpenVerseRequest | null;
   /** Opens Settings → Bibles, where Bibles and cross references are imported and removed */
   onManageBibles: () => void;
+  /** Changes when another screen (Home) asks for the search box to be ready for typing */
+  focusSearch?: number;
 }) {
   const { library, update } = useLibrary();
   const enBibles = library.bibles.filter((b) => bibleLang(b) === "en");
@@ -54,6 +56,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   const verseRefs = useRef(new Map<number, HTMLElement>());
   const readingRef = useRef<HTMLDivElement>(null);
   const chaptersRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Fall back to another Bible of the same language if the chosen one was removed.
   useEffect(() => {
@@ -95,6 +98,13 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   }, [scrollTo, bible, book, chapter, active]);
 
   useEffect(() => { if (bibleId) onTranslation?.(bibleId); }, [bibleId, onTranslation]);
+
+  // Home's "Find a Bible verse": show the search box ready for a reference.
+  useEffect(() => {
+    if (!focusSearch) return;
+    setMode("reference");
+    requestAnimationFrame(() => searchRef.current?.focus());
+  }, [focusSearch]);
 
   // Open a verse sent from Word Study, in the translation it was found in.
   useEffect(() => {
@@ -284,6 +294,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                 </div>
                 <Icon name="search" />
                 <input
+                  ref={searchRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && runSearch()}
