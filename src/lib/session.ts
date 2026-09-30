@@ -105,6 +105,8 @@ export type SessionAction =
   | { type: "start"; session: Session; index: number }
   | { type: "goto"; index: number; count: number }
   | { type: "step"; delta: number; count: number }
+  /** The slides changed under the live slide (a song was edited): stay on it, without changing Black */
+  | { type: "follow"; index: number }
   | { type: "extend"; where: "before" | "after"; chapter: number; slides: Slide[]; advance: boolean }
   | { type: "blackout" }
   | { type: "clear" }
@@ -121,6 +123,8 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return state.session ? { ...state, index: clamp(action.index, action.count), blackout: false, clear: false } : state;
     case "step":
       return state.session ? { ...state, index: clamp(state.index + action.delta, action.count), blackout: false, clear: false } : state;
+    case "follow":
+      return state.session ? { ...state, index: Math.max(0, action.index) } : state;
     case "extend": {
       const s = state.session;
       if (!s || s.kind !== "scripture" || s.chapters.includes(action.chapter) || action.slides.length === 0) return state;
@@ -151,6 +155,16 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     case "end":
       return initialSession;
   }
+}
+
+/**
+ * After a song being presented is edited, where the slide that was on screen is now.
+ * Returns null when nothing needs to move (same place, or the slide was left out or deleted).
+ */
+export function followSlide(liveKey: string | null | undefined, slides: Slide[], index: number): number | null {
+  if (!liveKey) return null;
+  const at = slides.findIndex((s) => s.key === liveKey);
+  return at >= 0 && at !== index ? at : null;
 }
 
 /** Is a step of `delta` at an end of the loaded slides (where a Bible session may need the next chapter)? */

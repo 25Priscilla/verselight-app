@@ -39,11 +39,12 @@ export function detectLanguage(song: Pick<Song, "title" | "lyrics">): SongLangua
 
 export const songLanguage = (song: Song): SongLanguage => song.language ?? detectLanguage(song);
 
-/** Every word of the query must appear in the title, English title, artist or lyrics. */
+/** Every word of the query must appear in the title, English title, artist or lyrics (not the [Verse 1] style tags). */
 export function songMatches(song: Song, query: string): boolean {
   const words = searchKey(query).split(" ").filter(Boolean);
   if (words.length === 0) return true;
-  const hay = searchKey([song.title, song.altTitle ?? "", song.artist, song.lyrics].join(" "));
+  const sung = song.lyrics.replace(/^\s*\[[^\]]+\]\s*$/gm, "");
+  const hay = searchKey([song.title, song.altTitle ?? "", song.artist, sung].join(" "));
   return words.every((w) => hay.includes(w));
 }
 

@@ -4,7 +4,7 @@ import { on, send, type NavCommand } from "../lib/bridge";
 import { closePresentation, listDisplays, openPresentation, type DisplayInfo } from "../lib/display";
 import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
-import { atEdge, chapterNeighbours, chapterSlides, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
+import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
 import { saveFileAs } from "../lib/storage";
 import type { Library, LiveState, Slide, Song } from "../lib/types";
 import { useLibrary } from "../state/library";
@@ -59,6 +59,20 @@ export function ControlApp() {
   const slides = useMemo(() => sessionSlides(state.session, songs), [state.session, songs]);
   const index = Math.min(state.index, Math.max(0, slides.length - 1));
   const liveSlide: Slide | null = slides[index] ?? null;
+
+  // When the song on screen is edited (a section moved, a slide left out), stay on the same words
+  // rather than on the same slide number. Only reacts to the slides changing within one session.
+  const lastLive = useRef<{ session: typeof state.session; slides: Slide[]; key: string | null }>({ session: null, slides: [], key: null });
+  useEffect(() => {
+    const last = lastLive.current;
+    const moved = last.session === state.session && last.slides !== slides ? followSlide(last.key, slides, index) : null;
+    if (moved !== null) {
+      lastLive.current = { session: state.session, slides, key: last.key };
+      dispatch({ type: "follow", index: moved });
+      return;
+    }
+    lastLive.current = { session: state.session, slides, key: liveSlide?.key ?? null };
+  }, [state.session, slides, index, liveSlide]);
 
   // Projector window: "off" → "opening" (window requested) → "live" (window reported back).
   const [projector, setProjector] = useState<ProjectorStatus>("off");

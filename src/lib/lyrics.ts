@@ -9,17 +9,20 @@ export interface LyricSection {
 const TAG = /^\s*\[([^\]]+)\]\s*$/;
 
 /**
- * Reads "[Verse 1]" style tags. Returns each section's content (first definition wins)
- * and the order in which sections appear, including bare tags used as repeats.
+ * Reads "[Verse 1]" style tags. Returns each section's content (first definition wins),
+ * the order in which sections appear, including bare tags used as repeats, and the names of
+ * sections written out twice with words under both (the second copy's words are not used).
  */
-export function parseLyrics(lyrics: string): { sections: Map<string, LyricSection>; written: string[] } {
+export function parseLyrics(lyrics: string): { sections: Map<string, LyricSection>; written: string[]; duplicates: string[] } {
   const sections = new Map<string, LyricSection>();
   const written: string[] = [];
+  const duplicates: string[] = [];
   let current: LyricSection | null = null;
 
   const close = () => {
     if (!current) return;
     const hasText = current.lines.some((l) => l.trim());
+    if (hasText && sections.has(current.label) && !duplicates.includes(current.label)) duplicates.push(current.label);
     if (hasText && !sections.has(current.label)) sections.set(current.label, current);
     if (hasText || sections.has(current.label)) written.push(current.label);
   };
@@ -35,7 +38,7 @@ export function parseLyrics(lyrics: string): { sections: Map<string, LyricSectio
     }
   }
   close();
-  return { sections, written };
+  return { sections, written, duplicates };
 }
 
 /** Splits a section into slide-sized chunks. */
@@ -68,6 +71,13 @@ export function songOrder(song: Song): string[] {
   const { sections, written } = parseLyrics(song.lyrics);
   const order = song.arrangement.length ? song.arrangement : written;
   return order.filter((l) => sections.has(l));
+}
+
+/** Sections with words that a custom play order leaves out, so they never reach the screen. */
+export function unusedSections(song: Song): string[] {
+  if (song.arrangement.length === 0) return [];
+  const { sections } = parseLyrics(song.lyrics);
+  return [...sections.keys()].filter((l) => !song.arrangement.includes(l));
 }
 
 /** Next number for a section type, e.g. "Verse" -> "Verse 3" */
