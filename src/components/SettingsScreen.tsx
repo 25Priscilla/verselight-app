@@ -9,6 +9,7 @@ import { ImportBibleDialog, ImportCrossRefsDialog, RemoveBibleConfirm } from "./
 import { Icon, type IconName } from "./Icon";
 import { Page } from "./Page";
 import type { ProjectorStatus } from "./PresentationPanel";
+import { ShortcutTable } from "./ShortcutTable";
 import { SongImportDialog } from "./SongImportDialog";
 import { Button, Card, cx, IconButton, StatusChip } from "./ui";
 
@@ -204,28 +205,11 @@ function BackupSettings({ onBackup, onRestore }: { onBackup: () => void; onResto
 
 // ---------------------------------------------------------------- Keyboard
 
-const KEYS: [string[], string][] = [
-  [["Space", "→", "↓", "Page Down"], "Next slide"],
-  [["←", "↑", "Page Up"], "Previous slide"],
-  [["B"], "Black screen on or off"],
-  [["Esc"], "Stop presentation (in a text box, Esc leaves the box first)"],
-  [["Enter"], "Present the selected Bible verses"],
-];
-
 function KeyboardSettings() {
   return (
     <Section title="Keyboard" intro="These keys work while presenting, as long as you're not typing in a box. Most presentation clickers work too.">
       <Card>
-        <table className="settings-keys">
-          <tbody>
-            {KEYS.map(([keys, action]) => (
-              <tr key={action}>
-                <td>{keys.map((k) => <kbd key={k}>{k}</kbd>)}</td>
-                <td>{action}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ShortcutTable />
       </Card>
     </Section>
   );

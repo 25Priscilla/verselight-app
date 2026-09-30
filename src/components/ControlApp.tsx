@@ -286,7 +286,7 @@ export function ControlApp() {
             songs, backgrounds, saved verses and settings. Anything added since that backup will be lost. To keep what you have now, back it up first.</>}
           onCancel={() => setPendingRestore(null)} onConfirm={confirmRestore} />
       )}
-      {mode === "help" && <HelpScreen />}
+      {mode === "help" && <HelpScreen onOpen={setMode} onSettings={openSettings} />}
 
       {presenting && <PresentationPanel
         title={sessionTitle}
