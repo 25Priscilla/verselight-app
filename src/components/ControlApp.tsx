@@ -9,9 +9,12 @@ import type { Library, LiveState, Slide, Song } from "../lib/types";
 import { useLibrary } from "../state/library";
 import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
 import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
+import { HelpScreen } from "./HelpScreen";
+import { HomeScreen } from "./HomeScreen";
 import { Icon } from "./Icon";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
-import { Rail, type Mode } from "./Rail";
+import { SettingsScreen } from "./SettingsScreen";
+import { Sidebar, type Mode } from "./Sidebar";
 import { SongImportDialog } from "./SongImportDialog";
 import { SongsWorkspace } from "./SongsWorkspace";
 import { Toast } from "./ui";
@@ -22,7 +25,7 @@ const isTyping = (el: EventTarget | null) =>
 
 export function ControlApp() {
   const { library, update, replace, saveError } = useLibrary();
-  const [mode, setMode] = useState<Mode>(library.bibles.length ? "bible" : "songs");
+  const [mode, setMode] = useState<Mode>("home");
   const [notice, setNotice] = useState<string | null>(null);
   const [songImport, setSongImport] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -226,20 +229,21 @@ export function ControlApp() {
 
   return (
     <div className="app">
-      <Rail mode={mode} onMode={setMode} />
-      <div className="rail-foot">
-        <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Library menu" aria-expanded={menuOpen} title="Import songs and back up">
-          <Icon name="more" />
-        </button>
-        {menuOpen && (
-          <div className="menu" role="menu">
-            <button role="menuitem" onClick={() => { setMenuOpen(false); setSongImport(true); }}>Import songs…</button>
-            <button role="menuitem" onClick={backup}>Back up library…</button>
-            <button role="menuitem" onClick={() => { setMenuOpen(false); importRef.current?.click(); }}>Restore from backup…</button>
-          </div>
-        )}
-        <input ref={importRef} type="file" accept=".json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = ""; }} />
-      </div>
+      <Sidebar mode={mode} onMode={setMode} projector={projector} displayName={displayName} footer={
+        <div className="library-menu">
+          <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Library menu" aria-expanded={menuOpen} title="Import songs and back up">
+            <Icon name="more" />
+          </button>
+          {menuOpen && (
+            <div className="menu" role="menu">
+              <button role="menuitem" onClick={() => { setMenuOpen(false); setSongImport(true); }}>Import songs…</button>
+              <button role="menuitem" onClick={backup}>Back up library…</button>
+              <button role="menuitem" onClick={() => { setMenuOpen(false); importRef.current?.click(); }}>Restore from backup…</button>
+            </div>
+          )}
+          <input ref={importRef} type="file" accept=".json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = ""; }} />
+        </div>
+      } />
 
       {songImport && (
         <SongImportDialog
@@ -252,6 +256,9 @@ export function ControlApp() {
       <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible} />
       <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} />
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
+      {mode === "home" && <HomeScreen />}
+      {mode === "settings" && <SettingsScreen />}
+      {mode === "help" && <HelpScreen />}
 
       <PresentationPanel
         title={sessionTitle}
