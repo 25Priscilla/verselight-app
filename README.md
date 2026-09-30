@@ -14,9 +14,15 @@ VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (w
 
 **Bible**
 - Choose a translation at the top of the book list. **Manage Bibles…** at the bottom of that menu opens **Settings → Bibles**, where Bible files are imported and removed.
-- Pick a book from the Old or New Testament list, then a chapter from the strip under the book name (the arrows step to the previous or next chapter).
+- Pick a book from the Old or New Testament list, then a chapter from the strip under the book name. The arrows step to the previous or next chapter and carry on into the neighbouring book (John 21 → Acts 1); the end of each chapter has the same links. The **Verse…** menu jumps to a verse and selects it.
+- The title shows where you are: the book and chapter, the translation (for example **KJV**), *Chapter 3 of 21*, and the selected verses.
 - Click a verse to select it. Shift-click another verse to select the passage between them.
 - Search by **Reference** (`John 3:16-18`, `john 3 16`, `jn 3:16`, `1 cor 13`, `Ps 23`, `Jude 3`) or by **Keyword** (every word must appear). Single-chapter books such as Jude and Philemon take a verse number directly. Clicking a result opens its chapter with the verse selected.
+  - A chapter or verse that doesn't exist opens the nearest one and says so (*John has 21 chapters, so John 21 is open.*).
+  - A word typed as a reference, such as `grace`, runs a keyword search instead.
+  - After a keyword search, **Word Study** opens Bible Study with every occurrence of the word.
+- **Save** (in the bar at the bottom) keeps the selected verse or passage in Bible Study; with nothing selected, **Saved verses** opens that list.
+- Switch a chapter between **Reading** and **Overview** (see [Chapter Overview](#chapter-overview)).
 - Choose **▶ Present Now** (or press **Enter**). Every verse becomes its own slide.
 
 **Songs**
@@ -86,6 +92,8 @@ npm test
 
 Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, black screen, song order), the presentation keys, the presentation panel's controls and background menu, song lyrics, slides, search and import (including Malayalam), the Songs screen, and presenting a song from the Songs screen through to what the projector is sent.
 
+The Bible tests cover reference and keyword search, saved verses and passages, Chapter Overview data, Word Study counts, and the Bible screen end to end: book, chapter and verse navigation, selecting passages, cross references, Overview, Word Study, English and Malayalam, and presenting (one verse, a passage, Previous/Next across a chapter boundary, Black/Show, Stop/Start/Close and the keys). They use made-up placeholder Bibles, never real Bible text.
+
 ## Bible text
 
 VerseLight contains **no Bible text**. It displays verses exactly as they appear in a Bible file you import, and never rewrites or generates scripture.
@@ -152,7 +160,7 @@ Select a verse or passage in **Bible** and choose **Cross references** in the ba
 - click it, or **Open**, to go to that passage (the panel then shows *its* cross references, so you can follow a chain)
 - **▶ Present** it on the projector straight away
 
-For a passage, the references of every verse are combined. References with negative votes on OpenBible.info are hidden behind **Show … less relevant**.
+For a passage, the references of every verse are combined. In a narrow window (for example a small laptop while presenting) the panel sits under the text instead of beside it. References with negative votes on OpenBible.info are hidden behind **Show … less relevant**.
 
 ### Getting the data (works offline once imported)
 
@@ -171,7 +179,7 @@ This downloads OpenBible.info's `cross-references.zip` and saves `bibles/cross_r
 
 ## Chapter Overview
 
-On the Bible screen, switch a chapter from **Read** to **Overview** (top right of the chapter title) for a study overview of that chapter. It uses only data stored in VerseLight. There are no AI summaries, it works offline, and it never presents or creates slides.
+On the Bible screen, switch a chapter from **Reading** to **Overview** (top right of the chapter title) for a study overview of that chapter. It uses only data stored in VerseLight. There are no AI summaries, it works offline, and it never presents or creates slides.
 
 - **Chapter name and number,** with its position in the book ("Chapter 3 of 21"), verse count and number of sections. In the bilingual view, both book names are shown.
 - **Main sections:** the section headings of the Berean Standard Bible with their verse ranges (for example "vv. 1–21 Jesus and Nicodemus"), sub-headings, and parallel passages. Click a section to read from its first verse.
@@ -180,13 +188,15 @@ On the Bible screen, switch a chapter from **Read** to **Overview** (top right o
 - **Nearby chapters** (two either side) and **related chapters** (the chapters most connected to this one by cross references).
 - **Read Chapter** returns to the verse-by-verse reading view.
 
-The Read view stays the default, so opening a chapter during a service always shows the verses. While the overview is showing, the selection bar and Enter-to-present are turned off.
+**What it doesn't include.** VerseLight has no verified source for chapter summaries, themes, lists of people or takeaways, so the overview doesn't show them, and it says so at the bottom. The section headings serve as the chapter's outline. Lamentations 2 has no heading in the BSB data, so its overview says there are none. Nothing is written or generated to fill the gaps.
+
+The Reading view stays the default, so opening a chapter during a service always shows the verses. While the overview is showing, the selection bar and Enter-to-present are turned off.
 
 **Section headings data.** `src/data/sections.json` holds the BSB's 3,095 section headings with their verse positions and parallel references, and no BSB verse text. It is bundled with the app and loaded only when an overview is first opened. The BSB was dedicated to the public domain on 30 April 2023 (https://berean.bible/terms.htm); headings are kept word for word. To rebuild the file, run `npm run fetch-sections`, or `npm run fetch-sections -- --dir path/to/bsb-usfm`. The source is https://github.com/usfm-bible/examples.bsb. Headings are in English, including in the Malayalam view, and follow standard English verse numbering.
 
 ## Word Study
 
-**Bible Study** (under Bible in the sidebar) finds every verse where a word appears. It is for Bible study only and never presents anything; to show a verse, open it in the Bible and choose Present Now there.
+**Bible Study** (under Bible in the sidebar) finds every verse where a word appears, and keeps your saved verses. Word search results are for study and aren't presented from here; to show one, open it in the Bible and choose Present Now there. Saved verses and passages can be presented directly.
 
 - **Search:** type a word (for example `grace` or `കൃപ`) and press Enter. Several words find verses that contain all of them.
 - **Translation:** Word Study searches the translation selected on the Bible screen (the English one in the bilingual view). You can pick another in the **Translation** menu.
@@ -200,9 +210,11 @@ The Read view stays the default, so opening a chapter during a service always sh
   - **Copy** the verse with its reference
   - **Save** it: saved verses are listed under **Saved** and stored in your library, by position, so they show in any translation
   - **Cross references**: the same OpenBible.info cross references as the Bible screen
+- **Word facts:** how many matching verses are in the Old and New Testaments, the book where the word is most frequent, and its first and last occurrence (click one to open it).
+- **Saved:** the verses and passages saved here or on the Bible screen (**Save** in the selection bar). They are stored by position, so they show in the translation being studied; a verse that translation doesn't have is marked *Not in …*. Each has **Open** (opens it in the Bible with the passage selected), **Present** (shows it on the projector straight away) and a remove button. Home lists the latest ones too.
 - **Offline:** everything runs on this computer, using the Bible text and search index VerseLight already has.
 
-Not included yet: Hebrew, Greek, Strong's numbers and dictionaries.
+**Hebrew, Greek and Strong's numbers are not included.** VerseLight has no original-language data, so Word Study says *not available* instead of showing guessed words, transliterations, Strong's numbers or definitions. The counts come from the translation's own words. `src/lib/wordStudy.ts` defines the record a tagged lexical dataset would supply (`LexicalEntry`: lemma, transliteration, Strong's number, definition, source) and a `registerLexicalSource` hook. Once a properly licensed dataset is added, the panel lists its entries and nothing else.
 
 ## Presenting
 
@@ -317,6 +329,11 @@ src/
   App.tsx                   Chooses the control window or the projector view
   lib/types.ts              Data model
   lib/bible.ts              Bible file import, reference parsing, keyword search
+  lib/bookmarks.ts          Saved verses and passages
+  lib/crossrefs.ts          Cross-reference import and lookup (OpenBible.info)
+  lib/overview.ts           Chapter Overview: sections, key verses, related chapters, next/previous chapter
+  lib/wordStudy.ts          Word Study counts; the hook for a future Hebrew/Greek dataset
+  data/sections.json        BSB section headings for Chapter Overview
   lib/lyrics.ts             Section tags and automatic slide splitting
   lib/slides.ts             Turns songs and passages into slides
   lib/storage.ts            Offline storage (Rust commands, or localStorage in a browser)
@@ -332,7 +349,10 @@ src/
     SettingsScreen.tsx      Projector, Bibles, Songs, Backup, Keyboard, About
     HelpScreen.tsx          Beginner's guide to presenting
     Page.tsx                Layout for the full-width screens
-    BibleWorkspace.tsx      Translation, books, chapters, reading page, search, add bar
+    BibleWorkspace.tsx      Translation, books, chapters, verses, reading page, search, add bar
+    ChapterOverview.tsx     A chapter's sections, key verses and related chapters
+    CrossRefPanel.tsx       Cross references for the selected verses (Bible and Word Study)
+    WordStudyWorkspace.tsx  Bible Study: word search, word facts, saved verses
     BibleDialogs.tsx        Import Bibles and cross references; confirm removing a Bible
     SongsWorkspace.tsx      Song library, lyrics editor, slide arrangement
     PresentationPanel.tsx   Live controls: current and next slide, Previous/Next/Black, Start/Stop/Close, slide list
@@ -344,6 +364,9 @@ src-tauri/
   src/lib.rs                Commands: data files, displays, projector window, save dialog
   tauri.conf.json           App and bundle settings
 scripts/fetch-kjv.mjs       Downloads the public-domain KJV for import
+scripts/fetch-malayalam-bible.mjs  Downloads the Malayalam Bible 1910 (CC BY-SA 4.0) for import
+scripts/fetch-crossrefs.mjs Downloads OpenBible.info cross references for import
+scripts/fetch-sections.mjs  Rebuilds src/data/sections.json from the BSB
 ```
 
 Libraries from version 0.1 are converted automatically: songs move to the tagged lyrics format with their play order kept. Old announcement slides stay in the data file but are no longer shown.

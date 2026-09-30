@@ -47,11 +47,21 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
       <div className="help-grid">
         <Topic icon="book" title="Present a Bible verse">
           <ol>
-            <li>Open <strong>Bible</strong> and pick a book, then a chapter from the numbers under the book name. Or type a reference in the search box and press Enter.</li>
+            <li>Open <strong>Bible</strong> and pick a book, then a chapter from the numbers under the book name (the arrows go to the previous or next chapter, even into the next book). Or type a reference in the search box and press Enter.</li>
             <li>Click a verse to select it. To select several, click the first verse, then hold <kbd>Shift</kbd> and click the last.</li>
             <li>Press <strong>Present Now</strong> (or <kbd>Enter</kbd>).</li>
           </ol>
           <p className="muted">Each verse is its own slide. Next keeps going past the verses you selected, and on into the next chapter.</p>
+        </Topic>
+
+        <Topic icon="study" title="Study the Bible">
+          <ul>
+            <li><strong>Overview</strong>, next to <strong>Reading</strong> above the chapter, lists that chapter's sections and its most cross-referenced verses.</li>
+            <li><strong>Cross references</strong>, in the bar at the bottom, shows passages related to the verses you selected.</li>
+            <li><strong>Save</strong> keeps the selected verses in <strong>Bible Study</strong>, where you can open, present or remove them.</li>
+            <li>After a keyword search, <strong>Word Study</strong> shows every place the word appears, book by book.</li>
+          </ul>
+          <p className="muted">Study tools use only data stored in VerseLight. There are no written chapter summaries, and no Hebrew or Greek word data yet.</p>
         </Topic>
 
         <Topic icon="music" title="Present a song">
