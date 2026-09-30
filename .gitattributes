@@ -1,0 +1,9 @@
+# Keep LF line endings in the repository and the working tree on every platform.
+* text=auto eol=lf
+
+# Binary files: never convert or diff as text.
+*.png binary
+*.ico binary
+*.icns binary
+*.woff binary
+*.woff2 binary
