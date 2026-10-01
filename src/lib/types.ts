@@ -1,6 +1,10 @@
 export type Id = string;
 
-export type SongLanguage = "en" | "ml";
+/** A BCP-47 language code, e.g. "en", "ml" (Malayalam), "ta" (Tamil), "kn" (Kannada). See lib/languages.ts. */
+export type SongLanguage = string;
+
+/** Which words of a song with a translation are shown on screen */
+export type SongDisplay = "primary" | "translation" | "both";
 
 export interface Song {
   kind: "song";
@@ -9,7 +13,7 @@ export interface Song {
   title: string;
   /** Optional English or transliterated title, e.g. a Manglish spelling, used for search and display */
   altTitle?: string;
-  /** Detected from the text when missing */
+  /** Language of `lyrics`. Detected from the text when missing */
   language?: SongLanguage;
   favorite?: boolean;
   /** When the song was last presented or added to a presentation */
@@ -22,6 +26,16 @@ export interface Song {
    * A tag with no lines under it repeats the earlier section with that name.
    */
   lyrics: string;
+  /**
+   * Optional translation of the lyrics in a second language, written with the same section tags ("[Verse 1]" in the
+   * lyrics pairs with "[Verse 1]" here). Empty or missing means the song is in one language only.
+   * Play order, left-out slides and lines per slide all come from `lyrics`.
+   */
+  translation?: string;
+  /** Language of `translation` */
+  translationLanguage?: SongLanguage;
+  /** What a song with a translation shows on screen; missing means both together */
+  display?: SongDisplay;
   /** 0 = automatic (blank lines, max 4 lines per slide); otherwise fixed lines per slide */
   linesPerSlide: number;
   /** Section names in play order; empty means the order written in the lyrics */
@@ -100,7 +114,7 @@ export interface Theme {
   overlay: number;
   /** Background blur, 0–20, as pixels at 1080p (scaled to every screen size) */
   blur: number;
-  /** How bilingual scripture is laid out on screen */
+  /** How bilingual scripture and songs are laid out on screen */
   bilingualLayout: "stacked" | "columns";
   fontFamily: FontKey;
   /** Text height as percentage of screen height */
@@ -113,13 +127,17 @@ export interface Theme {
 
 export type FontKey = "lora" | "crimson" | "sourcesans" | "montserrat";
 
+// Bundled fonts for Malayalam, Tamil and Kannada. Each covers only its own script, so their order doesn't matter.
+const INDIC_SERIF = "'Noto Serif Malayalam Variable', 'Noto Serif Tamil Variable', 'Noto Serif Kannada Variable', 'Nirmala UI'";
+const INDIC_SANS = "'Noto Sans Malayalam Variable', 'Noto Sans Tamil Variable', 'Noto Sans Kannada Variable', 'Nirmala UI'";
+
 export const FONTS: Record<FontKey, { label: string; css: string }> = {
-  // Each font falls back to a bundled Malayalam font, so Malayalam lyrics render correctly offline
+  // Each font falls back to bundled Malayalam, Tamil and Kannada fonts, so those lyrics render correctly offline
   // whichever font is chosen. Latin letters keep the chosen font.
-  lora: { label: "Lora (serif)", css: "'Lora Variable', 'Noto Serif Malayalam Variable', Georgia, serif" },
-  crimson: { label: "Crimson Pro (classic serif)", css: "'Crimson Pro Variable', 'Noto Serif Malayalam Variable', 'Times New Roman', serif" },
-  sourcesans: { label: "Source Sans (clean sans)", css: "'Source Sans 3 Variable', 'Noto Sans Malayalam Variable', 'Segoe UI', Helvetica, sans-serif" },
-  montserrat: { label: "Montserrat (bold sans)", css: "'Montserrat Variable', 'Noto Sans Malayalam Variable', 'Segoe UI', Helvetica, sans-serif" },
+  lora: { label: "Lora (serif)", css: `'Lora Variable', ${INDIC_SERIF}, Georgia, serif` },
+  crimson: { label: "Crimson Pro (classic serif)", css: `'Crimson Pro Variable', ${INDIC_SERIF}, 'Times New Roman', serif` },
+  sourcesans: { label: "Source Sans (clean sans)", css: `'Source Sans 3 Variable', ${INDIC_SANS}, 'Segoe UI', Helvetica, sans-serif` },
+  montserrat: { label: "Montserrat (bold sans)", css: `'Montserrat Variable', ${INDIC_SANS}, 'Segoe UI', Helvetica, sans-serif` },
 };
 
 export interface BibleMeta {
@@ -129,7 +147,7 @@ export interface BibleMeta {
   /** License / copyright statement recorded at import time */
   license: string;
   /** "en" or "ml"; detected from the text when missing */
-  language?: SongLanguage;
+  language?: "en" | "ml";
   bookCount: number;
   importedAt: number;
 }
@@ -207,7 +225,7 @@ export interface Slide {
   verseNumbers?: string[];
   /** BCP-47 language of the text ("ml" for Malayalam), used for correct shaping */
   lang?: string;
-  /** Second-language text for bilingual scripture slides, aligned with `lines` */
+  /** Second-language text for bilingual slides: scripture verses aligned with `lines`, or a song section's translation */
   parallelLines?: string[];
   parallelLang?: string;
   kind: LibraryItem["kind"];

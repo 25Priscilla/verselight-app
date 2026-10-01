@@ -65,7 +65,7 @@ describe("Songs: finding a song", () => {
     const title = screen.getByLabelText("Song title") as HTMLInputElement;
     expect(title.value).toBe("പ്രഭാത ഗാനം");
     expect(title.lang).toBe("ml");
-    expect(screen.getByRole("radio", { name: "മല" }).getAttribute("aria-checked")).toBe("true");
+    expect((screen.getByLabelText("Lyrics language") as HTMLSelectElement).value).toBe("ml");
     fireEvent.change(screen.getByLabelText("Search songs"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("radio", { name: "മലയാളം" }));
     expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പ്രഭാത ഗാനം"]);
@@ -198,5 +198,115 @@ describe("Songs: empty library and import", () => {
     // The song already there is untouched.
     expect(songs[0].lyrics).toBe(song().lyrics);
     expect((screen.getByLabelText("Song title") as HTMLInputElement).value).toBe("ആരാധന");
+  });
+});
+
+describe("Songs: a song with a translation", () => {
+  // Placeholder words only: "line one" and "chorus line" in Malayalam and English.
+  const ML = "[Verse 1]\nവരി ഒന്ന്\n\n[Chorus]\nകോറസ് വരി";
+  const bilingual = song({ id: "b1", title: "പാട്ട്", artist: "", language: "ml", lyrics: ML,
+    translation: "[Verse 1]\nLine one\n\n[Chorus]\nChorus line", translationLanguage: "en" });
+
+  it("adds a translation to a Malayalam song: one song, two lyrics boxes, saved together", async () => {
+    await setup([malayalam]);
+    expect(screen.queryByLabelText("Translation")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Add translation/ }));
+    const box = screen.getByLabelText("Translation") as HTMLTextAreaElement;
+    expect((screen.getByLabelText("Translation language") as HTMLSelectElement).value).toBe("en");
+    expect(box.lang).toBe("en");
+    expect((screen.getByLabelText("Lyrics") as HTMLTextAreaElement).lang).toBe("ml");
+    fireEvent.change(box, { target: { value: "[Verse 1]\nThe sun rises\nover the hills" } });
+    expect(current.items.filter((i) => i.kind === "song")).toHaveLength(1);
+    expect(songOf("m1")).toMatchObject({ lyrics: "[Verse 1]\nസൂര്യൻ ഉദിക്കുന്നു", translation: "[Verse 1]\nThe sun rises\nover the hills", translationLanguage: "en" });
+    // Both languages are on the slide, each in its own block.
+    expect(slidesFor(songOf("m1"))[0]).toMatchObject({ lines: ["സൂര്യൻ ഉദിക്കുന്നു"], parallelLines: ["The sun rises", "over the hills"] });
+    // Saved with its line breaks exactly as typed.
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem("verselight:library.json") ?? "{}") as Library;
+      expect((saved.items?.find((i) => i.id === "m1") as Song | undefined)?.translation).toBe("[Verse 1]\nThe sun rises\nover the hills");
+    }, { timeout: 2000 });
+  });
+
+  it("starts the translation with the lyrics' section tags, and no words", async () => {
+    await setup([song({ id: "m2", language: "ml", lyrics: ML })]);
+    fireEvent.click(screen.getByRole("button", { name: /Add translation/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Use the lyrics' section tags/ }));
+    expect(songOf("m2").translation).toBe("[Verse 1]\n\n[Chorus]\n");
+    expect(screen.getByText(/Not translated yet/)).toBeTruthy();
+  });
+
+  it("gives a section added to the lyrics an empty tag in the translation too", async () => {
+    await setup([bilingual]);
+    fireEvent.focus(screen.getByLabelText("Lyrics"));
+    fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    expect(songOf("b1").lyrics).toContain("[Bridge]");
+    expect(songOf("b1").translation).toBe("[Verse 1]\nLine one\n\n[Chorus]\nChorus line\n\n[Bridge]\n");
+    // A section added while writing the translation goes only into the translation.
+    fireEvent.focus(screen.getByLabelText("Translation"));
+    fireEvent.click(screen.getByRole("button", { name: "Verse" }));
+    expect(songOf("b1").translation).toContain("[Verse 2]");
+    expect(songOf("b1").lyrics).not.toContain("[Verse 2]");
+  });
+
+  it("chooses what the projector shows, without making another song", async () => {
+    await setup([bilingual]);
+    const show = screen.getByRole("radiogroup", { name: "Show on screen" });
+    expect(within(show).getByRole("radio", { name: "Both" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(within(show).getByRole("radio", { name: "English" }));
+    expect(songOf("b1").display).toBe("translation");
+    expect(slidesFor(songOf("b1")).map((s) => s.lines)).toEqual([["Line one"], ["Chorus line"]]);
+    fireEvent.click(within(show).getByRole("radio", { name: "Malayalam" }));
+    expect(slidesFor(songOf("b1")).map((s) => s.lines)).toEqual([["വരി ഒന്ന്"], ["കോറസ് വരി"]]);
+    expect(current.items.filter((i) => i.kind === "song")).toHaveLength(1);
+  });
+
+  it("can switch the languages, for example to Malayalam with Tamil", async () => {
+    await setup([bilingual]);
+    fireEvent.change(screen.getByLabelText("Translation language"), { target: { value: "ta" } });
+    fireEvent.change(screen.getByLabelText("Translation"), { target: { value: "[Verse 1]\nவரி ஒன்று" } });
+    expect(songOf("b1")).toMatchObject({ language: "ml", translationLanguage: "ta" });
+    expect(within(screen.getByRole("radiogroup", { name: "Show on screen" })).getByRole("radio", { name: "Tamil" })).toBeTruthy();
+    expect(slidesFor(songOf("b1"))[0]).toMatchObject({ lines: ["വരി ഒന്ന്"], parallelLines: ["வரி ஒன்று"], parallelLang: "ta" });
+  });
+
+  it("removes the translation after confirming, keeping the lyrics", async () => {
+    await setup([bilingual]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove translation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    expect(songOf("b1").translation).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove translation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove translation" }));
+    expect(songOf("b1").translation).toBeUndefined();
+    expect(songOf("b1").lyrics).toBe(ML);
+    expect(screen.queryByLabelText("Translation")).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: "Show on screen" })).toBeNull();
+  });
+
+  it("loads a saved song with its translation, and English-only songs as before", async () => {
+    await setup([song(), bilingual]);
+    expect(screen.queryByLabelText("Translation")).toBeNull();
+    expect(screen.getByRole("button", { name: /Add translation/ })).toBeTruthy();
+    fireEvent.click(list().getByText("പാട്ട്"));
+    expect((screen.getByLabelText("Translation") as HTMLTextAreaElement).value).toBe("[Verse 1]\nLine one\n\n[Chorus]\nChorus line");
+    expect((screen.getByLabelText("Lyrics") as HTMLTextAreaElement).value).toBe(ML);
+  });
+
+  it("lists the song under both its languages, and finds it by words in either", async () => {
+    await setup([song(), bilingual]);
+    fireEvent.click(screen.getByRole("radio", { name: "മലയാളം" }));
+    expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പാട്ട്"]);
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പാട്ട്", "Morning Song"]);
+    fireEvent.click(screen.getByRole("radio", { name: "All" }));
+    fireEvent.change(screen.getByLabelText("Search songs"), { target: { value: "chorus line" } });
+    expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പാട്ട്"]);
+  });
+
+  it("offers a filter for a language once a song uses it", async () => {
+    await setup([song()]);
+    expect(screen.queryByRole("radio", { name: "தமிழ்" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Lyrics language"), { target: { value: "ta" } });
+    expect(songOf("s1").language).toBe("ta");
+    expect(screen.getByRole("radio", { name: "தமிழ்" })).toBeTruthy();
   });
 });

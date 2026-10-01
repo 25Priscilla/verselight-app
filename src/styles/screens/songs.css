@@ -52,8 +52,8 @@
 .song-row:hover .row-present, .row-present:focus-visible, .song-row > button.on + .row-present { opacity: 1; }
 
 /* Song library filters */
-.lang-seg { display: grid; grid-template-columns: 0.8fr 1fr 1.1fr; }
-.lang-seg button { padding: 5px 4px; }
+.lang-seg { display: flex; flex-wrap: wrap; }
+.lang-seg button { flex: 1 1 auto; padding: 5px 8px; }
 .view-tabs { display: flex; gap: 2px; }
 .view-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: 0; background: none; color: var(--mute); font-size: 12px; font-weight: 650; padding: 5px 2px; border-radius: 6px; }
 .view-tabs button:hover { color: var(--ink); background: var(--raise); }
@@ -107,4 +107,31 @@
   .song-body { grid-template-columns: minmax(0, 1fr); }
   .lyrics-pane { position: static; }
   .lyrics { min-height: 300px; }
+}
+
+/* ---------- Lyrics and their translation ---------- */
+.lyrics-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.lyrics-cols.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.lyrics-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.lyrics-col-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 32px; }
+.lyrics-col-name { font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.lang-select { width: auto; max-width: 100%; padding-top: 3px; padding-bottom: 3px; font-size: 13px; }
+.lyrics-col-head .icon-btn, .lyrics-col-confirm { margin-left: auto; }
+.lyrics-col-confirm { display: inline-flex; gap: 6px; }
+.lyrics:is(:lang(ml), :lang(ta), :lang(kn)) { line-height: 1.85; }
+.copy-tags, .add-translation { align-self: flex-start; }
+.show-on-screen { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: -2px 0 12px; }
+
+/* With a translation the two lyrics boxes need the width: they go side by side and the slides sit below,
+   unless the editor is wide enough for all three. */
+.song-body.bilingual { grid-template-columns: minmax(0, 1fr); }
+.song-body.bilingual .lyrics-pane { position: static; }
+.song-body.bilingual .lyrics { min-height: 360px; }
+@container (min-width: 1380px) {
+  .song-body.bilingual { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .song-body.bilingual .lyrics-pane { position: sticky; }
+}
+@container (max-width: 640px) {
+  .lyrics-cols.two { grid-template-columns: minmax(0, 1fr); }
+  .song-body.bilingual .lyrics { min-height: 240px; }
 }

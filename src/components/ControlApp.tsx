@@ -7,7 +7,9 @@ import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
 import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
 import { saveFileAs } from "../lib/storage";
-import type { Library, LiveState, Slide, Song } from "../lib/types";
+import { displayChoices, hasTranslation, songDisplay } from "../lib/lyrics";
+import { songLanguage } from "../lib/malayalam";
+import type { Library, LiveState, Slide, Song, SongDisplay } from "../lib/types";
 import { useLibrary } from "../state/library";
 import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
 import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
@@ -314,6 +316,18 @@ export function ControlApp() {
   }, [state.session]);
   const neighbours = useMemo(() => chapterNeighbours(state.session), [state.session]);
 
+  // A song with a translation can switch languages while it is on screen; the choice is saved with the song.
+  const liveSong = state.session?.kind === "song" ? songs.get(state.session.songId) : undefined;
+  const liveSongDisplay = liveSong && hasTranslation(liveSong) ? {
+    value: songDisplay(liveSong),
+    options: displayChoices(liveSong).map((c) => ({
+      ...c, lang: c.value === "primary" ? songLanguage(liveSong) : c.value === "translation" ? liveSong.translationLanguage : undefined,
+    })),
+    onChange: (display: SongDisplay) => update((lib) => ({
+      ...lib, items: lib.items.map((i) => (i.id === liveSong.id && i.kind === "song" ? { ...i, display, updatedAt: Date.now() } : i)),
+    })),
+  } : null;
+
   // The presentation panel only appears while something is loaded or the projector is on; the rest of the
   // time the workspace gets the full width. While it shows, the sidebar shrinks to icons to make room.
   const presenting = !!state.session || projector !== "off";
@@ -420,6 +434,7 @@ export function ControlApp() {
         looks={library.looks}
         slideLook={(key) => library.assign.slides[key] ?? null}
         onSlideLook={(key, lookId) => assignLook("slides", key, lookId)}
+        songDisplay={liveSongDisplay}
       />}
 
       {(notice || saveError) && (

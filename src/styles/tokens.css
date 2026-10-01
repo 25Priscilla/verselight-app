@@ -29,8 +29,8 @@
   --warning: #f5c451;         /* warnings and favourites */
 
   /* ---- type ---- */
-  --font-ui: "Manrope Variable", "Noto Sans Malayalam Variable", "Segoe UI", system-ui, sans-serif;
-  --font-read: "Lora Variable", "Noto Serif Malayalam Variable", Georgia, serif;
+  --font-ui: "Manrope Variable", "Noto Sans Malayalam Variable", "Noto Sans Tamil Variable", "Noto Sans Kannada Variable", "Segoe UI", system-ui, sans-serif;
+  --font-read: "Lora Variable", "Noto Serif Malayalam Variable", "Noto Serif Tamil Variable", "Noto Serif Kannada Variable", Georgia, serif;
   --text-xs: 12px;            /* hints and captions; nothing smaller */
   --text-sm: 13px;            /* labels, list subtitles, small buttons */
   --text-md: 14px;            /* body (screens move to 15px as they're redesigned) */

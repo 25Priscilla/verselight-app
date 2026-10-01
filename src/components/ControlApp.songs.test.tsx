@@ -116,3 +116,50 @@ describe("presenting a song", () => {
     expect(within(recent).getByText("Morning Song")).toBeTruthy();
   });
 });
+
+describe("presenting a song with a translation", () => {
+  // Placeholder words only: "line one", "chorus line" in Malayalam and English.
+  const both: Song = {
+    kind: "song", id: "b1", title: "പാട്ട്", artist: "", copyright: "", ccli: "", linesPerSlide: 0, updatedAt: 0, language: "ml",
+    lyrics: "[Verse 1]\nവരി ഒന്ന്\n\n[Chorus]\nകോറസ് വരി", translation: "[Verse 1]\nLine one\n\n[Chorus]\nChorus line", translationLanguage: "en",
+    arrangement: [], hidden: [],
+  };
+  async function presentBoth(song: Song = both) {
+    localStorage.setItem("verselight:library.json", JSON.stringify({ items: [song], services: [] }));
+    render(<LibraryProvider><ControlApp /></LibraryProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: "Songs" }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Present Now/ })); });
+    return within(screen.getByRole("complementary", { name: "Presentation" }));
+  }
+  const words = () => ({ lines: projector().slide?.lines, parallelLines: projector().slide?.parallelLines, lang: projector().slide?.lang });
+
+  it("sends both languages for each section, and switches between them live without losing the place", async () => {
+    const panel = await presentBoth();
+    expect(words()).toEqual({ lines: ["വരി ഒന്ന്"], parallelLines: ["Line one"], lang: "ml" });
+    fireEvent.click(panel.getByRole("button", { name: /^Next/ }));
+    expect(words()).toEqual({ lines: ["കോറസ് വരി"], parallelLines: ["Chorus line"], lang: "ml" });
+
+    const show = within(panel.getByRole("radiogroup", { name: "Show on screen" }));
+    fireEvent.click(show.getByRole("radio", { name: "English" }));
+    expect(words()).toEqual({ lines: ["Chorus line"], parallelLines: undefined, lang: "en" });
+    expect(panel.getByText("Slide 2 of 2")).toBeTruthy();
+
+    fireEvent.click(show.getByRole("radio", { name: "Malayalam" }));
+    expect(words()).toEqual({ lines: ["കോറസ് വരി"], parallelLines: undefined, lang: "ml" });
+    fireEvent.click(show.getByRole("radio", { name: "Both" }));
+    expect(words()).toEqual({ lines: ["കോറസ് വരി"], parallelLines: ["Chorus line"], lang: "ml" });
+    // The editor shows the same choice: it is saved with the song.
+    expect(within(document.querySelector(".song-editor") as HTMLElement).getByRole("radio", { name: "Both" }).getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("presents in the language chosen in the editor", async () => {
+    await presentBoth({ ...both, display: "translation" });
+    expect(words()).toEqual({ lines: ["Line one"], parallelLines: undefined, lang: "en" });
+  });
+
+  it("offers no language switch for a song in one language", async () => {
+    const panel = await presentSong();
+    expect(panel.queryByRole("radiogroup", { name: "Show on screen" })).toBeNull();
+    expect(projector().slide?.parallelLines).toBeUndefined();
+  });
+});

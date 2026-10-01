@@ -8,6 +8,11 @@ import "@fontsource-variable/source-sans-3";
 // Malayalam fonts (SIL Open Font License), so Malayalam lyrics render correctly offline.
 import "@fontsource-variable/noto-sans-malayalam";
 import "@fontsource-variable/noto-serif-malayalam";
+// Tamil and Kannada fonts (SIL Open Font License), for songs in those languages.
+import "@fontsource-variable/noto-sans-tamil";
+import "@fontsource-variable/noto-serif-tamil";
+import "@fontsource-variable/noto-sans-kannada";
+import "@fontsource-variable/noto-serif-kannada";
 import "@fontsource-variable/manrope";
 import App from "./App";
 import "./styles/index.css";

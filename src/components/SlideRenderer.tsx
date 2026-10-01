@@ -84,6 +84,14 @@ export function SlideRenderer({ slide, theme, blackout, clear, className }: Prop
     </p>
   );
 
+  const songLines = (lines: string[], lang?: string) => (
+    <div className="slide-lines" lang={lang}>
+      {lines.map((line, i) => (
+        <div key={i}>{line}</div>
+      ))}
+    </div>
+  );
+
   return (
     <div ref={frameRef} className={`slide ${className ?? ""}`} style={style} data-align={theme.align} lang={slide?.lang}>
       <div className="slide-bg" style={bgStyle} />
@@ -97,12 +105,15 @@ export function SlideRenderer({ slide, theme, blackout, clear, className }: Prop
           </div>
         ) : showText && slide.kind === "scripture" ? (
           scripture(slide.lines, slide.lang)
-        ) : showText ? (
-          <div className="slide-lines">
-            {slide.lines.map((line, i) => (
-              <div key={i}>{line}</div>
-            ))}
+        ) : showText && slide.parallelLines?.length ? (
+          // A song section with its translation: each language stays a whole block, never mixed line by line.
+          <div className={`bilingual song-pair ${theme.bilingualLayout === "columns" ? "cols" : "stack"}`}>
+            {slide.lines.length > 0 && songLines(slide.lines, slide.lang)}
+            {slide.lines.length > 0 && <div className="bilingual-rule" aria-hidden />}
+            {songLines(slide.parallelLines, slide.parallelLang)}
           </div>
+        ) : showText ? (
+          songLines(slide.lines)
         ) : null}
       </div>
       {showText && theme.showReference && slide.footer && (

@@ -58,3 +58,32 @@ describe("PresentationView (the projector window)", () => {
     expect(bus.sent.filter((m) => m.event === "nav").map((m) => m.payload)).toEqual(["next", "blackout", "exit"]);
   });
 });
+
+describe("a song slide with its translation", () => {
+  const song: Slide = { key: "b1/Verse 1/0#0", itemId: "b1", kind: "song", label: "Verse 1", footer: "",
+    lines: ["വരി ഒന്ന്", "വരി രണ്ട്"], lang: "ml", parallelLines: ["Line one", "Line two"], parallelLang: "en" };
+
+  it("shows each language as a whole block, marked with its language, never mixed line by line", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: song });
+    const blocks = [...container.querySelectorAll(".song-pair > .slide-lines")];
+    expect(blocks.map((b) => [b.getAttribute("lang"), [...b.children].map((l) => l.textContent)])).toEqual([
+      ["ml", ["വരി ഒന്ന്", "വരി രണ്ട്"]],
+      ["en", ["Line one", "Line two"]],
+    ]);
+    expect(container.querySelector(".song-pair.stack .bilingual-rule")).toBeTruthy();
+  });
+
+  it("puts them side by side when the look says so", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: song, theme: { ...live.theme, bilingualLayout: "columns" } });
+    expect(container.querySelector(".song-pair.cols")).toBeTruthy();
+  });
+
+  it("shows a song slide in one language exactly as before", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: { ...song, parallelLines: undefined, parallelLang: undefined } });
+    expect(container.querySelector(".song-pair")).toBeNull();
+    expect([...container.querySelectorAll(".slide-lines > div")].map((l) => l.textContent)).toEqual(["വരി ഒന്ന്", "വരി രണ്ട്"]);
+  });
+});
