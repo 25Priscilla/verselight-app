@@ -6,6 +6,7 @@ import { chooseDisplay, displayConnected, displayLabel, sameDisplays } from "../
 import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
 import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings } from "../lib/settings";
 import { saveFileAs } from "../lib/storage";
 import { displayChoices, hasTranslation, songDisplay } from "../lib/lyrics";
 import { songLanguage } from "../lib/malayalam";
@@ -97,9 +98,19 @@ export function ControlApp() {
   /** The screen the projector window is on, so unplugging it can be noticed */
   const liveDisplay = useRef<DisplayInfo | null>(null);
 
+  // App settings (the church logo), saved in their own file so the library is never rewritten for them.
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  useEffect(() => { loadSettings().then(setSettings); }, []);
+  const changeSettings = (patch: Partial<Settings>) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    saveSettings(next).catch((e) => setNotice(`The setting wasn't saved: ${e}`));
+  };
+
   const liveState: LiveState = useMemo(
-    () => ({ slide: liveSlide, theme: lookForSlide(library, liveSlide).theme, blackout: state.blackout, clear: state.clear }),
-    [liveSlide, library, state.blackout, state.clear],
+    () => ({ slide: liveSlide, theme: lookForSlide(library, liveSlide).theme, blackout: state.blackout, clear: state.clear,
+      logo: settings.showLogo }),
+    [liveSlide, library, state.blackout, state.clear, settings.showLogo],
   );
   // The projector draws exactly what the laptop preview draws: the same slide, look and black state.
   const stateRef = useRef(liveState);
@@ -401,6 +412,7 @@ export function ControlApp() {
           displayChoice={choice} projectorProblem={projectorProblem}
           onDisplay={(id) => { setProjectorProblem(null); update((lib) => ({ ...lib, displayId: id, displayIndex: null })); }}
           onRefreshDisplays={refreshDisplays}
+          showLogo={settings.showLogo} onShowLogo={(on) => changeSettings({ showLogo: on })}
           onBackup={backup} onRestore={restore} notify={setNotice} />
       )}
       {pendingRestore && (

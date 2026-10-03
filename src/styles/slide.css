@@ -40,3 +40,12 @@ html.projector-window, html.projector-window body { overflow: hidden; background
 .bilingual.song-pair.cols { text-align: inherit; }
 .bilingual.song-pair.cols > .slide-lines { flex: 1 1 0; min-width: 0; }
 .bilingual.song-pair.stack { gap: 0.5em; }
+
+/* ---------- Church logo (projector only) ---------- */
+/* Small in the bottom-right corner, at its own aspect ratio. Text keeps clear of it: the reference stays centred
+   between equal side margins wider than the logo, and with no reference the words stop above the logo. */
+.slide { --logo-h: 7cqh; --logo-w: calc(var(--logo-h) * 1928 / 816); --logo-x: 2.5cqw; --logo-y: 3cqh; }
+.slide-logo { position: absolute; right: var(--logo-x); bottom: var(--logo-y); height: var(--logo-h); width: auto; max-width: 20cqw; object-fit: contain; pointer-events: none; }
+.slide.has-logo .slide-footer { padding-inline: calc(var(--logo-w) + var(--logo-x) + 1.5cqw); }
+.slide.has-logo[data-align="left"] .slide-footer { padding-left: 7cqw; }
+.slide.has-logo:not([data-footer]) .slide-body { padding-bottom: calc(var(--logo-h) + var(--logo-y) + 1cqh); }

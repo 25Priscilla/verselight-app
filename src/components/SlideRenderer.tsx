@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import churchLogo from "../assets/church-logo.webp";
 import { galleryUrl } from "../lib/gallery";
 import { FONTS, type Slide, type Theme } from "../lib/types";
 
@@ -7,6 +8,8 @@ interface Props {
   theme: Theme;
   blackout?: boolean;
   clear?: boolean;
+  /** Draw the church logo in the bottom-right corner (the projector only); hidden while Black */
+  logo?: boolean;
   className?: string;
 }
 
@@ -30,12 +33,13 @@ function backgroundStyle(t: Theme): CSSProperties {
  * the operator preview and the projector render identically at any size.
  * Text that doesn't fit shrinks until it does.
  */
-export function SlideRenderer({ slide, theme, blackout, clear, className }: Props) {
+export function SlideRenderer({ slide, theme, blackout, clear, logo, className }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(1);
   const [height, setHeight] = useState(0);
   const showText = !!slide && !clear && !blackout;
+  const showFooter = showText && theme.showReference && !!slide?.footer;
 
   useLayoutEffect(() => {
     const body = bodyRef.current;
@@ -55,7 +59,7 @@ export function SlideRenderer({ slide, theme, blackout, clear, className }: Prop
     const ro = new ResizeObserver(measure);
     if (frameRef.current) ro.observe(frameRef.current);
     return () => ro.disconnect();
-  }, [slide, theme.fontSize, theme.fontFamily, theme.showReference, theme.bilingualLayout, showText]);
+  }, [slide, theme.fontSize, theme.fontFamily, theme.showReference, theme.bilingualLayout, showText, logo]);
 
   // Blur is stored as pixels at 1080p and scaled to this frame, so every size matches the projector.
   const blurPx = ((theme.blur ?? 0) * height) / 1080;
@@ -93,7 +97,7 @@ export function SlideRenderer({ slide, theme, blackout, clear, className }: Prop
   );
 
   return (
-    <div ref={frameRef} className={`slide ${className ?? ""}`} style={style} data-align={theme.align} lang={slide?.lang}>
+    <div ref={frameRef} className={`slide ${logo ? "has-logo" : ""} ${className ?? ""}`} data-footer={showFooter || undefined} style={style} data-align={theme.align} lang={slide?.lang}>
       <div className="slide-bg" style={bgStyle} />
       {(theme.overlay ?? 0) > 0 && <div className="slide-dim" style={{ opacity: theme.overlay }} />}
       <div ref={bodyRef} className={`slide-body ${theme.shadow ? "has-shadow" : ""}`}>
@@ -116,9 +120,10 @@ export function SlideRenderer({ slide, theme, blackout, clear, className }: Prop
           songLines(slide.lines)
         ) : null}
       </div>
-      {showText && theme.showReference && slide.footer && (
-        <div className="slide-footer">{slide.footer}</div>
+      {showFooter && (
+        <div className="slide-footer">{slide?.footer}</div>
       )}
+      {logo && !blackout && <img className="slide-logo" src={churchLogo} alt="" draggable={false} />}
       {blackout && <div className="slide-black" />}
     </div>
   );

@@ -237,4 +237,6 @@ export interface LiveState {
   theme: Theme;
   blackout: boolean;
   clear: boolean;
+  /** Show the church logo on the projector (hidden while Black) */
+  logo?: boolean;
 }
