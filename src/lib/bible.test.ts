@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fakeEnglish, fakeMalayalam, EPHESIANS, GENESIS, JOHN, ROMANS } from "../test/fakeBible";
-import { alignedVerses, detectBibleLanguage, findBook, getVerses, matchRanges, parseReference, searchBible, searchWords, versesBetween } from "./bible";
+import { alignedVerses, detectBibleLanguage, findBook, forDisplay, getVerses, matchRanges, parseReference, searchBible, searchWords, versesBetween } from "./bible";
 
 const en = fakeEnglish();
 const ml = fakeMalayalam();
@@ -90,5 +90,30 @@ describe("verses and translations", () => {
   it("tells English and Malayalam Bibles apart", () => {
     expect(detectBibleLanguage(en)).toBe("en");
     expect(detectBibleLanguage(ml)).toBe("ml");
+  });
+});
+
+describe("KJV brace markup", () => {
+  const marked = () => {
+    const b = fakeEnglish();
+    b.books[GENESIS].chapters[0][0] = "Blessed {is} the man in whose spirit {there is} no guile. {guile: Heb. deceit}";
+    return b;
+  };
+
+  it("shows an English Bible's verses as printed, wherever they are read or searched", () => {
+    const shown = forDisplay(marked());
+    expect(getVerses(shown, GENESIS, 1, 1, 1)[0].text).toBe("Blessed is the man in whose spirit there is no guile.");
+    expect(searchBible(shown, "there is").total).toBe(1);
+    expect(searchBible(shown, "Heb").total).toBe(0);
+    expect(searchBible(shown, "deceit").total).toBe(0);
+  });
+
+  it("leaves Bibles without the markup, and Malayalam Bibles, untouched", () => {
+    const plain = fakeEnglish();
+    expect(forDisplay(plain)).toBe(plain);
+    const mal = fakeMalayalam();
+    mal.books[GENESIS].chapters[0][0] = "ആദിയിൽ {ദൈവം} ആകാശവും ഭൂമിയും സൃഷ്ടിച്ചു. {x: Heb. y}";
+    expect(forDisplay(mal)).toBe(mal);
+    expect(mal.books[GENESIS].chapters[0][0]).toBe("ആദിയിൽ {ദൈവം} ആകാശവും ഭൂമിയും സൃഷ്ടിച്ചു. {x: Heb. y}");
   });
 });

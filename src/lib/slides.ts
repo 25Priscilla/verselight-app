@@ -1,3 +1,4 @@
+import { cleanKjvVerse } from "./kjvText";
 import { chunkSection, parseLyrics, songDisplay, songOrder } from "./lyrics";
 import { songLanguage } from "./malayalam";
 import type { LibraryItem, Scripture, Slide, Song } from "./types";
@@ -91,7 +92,12 @@ export function rangeLabel(refs: string[]): string {
   return `${first} – ${last}`;
 }
 
+/** Verse text for a slide. Passages added from a KJV file before its brace markup was tidied still show it tidied. */
+const verseLine = (text: string, lang: string | undefined, fromFile: boolean) =>
+  (fromFile && lang !== "ml" ? cleanKjvVerse(text) : text).trim();
+
 function scriptureSlides(s: Scripture): Slide[] {
+  const fromFile = s.source === "bible-file";
   const per = Math.max(1, s.versesPerSlide || 1);
   const slides: Slide[] = [];
   for (let i = 0; i < s.verses.length; i += per) {
@@ -103,12 +109,12 @@ function scriptureSlides(s: Scripture): Slide[] {
       key: `${s.id}:${i}`,
       itemId: s.id,
       label: ref,
-      lines: group.map((v) => v.text.trim()),
+      lines: group.map((v) => verseLine(v.text, s.lang, fromFile)),
       verseNumbers: group.map((v) => v.ref.split(":").pop() ?? ""),
       footer: translations ? `${ref} (${translations})` : ref,
       kind: "scripture",
       lang: s.lang,
-      ...(other ? { parallelLines: other.map((v) => v.text.trim()), parallelLang: s.parallel!.lang } : {}),
+      ...(other ? { parallelLines: other.map((v) => verseLine(v.text, s.parallel!.lang, fromFile)), parallelLang: s.parallel!.lang } : {}),
     });
   }
   return slides;

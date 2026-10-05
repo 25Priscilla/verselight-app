@@ -1,8 +1,11 @@
 /**
  * Bible file import. VerseLight never generates or edits Bible text:
  * every verse shown comes from a file the user imports, stored as-is.
+ * The one exception is display: the KJV brace markup (italic supplied words, margin notes) is
+ * tidied when a Bible is loaded; see kjvText.ts. The stored file is unchanged.
  */
 import { newId } from "./id";
+import { cleanKjvVerse, hasKjvMarkup } from "./kjvText";
 import { hasMalayalam, searchKey } from "./malayalam";
 import { readData, writeData } from "./storage";
 import type { BibleMeta, ScriptureVerse } from "./types";
@@ -88,10 +91,19 @@ export function parseBibleFile(raw: string): Omit<BibleData, "license"> & { lice
 const fileName = (id: string) => `bible-${id}.json`;
 const cache = new Map<string, BibleData>();
 
+/**
+ * The Bible as it is shown: English Bibles with KJV brace markup read as printed
+ * ("Blessed is the man", not "Blessed {is} the man"). Other Bibles, including Malayalam, are untouched.
+ */
+export function forDisplay(data: BibleData): BibleData {
+  if (detectBibleLanguage(data) !== "en" || !hasKjvMarkup(data.books)) return data;
+  return { ...data, books: data.books.map((b) => ({ ...b, chapters: b.chapters.map((c) => c.map(cleanKjvVerse)) })) };
+}
+
 export async function saveBible(data: BibleData): Promise<BibleMeta> {
   const id = newId();
   await writeData(fileName(id), JSON.stringify(data));
-  cache.set(id, data);
+  cache.set(id, forDisplay(data));
   return {
     id,
     name: data.name,
@@ -108,7 +120,7 @@ export async function loadBible(id: string): Promise<BibleData | null> {
   if (hit) return hit;
   const raw = await readData(fileName(id));
   if (!raw) return null;
-  const data = JSON.parse(raw) as BibleData;
+  const data = forDisplay(JSON.parse(raw) as BibleData);
   cache.set(id, data);
   return data;
 }

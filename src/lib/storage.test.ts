@@ -118,6 +118,19 @@ describe("Bibles and the library", () => {
     expect(ml.books[JOHN].chapters[2]).toHaveLength(17);
   });
 
+  it("keeps an imported KJV file as it was and shows its verses without the brace markup", async () => {
+    const { bible } = await reload();
+    const en = fakeEnglish();
+    en.books[0].chapters[0][0] = "And God saw the light, that {it was} good. {the light: Heb. between the light}";
+    const meta = await bible.saveBible(en);
+    const shown = "And God saw the light, that it was good.";
+    expect((await bible.loadBible(meta.id))!.books[0].chapters[0][0]).toBe(shown);
+
+    const after = await reload();
+    expect((await after.bible.loadBible(meta.id))!.books[0].chapters[0][0]).toBe(shown);
+    expect(await after.storage.readData(after.bible.bibleFileName(meta.id))).toContain("{it was}");
+  });
+
   it("moves files saved in localStorage by earlier versions into IndexedDB on first read", async () => {
     localStorage.setItem("verselight:old.json", "saved by an earlier version");
     let { storage } = await reload();

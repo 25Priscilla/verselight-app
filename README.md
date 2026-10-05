@@ -107,6 +107,8 @@ npm run fetch-kjv
 
 Then import that file in the app under **Bibles → Import Bible file**. That dataset contains 31,100 verses; VerseLight imports exactly what the source provides. In the UK the KJV is under Crown patent, so check local rules there.
 
+**KJV files with curly braces.** Some copies of this dataset, including older downloads, mark the printed KJV's typography with braces: `{is}` for words the translators supplied (printed in italics), and `{word: Heb. …}` or `{word: or, …}` after the verse for the translators' margin notes. VerseLight shows such a file as the verse reads in print: supplied words are kept without their braces, and margin notes are left out ("Blessed is the man…", not "Blessed {is} the man…"). Psalm titles in square brackets and the epistles' closing notes are kept. This applies to English Bibles only; the file you imported is stored unchanged, and Malayalam Bibles are never altered.
+
 **NIV and other copyrighted translations.** Biblica licenses the NIV for online display only. Storing the full text offline needs written permission from Biblica, and quoting without permission is limited to 500 verses. Until you have a license, use **Enter verses manually** to paste individual passages from a licensed source, within Biblica's quotation limits, with the copyright notice filled in.
 
 **Supported import formats** (JSON):

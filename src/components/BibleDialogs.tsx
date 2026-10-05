@@ -47,7 +47,7 @@ export function ImportBibleDialog({ onClose, onImported }: { onClose: () => void
         <Button variant="primary" disabled={!confirmed || !pending.abbreviation.trim() || busy} onClick={save}>Import Bible</Button>
       </>}>
       <p className="muted">
-        Choose a Bible JSON file from a source you're allowed to use. Verses display exactly as they appear in the file.
+        Choose a Bible JSON file from a source you're allowed to use. Verses display as they appear in the file (a KJV's curly-brace marks for italic words and margin notes are tidied away).
         Public-domain translations like the KJV are free to use; copyrighted ones like the NIV need the publisher's permission.
       </p>
       <input ref={input} type="file" accept=".json,application/json" hidden
