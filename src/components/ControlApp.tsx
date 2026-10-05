@@ -6,6 +6,7 @@ import { chooseDisplay, displayConnected, displayLabel, sameDisplays } from "../
 import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
 import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
+import type { BibleResult } from "../lib/globalSearch";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings } from "../lib/settings";
 import { saveFileAs } from "../lib/storage";
 import { displayChoices, hasTranslation, songDisplay } from "../lib/lyrics";
@@ -14,6 +15,7 @@ import type { Library, LiveState, Slide, Song, SongDisplay } from "../lib/types"
 import { useLibrary } from "../state/library";
 import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
 import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
+import { GlobalSearch } from "./GlobalSearch";
 import { HelpScreen } from "./HelpScreen";
 import { HomeScreen } from "./HomeScreen";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
@@ -67,6 +69,11 @@ export function ControlApp() {
   const [songSearch, setSongSearch] = useState(0);
   const [openSong, setOpenSong] = useState<{ id: string; nonce: number } | null>(null);
   const openSettings = (section: SettingsSection) => { setSettingsSection(section); setMode("settings"); };
+  // Global Quick Search opens results through the same requests as Home and Word Study.
+  const openSongById = useCallback((id: string) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }, []);
+  const openSearchVerse = useCallback((r: BibleResult) =>
+    openInBible({ bibleId: r.bibleId, book: r.book, chapter: r.chapter, verse: r.verse, to: r.to }), [openInBible]);
+  const studyWord = useCallback((word: string) => openStudy({ word }), [openStudy]);
 
   // ---- the presentation session: the single source of truth for what is shown ----
   const [state, dispatch] = useReducer(sessionReducer, initialSession);
@@ -297,8 +304,9 @@ export function ControlApp() {
       const action = liveKeyAction(e, {
         typing: isTyping(e.target),
         modal: !!document.querySelector(".modal"),
-        // An open menu (such as a slide's background menu) handles its own keys: Esc closes it and nothing else.
-        menu: !!document.querySelector(".look-picker, .menu, .popover"),
+        // An open menu (such as a slide's background menu, or the Global Quick Search results) handles its own keys:
+        // Esc closes it and nothing else.
+        menu: !!document.querySelector(".look-picker, .menu, .popover, .gsearch-panel"),
         session: !!state.session,
         projectorOn: projector !== "off",
       });
@@ -384,7 +392,9 @@ export function ControlApp() {
 
   return (
     <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
-      <Sidebar mode={mode} onMode={setMode} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName} />
+      <Sidebar mode={mode} onMode={setMode} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName}
+        search={<GlobalSearch compact={presenting || narrow} readingBibleId={readingBibleId}
+          onOpenVerse={openSearchVerse} onOpenSong={openSongById} onStudyWord={studyWord} />} />
 
 
       <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
@@ -403,7 +413,7 @@ export function ControlApp() {
           onFindSong={() => { setMode("songs"); setSongSearch(Date.now()); }}
           onBackgrounds={() => setMode("backgrounds")}
           onManage={() => openSettings("bibles")}
-          onOpenSong={(id) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }}
+          onOpenSong={openSongById}
           onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse, to: b.to })} />
       )}
       {mode === "settings" && (

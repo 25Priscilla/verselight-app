@@ -6,6 +6,12 @@ A desktop app for projecting Bible verses and song lyrics in church services. Bu
 
 VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (with **Bible Study** under it), **Songs** and **Backgrounds**, and at the bottom the **Projector** status, **Settings** and **Help**. The selected screen fills the rest of the window. While something is being presented, the **Presentation** panel appears on the right and the sidebar shrinks to icons (their names show as tooltips) to leave room. Windows narrower than 1100 px always use the icon sidebar.
 
+**Global Quick Search** (the *Search Bible, songs...* box at the top of the sidebar, on every screen; **Ctrl + K** jumps to it)
+- Type a reference (`John 3:16`, `Psalm 23`), Bible words (`faith`, `കൃപ`) or a song's title, lyrics or translation, in any language VerseLight supports. Results are grouped under **Bible** and **Songs**; lyric matches show the line they were found in.
+- Click a result, or use ↑ ↓ and Enter. A verse opens on the Bible screen, selected and ready for **Present Now** (a chapter reference selects the whole chapter); a song opens on the Songs screen with its own language setting. **Esc** closes the results and returns focus to the screen you were on, without stopping the presentation.
+- It uses the same reference parsing, Bible word index and song matching as the Bible and Songs screens, whose own search boxes work as before. Bible words match the start of a word (`love` finds *loved*, not *glove*); the translation being read comes first, then verses only another translation matches. **See all … verses in Bible Study** lists every match.
+- While typing in the box the presentation keys are ignored, as in any text box; they work again once it is closed.
+
 **Home**
 - Quick actions: **Find a Bible verse** and **Find a song** open that screen with the search box ready; **Change the background** opens Backgrounds; **Add or manage Bibles and songs** opens Settings → Bibles.
 - Recently used songs and the verses saved in Bible Study; click one to open it.
@@ -235,6 +241,7 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 | ← (also ↑, Page Up) | Previous |
 | B | Black screen on/off |
 | Esc | Stop presentation (an open menu closes first) |
+| Ctrl + K | Global Quick Search (doesn't affect the presentation) |
 
 **Stopping and starting again.** **Stop presentation** (or Esc) closes the projector but keeps your place. **Start presenting** reopens it on the same slide. **Close**, next to Stop presentation, clears the presentation.
 
