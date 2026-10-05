@@ -296,7 +296,7 @@ function SongEditor({ song, themeFor, onChange, onDelete, onPresent, liveKey, du
   const setLinesPerSlide = (n: number) => set({ linesPerSlide: n, hidden: [] });
 
   return (
-    <div className="song-editor">
+    <div className="song-pane">
       <header className="song-head">
         <div className="song-names">
           <input className="song-title-input" lang={lang} dir="auto" value={song.title} placeholder={lang === "ml" ? "പാട്ടിന്റെ പേര് (Song title)" : "Song title"} onChange={(e) => set({ title: e.target.value })} aria-label="Song title" />
@@ -323,229 +323,231 @@ function SongEditor({ song, themeFor, onChange, onDelete, onPresent, liveKey, du
           </button>
         </div>
       </header>
-      {duplicate && (
-        <p className="song-note" role="status">
-          <Icon name="info" size={15} />
-          <span>Another song in your library has the same title and writer: <strong lang={songLanguage(duplicate)}>{duplicate.title}</strong>.{" "}
-            <button className="linklike" onClick={() => onOpen(duplicate.id)}>Open it</button> to compare, or change this title so they're easy to tell apart.</span>
-        </p>
-      )}
-      <div className="credits">
-        <input value={song.copyright} placeholder="Copyright" onChange={(e) => set({ copyright: e.target.value })} aria-label="Copyright" />
-        <input value={song.ccli} placeholder="CCLI song number" onChange={(e) => set({ ccli: e.target.value })} aria-label="CCLI song number" />
-      </div>
+      <div className="song-editor">
+        {duplicate && (
+          <p className="song-note" role="status">
+            <Icon name="info" size={15} />
+            <span>Another song in your library has the same title and writer: <strong lang={songLanguage(duplicate)}>{duplicate.title}</strong>.{" "}
+              <button className="linklike" onClick={() => onOpen(duplicate.id)}>Open it</button> to compare, or change this title so they're easy to tell apart.</span>
+          </p>
+        )}
+        <div className="credits">
+          <input value={song.copyright} placeholder="Copyright" onChange={(e) => set({ copyright: e.target.value })} aria-label="Copyright" />
+          <input value={song.ccli} placeholder="CCLI song number" onChange={(e) => set({ ccli: e.target.value })} aria-label="CCLI song number" />
+        </div>
 
-      <div className={cx("song-body", bilingual && "bilingual")}>
-        <section className="lyrics-pane">
-          <div className="pane-head">
-            <h2>{bilingual ? "Words" : "Lyrics"}</h2>
-            <div className="tag-buttons" title={bilingual ? `Adds a section to the ${writing === "translation" ? "translation" : "lyrics"} (the box you last typed in)` : undefined}>
-              {["Verse", "Chorus", "Bridge", "Pre-Chorus", "Tag", "Ending"].map((t) => (
-                <button key={t} className="tag-btn" onClick={() => insertTag(t)}><Icon name="plus" size={14} />{t}</button>
-              ))}
-            </div>
-          </div>
-          <div className={cx("lyrics-cols", bilingual && "two")}>
-            <div className="lyrics-col">
-              <div className="lyrics-col-head">
-                <span className="lyrics-col-name">{bilingual ? "Lyrics" : "Language"}</span>
-                <LanguageSelect label="Lyrics language" value={lang} onChange={(l) => set({ language: l })} />
+        <div className={cx("song-body", bilingual && "bilingual")}>
+          <section className="lyrics-pane">
+            <div className="pane-head">
+              <h2>{bilingual ? "Words" : "Lyrics"}</h2>
+              <div className="tag-buttons" title={bilingual ? `Adds a section to the ${writing === "translation" ? "translation" : "lyrics"} (the box you last typed in)` : undefined}>
+                {["Verse", "Chorus", "Bridge", "Pre-Chorus", "Tag", "Ending"].map((t) => (
+                  <button key={t} className="tag-btn" onClick={() => insertTag(t)}><Icon name="plus" size={14} />{t}</button>
+                ))}
               </div>
-              <textarea lang={lang} dir="auto"
-                ref={textRef}
-                className="lyrics"
-                value={song.lyrics}
-                onChange={(e) => set({ lyrics: e.target.value })}
-                onFocus={() => setWriting("lyrics")}
-                spellCheck
-                placeholder={"[Verse 1]\nFirst line\nSecond line\n\n[Chorus]\n…"}
-                aria-label="Lyrics"
-              />
             </div>
-            {bilingual && (
+            <div className={cx("lyrics-cols", bilingual && "two")}>
               <div className="lyrics-col">
                 <div className="lyrics-col-head">
-                  <span className="lyrics-col-name">Translation</span>
-                  <LanguageSelect label="Translation language" value={lang2} onChange={(l) => set({ translationLanguage: l })} />
-                  {confirmRemoveTranslation ? (
-                    <span className="lyrics-col-confirm">
-                      <button className="btn ghost small" onClick={() => setConfirmRemoveTranslation(false)}>Keep</button>
-                      <button className="btn danger-solid small" onClick={removeTranslation}>Remove translation</button>
-                    </span>
-                  ) : (
-                    <button className="icon-btn sm" onClick={() => (song.translation?.trim() ? setConfirmRemoveTranslation(true) : removeTranslation())}
-                      aria-label="Remove translation" title="Remove the translation (the lyrics stay)"><Icon name="x" size={15} /></button>
+                  <span className="lyrics-col-name">{bilingual ? "Lyrics" : "Language"}</span>
+                  <LanguageSelect label="Lyrics language" value={lang} onChange={(l) => set({ language: l })} />
+                </div>
+                <textarea lang={lang} dir="auto"
+                  ref={textRef}
+                  className="lyrics"
+                  value={song.lyrics}
+                  onChange={(e) => set({ lyrics: e.target.value })}
+                  onFocus={() => setWriting("lyrics")}
+                  spellCheck
+                  placeholder={"[Verse 1]\nFirst line\nSecond line\n\n[Chorus]\n…"}
+                  aria-label="Lyrics"
+                />
+              </div>
+              {bilingual && (
+                <div className="lyrics-col">
+                  <div className="lyrics-col-head">
+                    <span className="lyrics-col-name">Translation</span>
+                    <LanguageSelect label="Translation language" value={lang2} onChange={(l) => set({ translationLanguage: l })} />
+                    {confirmRemoveTranslation ? (
+                      <span className="lyrics-col-confirm">
+                        <button className="btn ghost small" onClick={() => setConfirmRemoveTranslation(false)}>Keep</button>
+                        <button className="btn danger-solid small" onClick={removeTranslation}>Remove translation</button>
+                      </span>
+                    ) : (
+                      <button className="icon-btn sm" onClick={() => (song.translation?.trim() ? setConfirmRemoveTranslation(true) : removeTranslation())}
+                        aria-label="Remove translation" title="Remove the translation (the lyrics stay)"><Icon name="x" size={15} /></button>
+                    )}
+                  </div>
+                  <textarea lang={lang2} dir="auto"
+                    ref={transRef}
+                    className="lyrics"
+                    value={song.translation ?? ""}
+                    onChange={(e) => set({ translation: e.target.value })}
+                    onFocus={() => setWriting("translation")}
+                    spellCheck
+                    placeholder={"[Verse 1]\nTranslation of the first line\nTranslation of the second line\n\n[Chorus]\n…"}
+                    aria-label="Translation"
+                  />
+                  {!song.translation?.trim() && sectionTags(song.lyrics) && (
+                    <button className="btn ghost small copy-tags" onClick={() => { set({ translation: sectionTags(song.lyrics) }); transRef.current?.focus(); }}
+                      title="Start the translation with the same section tags as the lyrics. No words are copied.">
+                      <Icon name="plus" size={14} />Use the lyrics' section tags
+                    </button>
                   )}
                 </div>
-                <textarea lang={lang2} dir="auto"
-                  ref={transRef}
-                  className="lyrics"
-                  value={song.translation ?? ""}
-                  onChange={(e) => set({ translation: e.target.value })}
-                  onFocus={() => setWriting("translation")}
-                  spellCheck
-                  placeholder={"[Verse 1]\nTranslation of the first line\nTranslation of the second line\n\n[Chorus]\n…"}
-                  aria-label="Translation"
-                />
-                {!song.translation?.trim() && sectionTags(song.lyrics) && (
-                  <button className="btn ghost small copy-tags" onClick={() => { set({ translation: sectionTags(song.lyrics) }); transRef.current?.focus(); }}
-                    title="Start the translation with the same section tags as the lyrics. No words are copied.">
-                    <Icon name="plus" size={14} />Use the lyrics' section tags
-                  </button>
+              )}
+            </div>
+            {bilingual ? (
+              <p className="muted small">
+                Write the translation under the same section tags as the lyrics, such as <code>[Verse 1]</code> and <code>[Chorus]</code>:
+                each section of the lyrics is shown with the section of the translation that has the same name.
+                Put blank lines in the same places in both so their slides pair up.
+              </p>
+            ) : (
+              <p className="muted small">
+                Put each section tag on its own line. A blank line starts a new slide; a tag with nothing under it repeats that section.
+                Enter only lyrics your church is licensed to project.
+              </p>
+            )}
+            {translated && pairing.missing.length > 0 && (
+              <p className="song-note">
+                <Icon name="info" size={15} />
+                <span>Not translated yet: <strong>{pairing.missing.join(", ")}</strong>.
+                  {display === "translation" ? " Until it is, the lyrics are shown there instead." : display === "both" ? " Until it is, only the lyrics are shown there." : ""}</span>
+              </p>
+            )}
+            {pairing.extra.length > 0 && (
+              <p className="song-note">
+                <Icon name="info" size={15} />
+                <span>In the translation but not in the lyrics, so not shown: <strong>{pairing.extra.map((l) => `[${l}]`).join(", ")}</strong>.
+                  Use the same section names as the lyrics.</span>
+              </p>
+            )}
+            {pairing.duplicates.length > 0 && (
+              <p className="song-note">
+                <Icon name="info" size={15} />
+                <span>{pairing.duplicates.map((d) => `[${d}]`).join(", ")} {pairing.duplicates.length === 1 ? "is" : "are each"} written out more than once in the translation, so only the first one's words are used.</span>
+              </p>
+            )}
+            {display === "both" && pairing.uneven.length > 0 && (
+              <p className="song-note">
+                <Icon name="info" size={15} />
+                <span><strong>{pairing.uneven.join(", ")}</strong> {pairing.uneven.length === 1 ? "splits" : "split"} into a different number of slides in each language,
+                  so some slides show only one language. Put blank lines in the same places in both, or choose a number of lines per slide.</span>
+              </p>
+            )}
+            {!bilingual && (
+              <button className="btn ghost small add-translation" onClick={addTranslation}
+                title="Add the same song in a second language, such as English with Malayalam. It stays one song.">
+                <Icon name="plus" size={14} />Add translation
+              </button>
+            )}
+          </section>
+
+          <section className="slides-pane">
+            <div className="pane-head">
+              <h2>Slides <span className="muted" aria-label={`${shown} of ${slides.length} slides will be shown`}>{shown === slides.length ? shown : `${shown} of ${slides.length}`}</span></h2>
+              <label className="inline-select">
+                <span className="muted small">Lines per slide</span>
+                <select value={song.linesPerSlide} onChange={(e) => setLinesPerSlide(Number(e.target.value))}>
+                  <option value={0}>Auto</option>
+                  {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+            </div>
+
+            {translated && (
+              <div className="show-on-screen">
+                <span className="muted small">Show on screen</span>
+                <Segmented label="Show on screen" value={display} onChange={(d) => set({ display: d })}
+                  options={displayChoices(song).map((c) => ({ ...c, lang: c.value === "primary" ? lang : c.value === "translation" ? lang2 : undefined }))} />
+              </div>
+            )}
+            {groups.length > 0 && (
+              <p className="muted small slides-hint">
+                Slides are shown in this order. Drag a section or use the arrows to move it. Click a slide to leave it out
+                (every time that part is sung); click it again to put it back.
+              </p>
+            )}
+            {duplicates.length > 0 && (
+              <p className="song-note">
+                <Icon name="info" size={15} />
+                <span>{duplicates.map((d) => `[${d}]`).join(", ")} {duplicates.length === 1 ? "is" : "are each"} written out more than once, so only the first one's words are used.
+                  Give the other one a new name, such as <strong>[{nextLabel(song.lyrics, duplicates[0].replace(/\s*\d+$/, ""))}]</strong>.</span>
+              </p>
+            )}
+            {unused.length > 0 && (
+              <p className="song-note">
+                <Icon name="info" size={15} />
+                <span>Not in the order, so not shown: <strong>{unused.join(", ")}</strong>. Add {unused.length === 1 ? "it" : "them"} below, or choose Use written order.</span>
+              </p>
+            )}
+            {groups.length === 0 ? (
+              <p className="muted small">Slides appear here as you type lyrics.</p>
+            ) : (
+              <ol className="arrangement">
+                {groups.map((g, i) => (
+                  <li
+                    key={`${g.label}-${g.occ}`}
+                    className={`arr-group ${dragFrom === i ? "dragging" : ""} ${dragOver === i && dragFrom !== i ? "drop" : ""}`}
+                    onDragOver={(e) => { if (dragFrom !== null) { e.preventDefault(); setDragOver(i); } }}
+                    onDrop={(e) => { e.preventDefault(); if (dragFrom !== null && dragFrom !== i) move(dragFrom, i); setDragFrom(null); setDragOver(null); }}
+                  >
+                    <div
+                      className="arr-head"
+                      draggable
+                      onDragStart={(e) => { setDragFrom(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", g.label); }}
+                      onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+                    >
+                      <span className="grip" aria-hidden><Icon name="grip" size={16} /></span>
+                      <span className="arr-label">{g.label}</span>
+                      <span className="arr-tools">
+                        <button className="icon-btn sm" disabled={i === 0} onClick={() => move(i, i - 1)} aria-label={`Move ${g.label} up`}><Icon name="up" size={15} /></button>
+                        <button className="icon-btn sm" disabled={i === groups.length - 1} onClick={() => move(i, i + 1)} aria-label={`Move ${g.label} down`}><Icon name="down" size={15} /></button>
+                        <button className="icon-btn sm" disabled={groups.length === 1} onClick={() => setOrder(order.filter((_, j) => j !== i))}
+                          aria-label={`Remove ${g.label} from order`} title={groups.length === 1 ? "A song needs at least one section" : "Remove from the order (the words stay in the lyrics)"}><Icon name="x" size={15} /></button>
+                      </span>
+                    </div>
+                    <div className="arr-slides">
+                      {g.slides.map((s) => {
+                        const now = isLive && s.key === liveKey;
+                        return (
+                          <div key={s.key} className={cx("mini-wrap", now && "now")}>
+                            <button className={cx("mini", s.hidden && "off")} onClick={() => toggle(s.sourceKey)}
+                              aria-pressed={!s.hidden} aria-label={`${s.label}: ${s.hidden ? "left out. Click to include it" : "included. Click to leave it out"}`}
+                              title={s.hidden ? "Include this slide" : "Leave this slide out"}>
+                              <SlideRenderer slide={s} theme={themeFor(s)} />
+                              {s.hidden && <span className="mini-off"><Icon name="eyeOff" size={16} /><span>Left out</span></span>}
+                              {now && <span className="now-badge" aria-hidden>Now</span>}
+                            </button>
+                            {!s.hidden && (
+                              <button className="mini-present" onClick={() => onPresent(s.key)} aria-label={`Present from ${s.label}`} title="Present from this slide">
+                                <Icon name="play" size={11} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            {sections.size > 0 && (
+              <div className="arr-add">
+                <span className="muted small">Add to order</span>
+                {[...sections.keys()].map((l) => (
+                  <button key={l} className={cx("tag-btn", unused.includes(l) && "unused")} onClick={() => setOrder([...order, l])}
+                    title={`Add ${l} to the end of the order`}><Icon name="plus" size={14} />{l}</button>
+                ))}
+                {song.arrangement.length > 0 && (
+                  <button className="btn ghost small" onClick={() => setOrder([])}>Use written order</button>
                 )}
               </div>
             )}
-          </div>
-          {bilingual ? (
-            <p className="muted small">
-              Write the translation under the same section tags as the lyrics, such as <code>[Verse 1]</code> and <code>[Chorus]</code>:
-              each section of the lyrics is shown with the section of the translation that has the same name.
-              Put blank lines in the same places in both so their slides pair up.
-            </p>
-          ) : (
-            <p className="muted small">
-              Put each section tag on its own line. A blank line starts a new slide; a tag with nothing under it repeats that section.
-              Enter only lyrics your church is licensed to project.
-            </p>
-          )}
-          {translated && pairing.missing.length > 0 && (
-            <p className="song-note">
-              <Icon name="info" size={15} />
-              <span>Not translated yet: <strong>{pairing.missing.join(", ")}</strong>.
-                {display === "translation" ? " Until it is, the lyrics are shown there instead." : display === "both" ? " Until it is, only the lyrics are shown there." : ""}</span>
-            </p>
-          )}
-          {pairing.extra.length > 0 && (
-            <p className="song-note">
-              <Icon name="info" size={15} />
-              <span>In the translation but not in the lyrics, so not shown: <strong>{pairing.extra.map((l) => `[${l}]`).join(", ")}</strong>.
-                Use the same section names as the lyrics.</span>
-            </p>
-          )}
-          {pairing.duplicates.length > 0 && (
-            <p className="song-note">
-              <Icon name="info" size={15} />
-              <span>{pairing.duplicates.map((d) => `[${d}]`).join(", ")} {pairing.duplicates.length === 1 ? "is" : "are each"} written out more than once in the translation, so only the first one's words are used.</span>
-            </p>
-          )}
-          {display === "both" && pairing.uneven.length > 0 && (
-            <p className="song-note">
-              <Icon name="info" size={15} />
-              <span><strong>{pairing.uneven.join(", ")}</strong> {pairing.uneven.length === 1 ? "splits" : "split"} into a different number of slides in each language,
-                so some slides show only one language. Put blank lines in the same places in both, or choose a number of lines per slide.</span>
-            </p>
-          )}
-          {!bilingual && (
-            <button className="btn ghost small add-translation" onClick={addTranslation}
-              title="Add the same song in a second language, such as English with Malayalam. It stays one song.">
-              <Icon name="plus" size={14} />Add translation
-            </button>
-          )}
-        </section>
-
-        <section className="slides-pane">
-          <div className="pane-head">
-            <h2>Slides <span className="muted" aria-label={`${shown} of ${slides.length} slides will be shown`}>{shown === slides.length ? shown : `${shown} of ${slides.length}`}</span></h2>
-            <label className="inline-select">
-              <span className="muted small">Lines per slide</span>
-              <select value={song.linesPerSlide} onChange={(e) => setLinesPerSlide(Number(e.target.value))}>
-                <option value={0}>Auto</option>
-                {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-          </div>
-
-          {translated && (
-            <div className="show-on-screen">
-              <span className="muted small">Show on screen</span>
-              <Segmented label="Show on screen" value={display} onChange={(d) => set({ display: d })}
-                options={displayChoices(song).map((c) => ({ ...c, lang: c.value === "primary" ? lang : c.value === "translation" ? lang2 : undefined }))} />
-            </div>
-          )}
-          {groups.length > 0 && (
-            <p className="muted small slides-hint">
-              Slides are shown in this order. Drag a section or use the arrows to move it. Click a slide to leave it out
-              (every time that part is sung); click it again to put it back.
-            </p>
-          )}
-          {duplicates.length > 0 && (
-            <p className="song-note">
-              <Icon name="info" size={15} />
-              <span>{duplicates.map((d) => `[${d}]`).join(", ")} {duplicates.length === 1 ? "is" : "are each"} written out more than once, so only the first one's words are used.
-                Give the other one a new name, such as <strong>[{nextLabel(song.lyrics, duplicates[0].replace(/\s*\d+$/, ""))}]</strong>.</span>
-            </p>
-          )}
-          {unused.length > 0 && (
-            <p className="song-note">
-              <Icon name="info" size={15} />
-              <span>Not in the order, so not shown: <strong>{unused.join(", ")}</strong>. Add {unused.length === 1 ? "it" : "them"} below, or choose Use written order.</span>
-            </p>
-          )}
-          {groups.length === 0 ? (
-            <p className="muted small">Slides appear here as you type lyrics.</p>
-          ) : (
-            <ol className="arrangement">
-              {groups.map((g, i) => (
-                <li
-                  key={`${g.label}-${g.occ}`}
-                  className={`arr-group ${dragFrom === i ? "dragging" : ""} ${dragOver === i && dragFrom !== i ? "drop" : ""}`}
-                  onDragOver={(e) => { if (dragFrom !== null) { e.preventDefault(); setDragOver(i); } }}
-                  onDrop={(e) => { e.preventDefault(); if (dragFrom !== null && dragFrom !== i) move(dragFrom, i); setDragFrom(null); setDragOver(null); }}
-                >
-                  <div
-                    className="arr-head"
-                    draggable
-                    onDragStart={(e) => { setDragFrom(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", g.label); }}
-                    onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
-                  >
-                    <span className="grip" aria-hidden><Icon name="grip" size={16} /></span>
-                    <span className="arr-label">{g.label}</span>
-                    <span className="arr-tools">
-                      <button className="icon-btn sm" disabled={i === 0} onClick={() => move(i, i - 1)} aria-label={`Move ${g.label} up`}><Icon name="up" size={15} /></button>
-                      <button className="icon-btn sm" disabled={i === groups.length - 1} onClick={() => move(i, i + 1)} aria-label={`Move ${g.label} down`}><Icon name="down" size={15} /></button>
-                      <button className="icon-btn sm" disabled={groups.length === 1} onClick={() => setOrder(order.filter((_, j) => j !== i))}
-                        aria-label={`Remove ${g.label} from order`} title={groups.length === 1 ? "A song needs at least one section" : "Remove from the order (the words stay in the lyrics)"}><Icon name="x" size={15} /></button>
-                    </span>
-                  </div>
-                  <div className="arr-slides">
-                    {g.slides.map((s) => {
-                      const now = isLive && s.key === liveKey;
-                      return (
-                        <div key={s.key} className={cx("mini-wrap", now && "now")}>
-                          <button className={cx("mini", s.hidden && "off")} onClick={() => toggle(s.sourceKey)}
-                            aria-pressed={!s.hidden} aria-label={`${s.label}: ${s.hidden ? "left out. Click to include it" : "included. Click to leave it out"}`}
-                            title={s.hidden ? "Include this slide" : "Leave this slide out"}>
-                            <SlideRenderer slide={s} theme={themeFor(s)} />
-                            {s.hidden && <span className="mini-off"><Icon name="eyeOff" size={16} /><span>Left out</span></span>}
-                            {now && <span className="now-badge" aria-hidden>Now</span>}
-                          </button>
-                          {!s.hidden && (
-                            <button className="mini-present" onClick={() => onPresent(s.key)} aria-label={`Present from ${s.label}`} title="Present from this slide">
-                              <Icon name="play" size={11} />
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-
-          {sections.size > 0 && (
-            <div className="arr-add">
-              <span className="muted small">Add to order</span>
-              {[...sections.keys()].map((l) => (
-                <button key={l} className={cx("tag-btn", unused.includes(l) && "unused")} onClick={() => setOrder([...order, l])}
-                  title={`Add ${l} to the end of the order`}><Icon name="plus" size={14} />{l}</button>
-              ))}
-              {song.arrangement.length > 0 && (
-                <button className="btn ghost small" onClick={() => setOrder([])}>Use written order</button>
-              )}
-            </div>
-          )}
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );
