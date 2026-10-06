@@ -165,6 +165,8 @@ export interface Bookmark {
   book: number;
   chapter: number;
   verse: number;
+  /** Last verse of a saved passage in the same chapter (missing for a single verse) */
+  to?: number;
   /** Translation the verse was saved from, e.g. "KJV" (shown as a hint only) */
   translation: string;
   savedAt: number;

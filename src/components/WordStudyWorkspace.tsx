@@ -1,22 +1,30 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { bibleLang, loadBible, matchRanges, searchBible, searchWords, type BibleData, type MatchMode, type SearchHit } from "../lib/bible";
+import { addBookmark, bookmarkLabel, bookmarkVerses, findBookmark, lastVerse, removeBookmark } from "../lib/bookmarks";
 import { splitId } from "../lib/crossrefs";
-import { newId } from "../lib/id";
+import type { ScriptureSpec } from "../lib/session";
 import type { Bookmark } from "../lib/types";
+import { originalLanguage, summarizeHits } from "../lib/wordStudy";
 import { useLibrary } from "../state/library";
 import { ImportCrossRefsDialog } from "./BibleDialogs";
 import { CrossRefPanel, type Passage } from "./CrossRefPanel";
 import { Icon } from "./Icon";
 import { EmptyState } from "./ui";
 
-/** Where to open a verse on the Bible screen. */
-export interface VerseTarget { bibleId: string; book: number; chapter: number; verse: number }
+/** Where to open a verse (or, with `to`, a passage) on the Bible screen. */
+export interface VerseTarget { bibleId: string; book: number; chapter: number; verse: number; to?: number }
+
+/** A request from another screen: search a word, or show the saved verses. */
+export interface StudyRequest { word?: string; tab?: "books" | "saved"; nonce: number }
 
 interface Props {
   active: boolean;
   /** The translation currently selected on the Bible screen */
   currentBibleId: string;
   onOpenInBible: (target: VerseTarget) => void;
+  request?: StudyRequest | null;
+  /** Presents a saved verse or passage. Word search results are for study and are never presented from here. */
+  onPresent?: (spec: ScriptureSpec) => void;
 }
 
 /** Groups at or below this many verses start expanded; larger searches start with books collapsed. */
@@ -52,7 +60,7 @@ async function copyText(text: string): Promise<boolean> {
  * Word Study: find every verse where a word appears in the selected translation.
  * Bible study only: it never presents anything. Reuses the Bible search index, verse data and cross references.
  */
-export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible }: Props) {
+export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible, request, onPresent }: Props) {
   const { library, update } = useLibrary();
   const [bibleId, setBibleId] = useState(currentBibleId);
   const [bible, setBible] = useState<BibleData | null>(null);
@@ -93,6 +101,13 @@ export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible }: Pr
       .catch((e) => setLoadError(String(e)));
   }, [bibleId]);
 
+  // Another screen asked for a word to be studied, or for the saved verses.
+  useEffect(() => {
+    if (!request) return;
+    if (request.word) { setQuery(request.word); setSubmitted(request.word.trim()); }
+    setTab(request.tab ?? "books");
+  }, [request?.nonce]);
+
   // Malayalam joins endings to words (കൃപ → കൃപയാൽ), so "Starts with" suits it better, unless the user chose a mode.
   useEffect(() => { if (!modeTouched.current) setMode(lang === "ml" ? "prefix" : "word"); }, [lang]);
 
@@ -102,6 +117,8 @@ export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible }: Pr
     [bible, submitted, mode],
   );
   const words = useMemo(() => searchWords(submitted), [submitted]);
+  const canonical = bible?.books.length === 66;
+  const summary = useMemo(() => (result && result.total ? summarizeHits(result.hits, canonical) : null), [result, canonical]);
   const groups = useMemo(() => {
     const byBook = new Map<number, SearchHit[]>();
     for (const h of result?.hits ?? []) {
@@ -155,16 +172,16 @@ export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible }: Pr
     }
   };
 
-  const bookmarkOf = (book: number, chapter: number, verse: number) =>
-    library.bookmarks.find((b) => b.book === book && b.chapter === chapter && b.verse === verse);
+  const bookmarkOf = (book: number, chapter: number, verse: number) => findBookmark(library.bookmarks, book, chapter, verse);
   const toggleBookmark = (book: number, chapter: number, verse: number) => {
     const existing = bookmarkOf(book, chapter, verse);
-    if (existing) {
-      update((lib) => ({ ...lib, bookmarks: lib.bookmarks.filter((b) => b.id !== existing.id) }));
-    } else {
-      const bm: Bookmark = { id: newId(), book, chapter, verse, translation: meta?.abbreviation ?? "", savedAt: Date.now() };
-      update((lib) => ({ ...lib, bookmarks: [bm, ...lib.bookmarks] }));
-    }
+    if (existing) update((lib) => ({ ...lib, bookmarks: removeBookmark(lib.bookmarks, existing.id) }));
+    else update((lib) => ({ ...lib, bookmarks: addBookmark(lib.bookmarks, { book, chapter, from: verse, translation: meta?.abbreviation ?? "" }) }));
+  };
+  const forget = (b: Bookmark) => update((lib) => ({ ...lib, bookmarks: removeBookmark(lib.bookmarks, b.id) }));
+  const openSaved = (b: Bookmark) => { if (bibleId) onOpenInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse, to: lastVerse(b) }); };
+  const presentSaved = (b: Bookmark) => {
+    if (bibleId && onPresent) onPresent({ primaryId: bibleId, onScreen: "first", book: b.book, chapter: b.chapter, from: b.verse, to: lastVerse(b) });
   };
 
   const showXrefs = (book: number, chapter: number, verse: number) =>
@@ -238,18 +255,38 @@ export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible }: Pr
             <p className="muted small pad">{submitted ? "No books to show." : "Books with matching verses will be listed here, with how many verses each has."}</p>
           )
         ) : bookmarks.length ? (
-          <ul className="ws-books ws-saved">
-            {bookmarks.map((b) => (
-              <li key={b.id}>
-                <button onClick={() => open(b.book, b.chapter, b.verse)} title="Open in the Bible">
-                  <span lang={lang}>{refOf(b.book, b.chapter, b.verse)}</span>
-                  <span className="ws-saved-text" lang={lang}>{verseText(b.book, b.chapter, b.verse)}</span>
-                </button>
-              </li>
-            ))}
+          <ul className="ws-books ws-saved" aria-label="Saved verses">
+            {bookmarks.map((b) => {
+              const label = bookmarkLabel(b, bible);
+              const { verses, missing } = bookmarkVerses(bible, b);
+              return (
+                <li key={b.id}>
+                  <button onClick={() => openSaved(b)} title={`Open ${label} in the Bible`}>
+                    <span lang={lang}>{label}</span>
+                    {bible && (verses.length ? (
+                      <span className="ws-saved-text" lang={lang}>{verses.map((v) => v.text).join(" ")}</span>
+                    ) : (
+                      <em className="ws-saved-text">Not in {meta?.abbreviation ?? "this translation"}</em>
+                    ))}
+                    {bible && verses.length > 0 && missing && <em className="ws-saved-note">Some verses aren't in {meta?.abbreviation}</em>}
+                  </button>
+                  <div className="ws-saved-actions">
+                    <button className="btn ghost small" onClick={() => openSaved(b)} aria-label={`Open ${label}`}><Icon name="book" size={13} />Open</button>
+                    {onPresent && (
+                      <button className="btn ghost small" onClick={() => presentSaved(b)} disabled={!verses.length} aria-label={`Present ${label}`}>
+                        <Icon name="play" size={12} />Present
+                      </button>
+                    )}
+                    <button className="btn ghost small" onClick={() => forget(b)} aria-label={`Remove ${label} from saved verses`} title="Remove from saved verses">
+                      <Icon name="trash" size={13} />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         ) : (
-          <p className="muted small pad">No saved verses yet. Choose <strong>Save</strong> on a result to keep it here.</p>
+          <p className="muted small pad">No saved verses yet. Choose <strong>Save</strong> on a result here, or select verses on the Bible screen and choose <strong>Save</strong>.</p>
         )}
       </aside>
 
@@ -329,6 +366,24 @@ export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible }: Pr
                         </span>
                       )}
                     </div>
+                    {summary && (
+                      <dl className="ws-facts" aria-label="Word facts">
+                        {canonical && <div><dt>Old Testament</dt><dd>{summary.oldTestament.toLocaleString()} {summary.oldTestament === 1 ? "verse" : "verses"}</dd></div>}
+                        {canonical && <div><dt>New Testament</dt><dd>{summary.newTestament.toLocaleString()} {summary.newTestament === 1 ? "verse" : "verses"}</dd></div>}
+                        {summary.topBook && groups.length > 1 && (
+                          <div><dt>Most often in</dt><dd><button className="linklike" onClick={() => jumpToBook(summary.topBook!.book)} lang={lang}>{bookName(summary.topBook.book)}</button> ({summary.topBook.verses})</dd></div>
+                        )}
+                        {summary.first && (
+                          <div><dt>First</dt><dd><button className="linklike" lang={lang} onClick={() => open(summary.first!.bookIndex, summary.first!.chapter, summary.first!.verse)}>
+                            {refOf(summary.first.bookIndex, summary.first.chapter, summary.first.verse)}</button></dd></div>
+                        )}
+                        {summary.last && summary.verses > 1 && (
+                          <div><dt>Last</dt><dd><button className="linklike" lang={lang} onClick={() => open(summary.last!.bookIndex, summary.last!.chapter, summary.last!.verse)}>
+                            {refOf(summary.last.bookIndex, summary.last.chapter, summary.last.verse)}</button></dd></div>
+                        )}
+                      </dl>
+                    )}
+                    <OriginalLanguage word={submitted} />
                     {groups.map((g) => {
                       const open = expanded.has(g.book);
                       const all = showAll.has(g.book);
@@ -378,5 +433,39 @@ export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible }: Pr
       </main>
       {importXrefs && <ImportCrossRefsDialog onClose={() => setImportXrefs(false)} onImported={() => setImportXrefs(false)} />}
     </div>
+  );
+}
+
+/**
+ * Hebrew and Greek information for a word, when a lexical dataset is installed. VerseLight doesn't include one,
+ * so this says so plainly rather than showing guessed words, Strong's numbers or definitions.
+ */
+function OriginalLanguage({ word }: { word: string }) {
+  const { available, entries } = originalLanguage(word);
+  if (!available) {
+    return (
+      <p className="ws-original muted small" role="note">
+        <Icon name="info" size={14} />
+        <span><strong>Hebrew and Greek:</strong> not available. No original-language data (Hebrew or Greek words, transliterations,
+          Strong's numbers or definitions) is installed, so the counts above come from the translation's own words.</span>
+      </p>
+    );
+  }
+  if (!entries.length) return <p className="ws-original muted small" role="note"><Icon name="info" size={14} /><span>No Hebrew or Greek entry for “{word}”.</span></p>;
+  return (
+    <section className="ws-lexicon" aria-label="Hebrew and Greek">
+      <h3>Hebrew and Greek</h3>
+      <ul>
+        {entries.map((e) => (
+          <li key={`${e.strongs}-${e.lemma}`}>
+            <span className="ws-lemma" lang={e.language === "greek" ? "grc" : "hbo"}>{e.lemma}</span>
+            <span className="ws-translit">{e.transliteration}</span>
+            <span className="ws-strongs">{e.strongs}</span>
+            <span className="ws-def">{e.definition}</span>
+            <span className="ws-src">{e.source}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

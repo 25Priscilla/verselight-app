@@ -155,3 +155,29 @@ mark { background: rgba(163, 177, 255, 0.25); color: #fff; border-radius: 3px; p
 @container (max-width: 760px) { .ov-grid { grid-template-columns: minmax(0, 1fr); } }
 .bible-body > .overview { container-type: inline-size; }
 @media (max-width: 1300px) { .ov-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Where you are, verse menu, chapter-to-chapter links (Phase 5) ---------- */
+.book-heading { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bible-where { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: var(--text-sm); color: var(--text-muted); }
+.where-tr { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: 0.04em; color: var(--accent); background: var(--accent-soft); border-radius: var(--radius-full); padding: 2px 9px; }
+.where-sel { color: var(--text-soft); font-weight: var(--weight-semibold); }
+.chapter-title-row { align-items: flex-start; flex-wrap: wrap; }
+.verse-select { flex: none; width: auto; margin-left: 6px; padding-top: 4px; padding-bottom: 4px; font-size: var(--text-sm); }
+.chapter-end { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.chapter-end .btn { gap: 6px; }
+.search-note { margin: 8px 2px 0; color: var(--text-muted); font-size: var(--text-sm); }
+.results-head { gap: 8px; flex-wrap: wrap; }
+.results-count { margin-left: auto; }
+.addbar-hint { margin-right: auto; }
+.addbar .btn.saved { color: var(--warning); }
+.addbar .btn.saved svg, .ws-saved-actions .btn.saved svg { fill: currentColor; }
+.ov-note { margin: 16px 2px 0; font-size: var(--text-xs); line-height: 1.5; color: var(--text-muted); }
+/* A narrow working area (small windows while presenting): cross references go under the text, not beside it. */
+.work { container: work / inline-size; }
+@container work (max-width: 720px) {
+  .bible-body { flex-direction: column; }
+  .bible-body > .xref { width: auto; max-height: 45%; border-left: 0; border-top: 1px solid var(--line); }
+  .bible-body > .reading { min-height: 0; }
+  .toolbar, .chapter-bar, .addbar { padding-left: 16px; padding-right: 16px; }
+  .reading { padding-left: 16px; padding-right: 16px; }
+}

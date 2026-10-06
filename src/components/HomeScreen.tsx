@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { bibleLang, BOOK_NAMES, loadBible, type BibleData } from "../lib/bible";
+import { bibleLang, loadBible, type BibleData } from "../lib/bible";
+import { bookmarkLabel, bookmarkVerses } from "../lib/bookmarks";
 import { songLanguage } from "../lib/malayalam";
 import type { Bookmark, Song } from "../lib/types";
 import { useLibrary } from "../state/library";
@@ -144,14 +145,13 @@ function SavedVerses({ bookmarks, readingBibleId, onOpen }: { bookmarks: Bookmar
             const id = bibleFor(b);
             const data = bibles.get(id);
             const lang = bibleLang(library.bibles.find((m) => m.id === id));
-            const book = data?.books[b.book]?.name ?? BOOK_NAMES[b.book];
-            const text = data?.books[b.book]?.chapters[b.chapter - 1]?.[b.verse - 1];
+            const text = bookmarkVerses(data, b).verses.map((v) => v.text).join(" ");
             return (
               <li key={b.id}>
                 <button onClick={() => id && onOpen(id, b)} disabled={!id} title="Open in the Bible">
                   <Icon name="bookmark" size={16} />
                   <span className="home-list-text">
-                    <span className="home-list-title" lang={data ? lang : undefined}>{book} {b.chapter}:{b.verse}</span>
+                    <span className="home-list-title" lang={data ? lang : undefined}>{bookmarkLabel(b, data)}</span>
                     {text && <span className="home-list-sub home-verse" lang={lang}>{text}</span>}
                   </span>
                 </button>

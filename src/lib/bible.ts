@@ -173,7 +173,14 @@ export function findBook(bible: BibleData, query: string): number {
   return names.findIndex((n) => n.some(subseq));
 }
 
-export interface ParsedRef { bookIndex: number; chapter: number; from?: number; to?: number }
+export interface ParsedRef {
+  bookIndex: number;
+  chapter: number;
+  from?: number;
+  to?: number;
+  /** Set when the chapter or verse asked for doesn't exist in this Bible and the nearest one was used */
+  adjusted?: "chapter" | "verse";
+}
 
 /** "john 3:16-18", "john 3 16", "1 cor 13", "ps 23:1", "jude 3", "Genesis" */
 export function parseReference(bible: BibleData, input: string): ParsedRef | null {
@@ -191,12 +198,14 @@ export function parseReference(bible: BibleData, input: string): ParsedRef | nul
   } else if (!fromStr) {
     toStr = undefined; // "Ps 23-24" opens Psalm 23
   }
-  const chapter = Math.min(Math.max(1, Number(chapterStr ?? 1)), book.chapters.length);
+  const asked = Number(chapterStr ?? 1);
+  const chapter = Math.min(Math.max(1, asked), book.chapters.length);
   const count = book.chapters[chapter - 1]?.length ?? 0;
-  if (!fromStr) return { bookIndex, chapter };
+  const adjusted = chapter !== asked ? { adjusted: "chapter" as const } : {};
+  if (!fromStr) return { bookIndex, chapter, ...adjusted };
   const from = Math.min(Math.max(1, Number(fromStr)), count);
   const to = Math.min(Math.max(from, Number(toStr ?? fromStr)), count);
-  return { bookIndex, chapter, from, to };
+  return { bookIndex, chapter, from, to, ...(chapter !== asked ? adjusted : from !== Number(fromStr) ? { adjusted: "verse" as const } : {}) };
 }
 
 // ---------- keyword search ----------

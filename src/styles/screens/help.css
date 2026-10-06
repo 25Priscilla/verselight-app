@@ -15,7 +15,7 @@
 .help-topic h3 { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); color: var(--text); font-size: var(--text-lg); }
 .help-topic-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--radius-full); background: var(--accent-soft); color: var(--accent); flex: none; }
 .help-topic p { margin: 0; }
-.help-topic ol { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.help-topic ol, .help-topic ul { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
 .help-topic strong { color: var(--text); }
 
 .help-links { list-style: none; margin: 0 calc(-1 * var(--space-2)); padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--space-3); }

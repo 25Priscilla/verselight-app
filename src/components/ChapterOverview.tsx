@@ -160,6 +160,10 @@ export function ChapterOverview({ bible, meta, second, book, chapter, onRead, on
           )}
         </section>
       </div>
+      <p className="ov-note" role="note">
+        This overview shows only what VerseLight has data for: the chapter's section headings and its cross references.
+        It doesn't include written summaries, themes, lists of people or takeaways, because no verified source for them is installed.
+      </p>
     </div>
   );
 }

@@ -141,6 +141,12 @@ function BibleSettings({ notify }: { notify: (m: string) => void }) {
             ))}
           </ul>
         )}
+        {!library.bibles.some((b) => bibleLang(b) === "ml") && (
+          <p className="muted small" role="note">
+            No Malayalam Bible yet. To add the Malayalam Bible 1910 (CC BY-SA 4.0), run <code>npm run fetch-malayalam-bible</code>,
+            then choose <strong>Import a Bible</strong> and pick <code>bibles/mal1910.verselight.json</code>.
+          </p>
+        )}
       </Card>
       <Card title="Cross references" actions={
         <Button size="sm" icon={x ? "refresh" : "plus"} onClick={() => setDialog("xrefs")}>{x ? "Replace" : "Import"}</Button>
