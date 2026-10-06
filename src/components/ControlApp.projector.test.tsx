@@ -324,3 +324,53 @@ describe("the projector window's lifetime", () => {
     expect(hw.opened).toEqual([tv.id]);
   });
 });
+
+describe("Settings → Church logo", () => {
+  const logoBox = () => screen.findByRole("checkbox", { name: "Show the church logo on the projector" }) as Promise<HTMLInputElement>;
+  const savedLibrary = () => localStorage.getItem("verselight:library.json");
+  const savedSettings = () => JSON.parse(localStorage.getItem("verselight:settings.json") ?? "null");
+
+  it("is on by default, with nothing saved yet", async () => {
+    await start();
+    await presentSong();
+    await projectorReportsBack();
+    expect(projector().logo).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect((await logoBox()).checked).toBe(true);
+    expect(savedSettings()).toBeNull();
+  });
+
+  it("turns off and on again, and the projector follows at once", async () => {
+    await start();
+    await presentSong();
+    await projectorReportsBack();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(await logoBox());
+    expect(projector().logo).toBe(false);
+    expect(onScreen()).toBe("Sun is rising");
+    fireEvent.click(await logoBox());
+    expect(projector().logo).toBe(true);
+  });
+
+  it("is saved in its own settings file, never in the library, and stays off after VerseLight is restarted", async () => {
+    await start();
+    // Let the library finish its usual save after opening, then keep an exact copy of it.
+    await waitFor(() => expect(JSON.parse(savedLibrary()!).items).toEqual([song]));
+    await new Promise((r) => setTimeout(r, 600));
+    const before = savedLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(await logoBox());
+    await waitFor(() => expect(savedSettings()).toEqual({ showLogo: false }));
+    await new Promise((r) => setTimeout(r, 600));
+    expect(savedLibrary()).toBe(before);
+
+    cleanup();
+    render(<LibraryProvider><ControlApp /></LibraryProvider>);
+    await screen.findByRole("button", { name: "Songs" });
+    await presentSong();
+    await projectorReportsBack();
+    expect(projector().logo).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect((await logoBox()).checked).toBe(false);
+  });
+});

@@ -74,6 +74,15 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
           <p className="muted">Each verse and chorus is its own slide, in the order the song is sung. The slide on the projector is marked <em>Now</em>. Changes to the words show on the screen straight away.</p>
         </Topic>
 
+        <Topic icon="music" title="A song in two languages">
+          <ul>
+            <li>In the song, press <strong>Add translation</strong>. A second box appears beside the lyrics; choose the language of each box, for example Malayalam and English, Tamil and English, or Malayalam and Tamil.</li>
+            <li>Write the translation under the same section tags as the lyrics (<code>[Verse 1]</code>, <code>[Chorus]</code>). <strong>Use the lyrics' section tags</strong> starts it for you; no words are copied.</li>
+            <li>Under <strong>Show on screen</strong>, choose one language or <strong>Both</strong>. While presenting, the same choice is in the Presentation panel, so you can switch without losing your place.</li>
+          </ul>
+          <p className="muted">It stays one song. With Both, each section shows its lyrics and its translation as two separate blocks; lines are never mixed. Stacked or side by side is set in Backgrounds, under the look's text settings.</p>
+        </Topic>
+
         <Topic icon="next" title="Previous and Next">
           <p>Press <strong>Next</strong> to go forward one slide and <strong>Previous</strong> to go back. The keyboard and most presentation clickers work too.</p>
           <p>To jump to any slide, click it in the slide list on the right.</p>

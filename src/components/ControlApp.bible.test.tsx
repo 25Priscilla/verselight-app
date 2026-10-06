@@ -354,6 +354,6 @@ describe("presenting from the Bible", () => {
     await openBible();
     await search("John 3:16");
     await present();
-    expect(Object.keys(projector()).sort()).toEqual(["blackout", "clear", "slide", "theme"]);
+    expect(Object.keys(projector()).sort()).toEqual(["blackout", "clear", "logo", "slide", "theme"]);
   });
 });

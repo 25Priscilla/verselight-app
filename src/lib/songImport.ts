@@ -4,7 +4,7 @@
  */
 import { newId } from "./id";
 import { detectLanguage, hasMalayalam, searchKey } from "./malayalam";
-import type { LibraryItem, Song, SongLanguage } from "./types";
+import type { LibraryItem, Song, SongDisplay, SongLanguage } from "./types";
 
 export interface SongFileEntry {
   /** Section order as VerseLight labels, e.g. ["Verse 1", "Chorus", "Verse 2", "Chorus"] */
@@ -16,6 +16,10 @@ export interface SongFileEntry {
   copyright?: string;
   ccli?: string;
   lyrics: string;
+  /** Translation in a second language, with the same section tags as `lyrics` */
+  translation?: string;
+  translationLanguage?: SongLanguage;
+  display?: SongDisplay;
   sourceUrl?: string;
 }
 
@@ -81,6 +85,13 @@ export function toSong(entry: SongFileEntry): Song {
     copyright: (entry.copyright ?? "").trim(),
     ccli: (entry.ccli ?? "").trim(),
     lyrics: entry.lyrics,
+    ...(typeof entry.translation === "string" && entry.translation.trim()
+      ? {
+          translation: entry.translation,
+          translationLanguage: entry.translationLanguage ?? detectLanguage({ title: "", lyrics: entry.translation }),
+          ...(entry.display === "primary" || entry.display === "translation" || entry.display === "both" ? { display: entry.display } : {}),
+        }
+      : {}),
     linesPerSlide: 0,
     arrangement: entry.arrangement ?? [],
     hidden: [],

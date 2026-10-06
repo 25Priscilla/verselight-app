@@ -204,10 +204,39 @@ async fn save_file(app: AppHandle, default_name: String, contents: String) -> Re
     }
 }
 
+/// The control window opens at 1440×900 logical pixels. On a laptop with display scaling (1920×1080 at 150% is
+/// only 1280×720) that is bigger than the screen: Windows trims it to the screen's size, but it is not maximized,
+/// so its bottom edge (where Present Now is) sits behind the taskbar. So the window is made to fit the work area
+/// (the screen above the taskbar) and then maximized. Fitting it first matters: restoring a maximized window goes
+/// back to this size, and an oversized one would slip behind the taskbar again.
+fn fit_to_screen(window: &WebviewWindow) -> tauri::Result<()> {
+    let Some(monitor) = window.current_monitor()? else { return Ok(()) };
+    let work = monitor.work_area();
+    let outer = window.outer_size()?;
+    if outer.width <= work.size.width && outer.height <= work.size.height {
+        return Ok(());
+    }
+    // set_size sets the inside of the window, so leave room for the title bar and borders.
+    let inner = window.inner_size()?;
+    let frame_w = outer.width.saturating_sub(inner.width);
+    let frame_h = outer.height.saturating_sub(inner.height);
+    let width = (work.size.width * 9 / 10).min(outer.width).saturating_sub(frame_w);
+    let height = (work.size.height * 9 / 10).min(outer.height).saturating_sub(frame_h);
+    window.set_size(PhysicalSize::new(width, height))?;
+    window.center()?;
+    window.maximize()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            if let Some(main) = app.get_webview_window("main") {
+                fit_to_screen(&main)?;
+            }
+            Ok(())
+        })
         .on_window_event(|window, event| {
             if let WindowEvent::Destroyed = event {
                 let app = window.app_handle();

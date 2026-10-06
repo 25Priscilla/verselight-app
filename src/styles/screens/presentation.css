@@ -91,3 +91,9 @@
   .up-next, .session-actions { margin-top: 10px; }
   .slides-head { margin-top: 12px; padding-top: 10px; }
 }
+
+/* A song with a translation: which language is on screen */
+.present-lang { display: flex; align-items: center; gap: 8px; }
+.present-lang-label { font-size: var(--text-xs); font-weight: var(--weight-bold); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; flex: none; }
+.present-lang .seg { flex: 1; min-width: 0; }
+.present-lang .seg button { padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

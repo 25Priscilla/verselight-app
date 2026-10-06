@@ -16,8 +16,8 @@
         "title": "VerseLight",
         "width": 1440,
         "height": 900,
-        "minWidth": 1180,
-        "minHeight": 680,
+        "minWidth": 900,
+        "minHeight": 560,
         "center": true,
         "dragDropEnabled": false
       }

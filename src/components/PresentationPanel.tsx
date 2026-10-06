@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { LookSource } from "../lib/looks";
-import type { Look, Slide, Theme } from "../lib/types";
+import type { Look, Slide, SongDisplay, Theme } from "../lib/types";
 import { Icon } from "./Icon";
 import { LookPicker } from "./LookPicker";
 import { SlideRenderer } from "./SlideRenderer";
-import { cx } from "./ui";
+import { Segmented, cx, type SegmentedOption } from "./ui";
 
 export type ProjectorStatus = "off" | "opening" | "live";
 
@@ -35,6 +35,8 @@ interface Props {
   looks: Look[];
   slideLook: (slideKey: string) => string | null;
   onSlideLook: (slideKey: string, lookId: string | null) => void;
+  /** A song with a translation: which words are on screen, and the choices (its languages, or both) */
+  songDisplay?: { value: SongDisplay; options: SegmentedOption<SongDisplay>[]; onChange: (display: SongDisplay) => void } | null;
 }
 
 /**
@@ -111,6 +113,13 @@ export function PresentationPanel(p: Props) {
               {p.blackout ? <Icon name="eye" size={16} /> : <Icon name="square" size={13} />}{p.blackout ? "Show" : "Black"}
             </button>
           </div>
+
+          {p.songDisplay && (
+            <div className="present-lang">
+              <span className="present-lang-label">Show</span>
+              <Segmented label="Show on screen" full value={p.songDisplay.value} onChange={p.songDisplay.onChange} options={p.songDisplay.options} />
+            </div>
+          )}
 
           <div className="up-next" aria-label="Next slide">
             <div className="up-next-frame">

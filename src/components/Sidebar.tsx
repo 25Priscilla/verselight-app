@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 import type { ProjectorStatus } from "./PresentationPanel";
 import { cx } from "./ui";
@@ -11,12 +12,14 @@ interface Props {
   onProjector: () => void;
   projector: ProjectorStatus;
   displayName: string;
+  /** Global Quick Search, under the name so it is there on every screen */
+  search?: ReactNode;
 }
 
 const PROJECTOR_TEXT: Record<ProjectorStatus, string> = { off: "Off", opening: "Connecting…", live: "Live" };
 
 /** The main navigation. Shrinks to icons (names as tooltips) while presenting and on narrow windows; see .nav-compact. */
-export function Sidebar({ mode, onMode, onProjector, projector, displayName }: Props) {
+export function Sidebar({ mode, onMode, onProjector, projector, displayName, search }: Props) {
   const item = (m: Mode, icon: IconName, label: string, sub = false) => (
     <li>
       <button className={cx("nav-item", sub && "sub", mode === m && "on")} onClick={() => onMode(m)}
@@ -33,6 +36,7 @@ export function Sidebar({ mode, onMode, onProjector, projector, displayName }: P
         <span className="brand-mark" aria-hidden><span /></span>
         <span className="brand-name">VerseLight</span>
       </div>
+      {search}
       <ul className="nav">
         {item("home", "home", "Home")}
         {item("bible", "book", "Bible")}

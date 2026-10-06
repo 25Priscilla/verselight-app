@@ -1,4 +1,6 @@
-import type { Song } from "./types";
+import { languageName } from "./languages";
+import { songLanguage } from "./malayalam";
+import type { Song, SongDisplay } from "./types";
 
 export interface LyricSection {
   label: string;
@@ -87,4 +89,46 @@ export function nextLabel(lyrics: string, base: string): string {
   let n = 1;
   while (sections.has(`${base} ${n}`) || (n === 1 && sections.has(base))) n++;
   return `${base} ${n}`;
+}
+
+// ---------- translations ----------
+
+export const hasTranslation = (song: Song) => !!song.translation?.trim();
+
+/** What the song shows on screen. A song without a translation always shows its lyrics. */
+export const songDisplay = (song: Song): SongDisplay => (hasTranslation(song) ? song.display ?? "both" : "primary");
+
+/**
+ * How the translation lines up with the lyrics, section by section (by tag name): sections of the lyrics with no
+ * translation yet, translated sections with no matching section in the lyrics, translated sections written twice,
+ * and sections that split into a different number of slides in each language (so their slides can't pair up evenly).
+ */
+export function translationPairing(song: Song): { missing: string[]; extra: string[]; duplicates: string[]; uneven: string[] } {
+  if (!hasTranslation(song)) return { missing: [], extra: [], duplicates: [], uneven: [] };
+  const lyrics = parseLyrics(song.lyrics).sections;
+  const { sections, duplicates } = parseLyrics(song.translation ?? "");
+  const slides = (lines: string[]) => chunkSection(lines, song.linesPerSlide).length;
+  return {
+    missing: [...lyrics.keys()].filter((l) => !sections.has(l)),
+    extra: [...sections.keys()].filter((l) => !lyrics.has(l)),
+    duplicates,
+    uneven: [...lyrics.keys()].filter((l) => sections.has(l) && slides(lyrics.get(l)!.lines) !== slides(sections.get(l)!.lines)),
+  };
+}
+
+/** The choices for what a song with a translation shows on screen, named by language ("Malayalam", "English", "Both"). */
+export function displayChoices(song: Song): { value: SongDisplay; label: string; title: string }[] {
+  const first = languageName(songLanguage(song));
+  const second = languageName(song.translationLanguage ?? "und");
+  const [a, b] = first === second ? ["Lyrics", "Translation"] : [first, second];
+  return [
+    { value: "primary", label: a, title: `Show only the ${first === second ? "lyrics" : `${first} lyrics`}` },
+    { value: "translation", label: b, title: `Show only the ${first === second ? "translation" : `${second} translation`}` },
+    { value: "both", label: "Both", title: `Show each section with its translation` },
+  ];
+}
+
+/** The lyrics' section tags with room under each, to start a translation in the same sections. No words are copied. */
+export function sectionTags(lyrics: string): string {
+  return [...parseLyrics(lyrics).sections.keys()].map((l) => `[${l}]\n`).join("\n");
 }

@@ -6,6 +6,12 @@ A desktop app for projecting Bible verses and song lyrics in church services. Bu
 
 VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (with **Bible Study** under it), **Songs** and **Backgrounds**, and at the bottom the **Projector** status, **Settings** and **Help**. The selected screen fills the rest of the window. While something is being presented, the **Presentation** panel appears on the right and the sidebar shrinks to icons (their names show as tooltips) to leave room. Windows narrower than 1100 px always use the icon sidebar.
 
+**Global Quick Search** (the *Search Bible, songs...* box at the top of the sidebar, on every screen; **Ctrl + K** jumps to it)
+- Type a reference (`John 3:16`, `Psalm 23`), Bible words (`faith`, `കൃപ`) or a song's title, lyrics or translation, in any language VerseLight supports. Results are grouped under **Bible** and **Songs**; lyric matches show the line they were found in.
+- Click a result, or use ↑ ↓ and Enter. A verse opens on the Bible screen, selected and ready for **Present Now** (a chapter reference selects the whole chapter); a song opens on the Songs screen with its own language setting. **Esc** closes the results and returns focus to the screen you were on, without stopping the presentation.
+- It uses the same reference parsing, Bible word index and song matching as the Bible and Songs screens, whose own search boxes work as before. Bible words match the start of a word (`love` finds *loved*, not *glove*); the translation being read comes first, then verses only another translation matches. **See all … verses in Bible Study** lists every match.
+- While typing in the box the presentation keys are ignored, as in any text box; they work again once it is closed.
+
 **Home**
 - Quick actions: **Find a Bible verse** and **Find a song** open that screen with the search box ready; **Change the background** opens Backgrounds; **Add or manage Bibles and songs** opens Settings → Bibles.
 - Recently used songs and the verses saved in Bible Study; click one to open it.
@@ -32,6 +38,7 @@ VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (w
 - Write lyrics with section tags on their own line: `[Verse 1]`, `[Chorus]`, `[Bridge]`. The + buttons insert the next tag for you.
   - A blank line starts a new slide. In Auto mode, long sections are split into slides of four lines or fewer; you can also fix 1–4 lines per slide.
   - A tag with nothing under it repeats that section, so a chorus is written once.
+- **Add translation** keeps the same song in a second language (see [Songs in two languages](#songs-in-two-languages)).
 - Slides are created automatically. Drag sections (or use the arrows) to reorder them, click a slide to leave it out (it shows *Left out*, and leaving out a chorus slide leaves it out every time it is sung), and add sections to the order again. The slide count shows how many will be presented, e.g. *5 of 7*. The last section can't be removed from the order.
 - Notes point out anything that would keep words off the screen: a section left out of a custom order, or a section name written out twice (only the first one's words are used). A note also says when another song has the same title and writer.
 - **▶ Present Now** shows the song on the projector; the ▶ on a slide starts from that slide. While the song is presented, the slide on the projector is outlined and marked *Now*. Edits made while presenting update the screen straight away, and moving sections keeps the projector on the same words.
@@ -90,7 +97,7 @@ The builds are unsigned, so Windows SmartScreen and macOS Gatekeeper will warn o
 npm test
 ```
 
-Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, black screen, song order), the presentation keys, the presentation panel's controls and background menu, song lyrics, slides, search and import (including Malayalam), the Songs screen, and presenting a song from the Songs screen through to what the projector is sent. The projector tests simulate the screens (choosing one, one window only, Stop and Start, no second screen, a missing or unplugged screen) and the projector window itself; they can't prove a physical projector works, so test with the real projector before a service.
+Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, black screen, song order), the presentation keys, the presentation panel's controls and background menu, song lyrics, slides, search and import (including Malayalam), the Songs screen, songs with a translation (editing, saving, loading, and presenting each language or both), and presenting a song from the Songs screen through to what the projector is sent. The projector tests simulate the screens (choosing one, one window only, Stop and Start, no second screen, a missing or unplugged screen) and the projector window itself; they can't prove a physical projector works, so test with the real projector before a service.
 
 The Bible tests cover reference and keyword search, saved verses and passages, Chapter Overview data, Word Study counts, and the Bible screen end to end: book, chapter and verse navigation, selecting passages, cross references, Overview, Word Study, English and Malayalam, and presenting (one verse, a passage, Previous/Next across a chapter boundary, Black/Show, Stop/Start/Close and the keys). They use made-up placeholder Bibles, never real Bible text.
 
@@ -105,6 +112,8 @@ npm run fetch-kjv
 ```
 
 Then import that file in the app under **Bibles → Import Bible file**. That dataset contains 31,100 verses; VerseLight imports exactly what the source provides. In the UK the KJV is under Crown patent, so check local rules there.
+
+**KJV files with curly braces.** Some copies of this dataset, including older downloads, mark the printed KJV's typography with braces: `{is}` for words the translators supplied (printed in italics), and `{word: Heb. …}` or `{word: or, …}` after the verse for the translators' margin notes. VerseLight shows such a file as the verse reads in print: supplied words are kept without their braces, and margin notes are left out ("Blessed is the man…", not "Blessed {is} the man…"). Psalm titles in square brackets and the epistles' closing notes are kept. This applies to English Bibles only; the file you imported is stored unchanged, and Malayalam Bibles are never altered.
 
 **NIV and other copyrighted translations.** Biblica licenses the NIV for online display only. Storing the full text offline needs written permission from Biblica, and quoting without permission is limited to 500 verses. Until you have a license, use **Enter verses manually** to paste individual passages from a licensed source, within Biblica's quotation limits, with the copyright notice filled in.
 
@@ -222,7 +231,7 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 
 **Bible: verse by verse.** Present Now starts a presentation of the whole chapter, one verse per slide, beginning at the first verse you selected. Next and Previous always move exactly one verse. They go past the end of your selection, and from the last verse of a chapter Next continues into the next chapter (Previous from verse 1 goes into the previous chapter). So if only John 3:16 was selected, Next still shows John 3:17, 3:18 and so on.
 
-**Songs: section by section.** Each section slide (Verse 1, Chorus, Verse 2, Chorus, …) is one slide, in the song's play order. Slides that were left out are skipped.
+**Songs: section by section.** Each section slide (Verse 1, Chorus, Verse 2, Chorus, …) is one slide, in the song's play order. Slides that were left out are skipped. For a song with a translation, the Presentation panel has a **Show** switch (for example **Malayalam / English / Both**) that changes the language on screen without losing your place.
 
 **Keyboard** (works wherever focus is, except while typing in a field; press Esc to leave a field first):
 
@@ -232,6 +241,7 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 | ← (also ↑, Page Up) | Previous |
 | B | Black screen on/off |
 | Esc | Stop presentation (an open menu closes first) |
+| Ctrl + K | Global Quick Search (doesn't affect the presentation) |
 
 **Stopping and starting again.** **Stop presentation** (or Esc) closes the projector but keeps your place. **Start presenting** reopens it on the same slide. **Close**, next to Stop presentation, clears the presentation.
 
@@ -287,13 +297,13 @@ This downloads the catalog from [ChurchApps/WorshipCommonsContent](https://githu
 
 VerseLight supports Malayalam songs in Unicode alongside English ones.
 
-- **Library:** filter the song list by **All / English / മലയാളം**, and switch between **All songs**, **Favorites** (tap the star on any song) and **Recent** (songs you presented or added to a presentation).
+- **Library:** filter the song list by **All / English / മലയാളം** (other languages, such as தமிழ் or ಕನ್ನಡ, appear once a song uses them; a song with a translation is listed under both its languages), and switch between **All songs**, **Favorites** (tap the star on any song) and **Recent** (songs you presented or added to a presentation).
 - **Titles:** each song has its title in its own script, plus an optional **English or transliterated title** (e.g. a Manglish spelling). The transliterated title is shown under the Malayalam title and can be searched.
 - **Search:** matches the title, transliterated title, writer and lyrics. It ignores differences in how Malayalam was typed: old-style chillu (consonant + virama + ZWJ) and new atomic chillu letters match each other, and invisible joiners are ignored. Stored and projected text is never changed.
-- **Language:** detected automatically from the text, and can be set with the **EN / മല** switch in the song editor.
+- **Language:** detected automatically from the text (Malayalam, Tamil, Kannada, Telugu, Hindi and other Indian scripts), and can be set with the **Language** list above the lyrics.
 - **Sections:** Verse, Chorus, Bridge, Pre-Chorus, Tag and Ending buttons insert tags; any other tag name, including Malayalam names, works too.
 - **Slides:** every slide shows as a preview. Click a slide to leave it out, reorder sections, or use the ▶ on a slide to present from that slide.
-- **Fonts:** Noto Sans Malayalam and Noto Serif Malayalam (SIL Open Font License) are bundled and used automatically for Malayalam text in every font, so lyrics render correctly offline, including conjuncts. Malayalam slides get extra line height.
+- **Fonts:** Noto Sans and Noto Serif for Malayalam, Tamil and Kannada (SIL Open Font License) are bundled and used automatically for those scripts in every font, so lyrics render correctly offline, including conjuncts. Slides in these languages get extra line height. Other scripts use the fonts installed with Windows.
 
 ### Getting Malayalam songs into VerseLight
 
@@ -310,7 +320,19 @@ To add songs your church is licensed to use:
 - **Type or paste** them: Songs → **New Malayalam song** (choose മലയാളം first).
 - **Import files:** **Import** on the Songs screen (or **Settings → Songs → Import songs**), then pick one or more files:
   - **OpenLyrics** (`.xml`), the open format exported by OpenLP and other worship software. Section names, verse order, authors and copyright are read, and chord marks are removed. If a file holds each verse in both Malayalam and a transliteration, the Malayalam verses are kept and the transliterated title is used for search.
-  - **VerseLight song files** (`.json`); entries may include `language: "ml"` and `altTitle`.
+  - **VerseLight song files** (`.json`); entries may include `language: "ml"`, `altTitle`, and a translation (`translation`, `translationLanguage`, `display`; see below).
+
+## Songs in two languages
+
+One song can hold its lyrics in one language and a complete translation in another: Malayalam + English, Tamil + English, Kannada + English, Malayalam + Tamil, or any other pair. Both belong to the same song; nothing is duplicated.
+
+- **Add translation** in the song editor opens a second box beside the lyrics (below them in a narrow window). Choose the language of each box from its list. Remove the translation with the × on its box; the lyrics stay.
+- **Sections pair by name.** Write the translation under the same tags as the lyrics: `[Verse 1]` in the translation is the translation of `[Verse 1]` in the lyrics. **Use the lyrics' section tags** fills an empty translation with the tags only. A section added with the + buttons while typing the lyrics also gets its tag in the translation.
+- **The lyrics lead.** Play order, left-out slides and lines per slide come from the lyrics. Line breaks are kept exactly as typed in both boxes.
+- **Show on screen:** the language of the lyrics, the language of the translation, or **Both**. The choice is saved with the song and can be changed while presenting. With **Both**, each slide shows a section's lyrics and that section's translation as two separate blocks (stacked, or side by side if the look's **Two languages** setting says so); lines are never mixed.
+- **Notes in the editor** point out sections not translated yet (they show the lyrics instead), translation sections whose name isn't in the lyrics, and sections that split into a different number of slides in each language. Put blank lines in the same places in both so slides pair up.
+- **Search** matches words in either language.
+- Song files can carry a translation: `{ "title": "…", "lyrics": "[Verse 1]\n…", "translation": "[Verse 1]\n…", "translationLanguage": "en", "display": "both" }`. VerseLight never writes or generates translations.
 
 ## Song lyrics
 

@@ -4,6 +4,7 @@
  * consonant + virama + ZWJ, newer ones use the atomic chillu code points (U+0D7A–U+0D7F),
  * and invisible joiners appear inconsistently. Searching must treat all of these the same.
  */
+import { detectScript } from "./languages";
 import type { Song, SongLanguage } from "./types";
 
 const MALAYALAM = /[\u0D00-\u0D7F]/;
@@ -33,17 +34,28 @@ export function searchKey(text: string): string {
     .trim();
 }
 
+/** The lyrics' language, from the script most of the title and lyrics are written in (see detectScript). */
 export function detectLanguage(song: Pick<Song, "title" | "lyrics">): SongLanguage {
-  return hasMalayalam(song.title) || hasMalayalam(song.lyrics) ? "ml" : "en";
+  return detectScript(`${song.title}\n${song.lyrics}`);
 }
 
 export const songLanguage = (song: Song): SongLanguage => song.language ?? detectLanguage(song);
 
-/** Every word of the query must appear in the title, English title, artist or lyrics (not the [Verse 1] style tags). */
+/** The song's languages: the lyrics' language, then the translation's when it has one. */
+export function songLanguages(song: Song): SongLanguage[] {
+  const first = songLanguage(song);
+  const second = song.translation?.trim() && song.translationLanguage;
+  return second && second !== first ? [first, second] : [first];
+}
+
+/**
+ * Every word of the query must appear in the title, English title, artist, lyrics or translation
+ * (not the [Verse 1] style tags).
+ */
 export function songMatches(song: Song, query: string): boolean {
   const words = searchKey(query).split(" ").filter(Boolean);
   if (words.length === 0) return true;
-  const sung = song.lyrics.replace(/^\s*\[[^\]]+\]\s*$/gm, "");
+  const sung = `${song.lyrics}\n${song.translation ?? ""}`.replace(/^\s*\[[^\]]+\]\s*$/gm, "");
   const hay = searchKey([song.title, song.altTitle ?? "", song.artist, sung].join(" "));
   return words.every((w) => hay.includes(w));
 }

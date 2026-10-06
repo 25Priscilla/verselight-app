@@ -12,7 +12,7 @@ import { Page } from "./Page";
 import type { ProjectorStatus } from "./PresentationPanel";
 import { ShortcutTable } from "./ShortcutTable";
 import { SongImportDialog } from "./SongImportDialog";
-import { Button, Card, cx, IconButton, StatusChip } from "./ui";
+import { Button, Card, Checkbox, cx, IconButton, StatusChip } from "./ui";
 
 export type SettingsSection = "projector" | "bibles" | "songs" | "backup" | "keyboard" | "about";
 
@@ -39,6 +39,9 @@ interface Props {
   /** Choose a screen by id; null is automatic */
   onDisplay: (id: string | null) => void;
   onRefreshDisplays: () => void;
+  /** Church logo in the projector's bottom-right corner */
+  showLogo: boolean;
+  onShowLogo: (on: boolean) => void;
   onBackup: () => void;
   /** Checks the file, then asks before replacing the library */
   onRestore: (file: File) => void;
@@ -102,6 +105,7 @@ function ProjectorSettings(p: Props) {
             screen (F11). The VerseLight desktop app finds the projector screen and opens the slides on it for you.
           </p>
         </Card>
+        <LogoCard {...p} />
       </Section>
     );
   }
@@ -154,7 +158,17 @@ function ProjectorSettings(p: Props) {
           </div>
         ) : null}
       </Card>
+      <LogoCard {...p} />
     </Section>
+  );
+}
+
+function LogoCard({ showLogo, onShowLogo }: Pick<Props, "showLogo" | "onShowLogo">) {
+  return (
+    <Card title="Church logo">
+      <Checkbox label="Show the church logo on the projector" checked={showLogo} onChange={(e) => onShowLogo(e.target.checked)} />
+      <p className="muted small">Shown small in the bottom-right corner on every Bible and song slide. It hides with Black.</p>
+    </Card>
   );
 }
 

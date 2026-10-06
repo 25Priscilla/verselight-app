@@ -45,7 +45,7 @@ export function PresentationView() {
 
   return (
     <div className="projector">
-      <SlideRenderer slide={state.slide} theme={state.theme} blackout={state.blackout} clear={state.clear} />
+      <SlideRenderer slide={state.slide} theme={state.theme} blackout={state.blackout} clear={state.clear} logo={state.logo} />
     </div>
   );
 }

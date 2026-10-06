@@ -6,11 +6,16 @@ import { chooseDisplay, displayConnected, displayLabel, sameDisplays } from "../
 import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
 import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
+import type { BibleResult } from "../lib/globalSearch";
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings } from "../lib/settings";
 import { saveFileAs } from "../lib/storage";
-import type { Library, LiveState, Slide, Song } from "../lib/types";
+import { displayChoices, hasTranslation, songDisplay } from "../lib/lyrics";
+import { songLanguage } from "../lib/malayalam";
+import type { Library, LiveState, Slide, Song, SongDisplay } from "../lib/types";
 import { useLibrary } from "../state/library";
 import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
 import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
+import { GlobalSearch } from "./GlobalSearch";
 import { HelpScreen } from "./HelpScreen";
 import { HomeScreen } from "./HomeScreen";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
@@ -64,6 +69,11 @@ export function ControlApp() {
   const [songSearch, setSongSearch] = useState(0);
   const [openSong, setOpenSong] = useState<{ id: string; nonce: number } | null>(null);
   const openSettings = (section: SettingsSection) => { setSettingsSection(section); setMode("settings"); };
+  // Global Quick Search opens results through the same requests as Home and Word Study.
+  const openSongById = useCallback((id: string) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }, []);
+  const openSearchVerse = useCallback((r: BibleResult) =>
+    openInBible({ bibleId: r.bibleId, book: r.book, chapter: r.chapter, verse: r.verse, to: r.to }), [openInBible]);
+  const studyWord = useCallback((word: string) => openStudy({ word }), [openStudy]);
 
   // ---- the presentation session: the single source of truth for what is shown ----
   const [state, dispatch] = useReducer(sessionReducer, initialSession);
@@ -95,9 +105,19 @@ export function ControlApp() {
   /** The screen the projector window is on, so unplugging it can be noticed */
   const liveDisplay = useRef<DisplayInfo | null>(null);
 
+  // App settings (the church logo), saved in their own file so the library is never rewritten for them.
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  useEffect(() => { loadSettings().then(setSettings); }, []);
+  const changeSettings = (patch: Partial<Settings>) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    saveSettings(next).catch((e) => setNotice(`The setting wasn't saved: ${e}`));
+  };
+
   const liveState: LiveState = useMemo(
-    () => ({ slide: liveSlide, theme: lookForSlide(library, liveSlide).theme, blackout: state.blackout, clear: state.clear }),
-    [liveSlide, library, state.blackout, state.clear],
+    () => ({ slide: liveSlide, theme: lookForSlide(library, liveSlide).theme, blackout: state.blackout, clear: state.clear,
+      logo: settings.showLogo }),
+    [liveSlide, library, state.blackout, state.clear, settings.showLogo],
   );
   // The projector draws exactly what the laptop preview draws: the same slide, look and black state.
   const stateRef = useRef(liveState);
@@ -284,8 +304,9 @@ export function ControlApp() {
       const action = liveKeyAction(e, {
         typing: isTyping(e.target),
         modal: !!document.querySelector(".modal"),
-        // An open menu (such as a slide's background menu) handles its own keys: Esc closes it and nothing else.
-        menu: !!document.querySelector(".look-picker, .menu, .popover"),
+        // An open menu (such as a slide's background menu, or the Global Quick Search results) handles its own keys:
+        // Esc closes it and nothing else.
+        menu: !!document.querySelector(".look-picker, .menu, .popover, .gsearch-panel"),
         session: !!state.session,
         projectorOn: projector !== "off",
       });
@@ -313,6 +334,18 @@ export function ControlApp() {
     return new Set(Array.from({ length: sp.to - sp.from + 1 }, (_, i) => verseKey(sp.book, sp.chapter, sp.from + i)));
   }, [state.session]);
   const neighbours = useMemo(() => chapterNeighbours(state.session), [state.session]);
+
+  // A song with a translation can switch languages while it is on screen; the choice is saved with the song.
+  const liveSong = state.session?.kind === "song" ? songs.get(state.session.songId) : undefined;
+  const liveSongDisplay = liveSong && hasTranslation(liveSong) ? {
+    value: songDisplay(liveSong),
+    options: displayChoices(liveSong).map((c) => ({
+      ...c, lang: c.value === "primary" ? songLanguage(liveSong) : c.value === "translation" ? liveSong.translationLanguage : undefined,
+    })),
+    onChange: (display: SongDisplay) => update((lib) => ({
+      ...lib, items: lib.items.map((i) => (i.id === liveSong.id && i.kind === "song" ? { ...i, display, updatedAt: Date.now() } : i)),
+    })),
+  } : null;
 
   // The presentation panel only appears while something is loaded or the projector is on; the rest of the
   // time the workspace gets the full width. While it shows, the sidebar shrinks to icons to make room.
@@ -359,7 +392,9 @@ export function ControlApp() {
 
   return (
     <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
-      <Sidebar mode={mode} onMode={setMode} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName} />
+      <Sidebar mode={mode} onMode={setMode} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName}
+        search={<GlobalSearch compact={presenting || narrow} readingBibleId={readingBibleId}
+          onOpenVerse={openSearchVerse} onOpenSong={openSongById} onStudyWord={studyWord} />} />
 
 
       <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
@@ -378,7 +413,7 @@ export function ControlApp() {
           onFindSong={() => { setMode("songs"); setSongSearch(Date.now()); }}
           onBackgrounds={() => setMode("backgrounds")}
           onManage={() => openSettings("bibles")}
-          onOpenSong={(id) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }}
+          onOpenSong={openSongById}
           onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse, to: b.to })} />
       )}
       {mode === "settings" && (
@@ -387,6 +422,7 @@ export function ControlApp() {
           displayChoice={choice} projectorProblem={projectorProblem}
           onDisplay={(id) => { setProjectorProblem(null); update((lib) => ({ ...lib, displayId: id, displayIndex: null })); }}
           onRefreshDisplays={refreshDisplays}
+          showLogo={settings.showLogo} onShowLogo={(on) => changeSettings({ showLogo: on })}
           onBackup={backup} onRestore={restore} notify={setNotice} />
       )}
       {pendingRestore && (
@@ -420,6 +456,7 @@ export function ControlApp() {
         looks={library.looks}
         slideLook={(key) => library.assign.slides[key] ?? null}
         onSlideLook={(key, lookId) => assignLook("slides", key, lookId)}
+        songDisplay={liveSongDisplay}
       />}
 
       {(notice || saveError) && (

@@ -18,8 +18,10 @@
 .projector { height: 100vh; width: 100vw; background: #000; cursor: none; overflow: hidden; }
 .projector .slide { aspect-ratio: auto; height: 100vh; }
 html.projector-window, html.projector-window body { overflow: hidden; background: #000; user-select: none; -webkit-user-select: none; }
-.slide[lang="ml"] .slide-body { line-height: 1.5; }
-.slide[lang="ml"] .slide-lines > div { text-wrap: pretty; }
+/* Malayalam, Tamil and Kannada need taller lines for their vowel signs */
+.slide:is([lang="ml"], [lang="ta"], [lang="kn"]) .slide-body { line-height: 1.5; }
+.slide-lines:is(:lang(ml), :lang(ta), :lang(kn)) { line-height: 1.5; }
+.slide-lines:is(:lang(ml), :lang(ta), :lang(kn)) > div { text-wrap: pretty; }
 
 /* ---------- Bilingual scripture on screen ---------- */
 .bilingual { display: flex; width: 100%; }
@@ -32,3 +34,18 @@ html.projector-window, html.projector-window body { overflow: hidden; background
 .bilingual.cols .bilingual-rule { width: max(1px, 0.15cqw); align-self: stretch; }
 .slide[data-align="left"] .bilingual.stack .bilingual-rule { align-self: flex-start; }
 .slide-scripture:lang(ml) { line-height: 1.55; }
+
+/* ---------- A song section with its translation ---------- */
+/* Each language is a whole block; side by side keeps the look's alignment rather than forcing left. */
+.bilingual.song-pair.cols { text-align: inherit; }
+.bilingual.song-pair.cols > .slide-lines { flex: 1 1 0; min-width: 0; }
+.bilingual.song-pair.stack { gap: 0.5em; }
+
+/* ---------- Church logo (projector only) ---------- */
+/* Small in the bottom-right corner, at its own aspect ratio. Text keeps clear of it: the reference stays centred
+   between equal side margins wider than the logo, and with no reference the words stop above the logo. */
+.slide { --logo-h: 8cqh; --logo-w: calc(var(--logo-h) * 1928 / 816); --logo-x: 2.5cqw; --logo-y: 2.5cqh; }
+.slide-logo { position: absolute; right: var(--logo-x); bottom: var(--logo-y); height: var(--logo-h); width: auto; max-width: 20cqw; object-fit: contain; pointer-events: none; }
+.slide.has-logo .slide-footer { padding-inline: calc(var(--logo-w) + var(--logo-x) + 1.5cqw); }
+.slide.has-logo[data-align="left"] .slide-footer { padding-left: 7cqw; }
+.slide.has-logo:not([data-footer]) .slide-body { padding-bottom: calc(var(--logo-h) + var(--logo-y) + 1cqh); }

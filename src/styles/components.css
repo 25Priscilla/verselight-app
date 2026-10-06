@@ -125,6 +125,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-full); padding: 7px 8px 7px 16px; box-shadow: var(--shadow-toast); font-size: 13px;
 }
 .toast.error { border-color: rgba(255, 93, 108, 0.5); }
+/* In the app, notices sit over the navigation and library columns, never over the working area's actions (Present Now) */
+.app > .toast { left: 12px; bottom: 12px; transform: none; max-width: calc(var(--sidebar-w) + var(--context-w) - 24px); border-radius: var(--radius); align-items: flex-start; line-height: 1.45; }
 
 /* ---------- menus and popovers ---------- */
 .menu { z-index: 30; min-width: 200px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; box-shadow: var(--shadow-menu); }

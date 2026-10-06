@@ -266,7 +266,7 @@ export function BackgroundsWorkspace({ active, liveSample }: Props) {
                 </select>
               </Field>
             </div>
-            <Field label="Bilingual scripture" hint="How English and Malayalam show together on screen.">
+            <Field label="Two languages" hint="How bilingual scripture, and songs with a translation, show together on screen.">
               <div className="seg full" role="radiogroup" aria-label="Bilingual layout">
                 <button role="radio" aria-checked={theme.bilingualLayout !== "columns"} className={theme.bilingualLayout !== "columns" ? "on" : ""} onClick={() => setTheme({ bilingualLayout: "stacked" })}>Stacked</button>
                 <button role="radio" aria-checked={theme.bilingualLayout === "columns"} className={theme.bilingualLayout === "columns" ? "on" : ""} onClick={() => setTheme({ bilingualLayout: "columns" })}>Side by side</button>

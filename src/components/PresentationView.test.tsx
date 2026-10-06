@@ -58,3 +58,87 @@ describe("PresentationView (the projector window)", () => {
     expect(bus.sent.filter((m) => m.event === "nav").map((m) => m.payload)).toEqual(["next", "blackout", "exit"]);
   });
 });
+
+describe("a song slide with its translation", () => {
+  const song: Slide = { key: "b1/Verse 1/0#0", itemId: "b1", kind: "song", label: "Verse 1", footer: "",
+    lines: ["വരി ഒന്ന്", "വരി രണ്ട്"], lang: "ml", parallelLines: ["Line one", "Line two"], parallelLang: "en" };
+
+  it("shows each language as a whole block, marked with its language, never mixed line by line", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: song });
+    const blocks = [...container.querySelectorAll(".song-pair > .slide-lines")];
+    expect(blocks.map((b) => [b.getAttribute("lang"), [...b.children].map((l) => l.textContent)])).toEqual([
+      ["ml", ["വരി ഒന്ന്", "വരി രണ്ട്"]],
+      ["en", ["Line one", "Line two"]],
+    ]);
+    expect(container.querySelector(".song-pair.stack .bilingual-rule")).toBeTruthy();
+  });
+
+  it("puts them side by side when the look says so", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: song, theme: { ...live.theme, bilingualLayout: "columns" } });
+    expect(container.querySelector(".song-pair.cols")).toBeTruthy();
+  });
+
+  it("shows a song slide in one language exactly as before", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: { ...song, parallelLines: undefined, parallelLang: undefined } });
+    expect(container.querySelector(".song-pair")).toBeNull();
+    expect([...container.querySelectorAll(".slide-lines > div")].map((l) => l.textContent)).toEqual(["വരി ഒന്ന്", "വരി രണ്ട്"]);
+  });
+});
+
+describe("the church logo", () => {
+  const logo = (c: HTMLElement) => c.querySelector<HTMLImageElement>(".projector > .slide > img.slide-logo");
+  const song: Slide = { key: "b1/Verse 1/0#0", itemId: "b1", kind: "song", label: "Verse 1", footer: "",
+    lines: ["വരി ഒന്ന്"], lang: "ml", parallelLines: ["Line one"], parallelLang: "en" };
+
+  it("shows the bundled logo in the corner of the slide when it is on", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, logo: true });
+    expect(logo(container)!.getAttribute("src")).toMatch(/church-logo.*\.webp/);
+    // Decorative: screen readers and the audience's view are not interrupted, and it can't be dragged away.
+    expect(logo(container)!.getAttribute("alt")).toBe("");
+    expect(container.querySelector(".slide.has-logo")).toBeTruthy();
+  });
+
+  it("is not drawn when the setting is off", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, logo: false });
+    expect(logo(container)).toBeNull();
+    expect(container.querySelector(".slide.has-logo")).toBeNull();
+    expect(container.textContent).toContain("placeholder words");
+  });
+
+  it("hides with Black and comes back with Show", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, logo: true, blackout: true });
+    expect(logo(container)).toBeNull();
+    control({ ...live, logo: true });
+    expect(logo(container)).toBeTruthy();
+  });
+
+  it("stays on while moving between Bible and songs, languages, backgrounds and Clear", () => {
+    const { container } = render(<PresentationView />);
+    const states: LiveState[] = [
+      { ...live, logo: true },
+      { ...live, logo: true, slide: { ...slide, lines: ["വാക്യം"], lang: "ml" } },
+      { ...live, logo: true, slide: song },
+      { ...live, logo: true, slide: { ...song, lang: "ta", lines: ["வரி"] }, theme: { ...live.theme, backgroundKind: "gallery", galleryId: "dawn" } },
+      { ...live, logo: true, slide: { ...song, lang: "kn", lines: ["ಸಾಲು"] }, theme: { ...live.theme, bilingualLayout: "columns" } },
+      { ...live, logo: true, clear: true },
+    ];
+    for (const s of states) {
+      control(s);
+      expect(logo(container)).toBeTruthy();
+    }
+  });
+
+  it("keeps the reference clear of the logo, and the words above it when there is no reference", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, logo: true });
+    expect(container.querySelector(".slide[data-footer] .slide-footer")).toBeTruthy();
+    control({ ...live, logo: true, slide: song });
+    expect(container.querySelector(".slide.has-logo:not([data-footer])")).toBeTruthy();
+  });
+});
