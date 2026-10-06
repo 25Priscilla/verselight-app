@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import type { ScriptureSpec } from "../lib/session";
 import { splitId } from "../lib/crossrefs";
-import { bibleLang, BOOK_NAMES, detectBibleLanguage, getVerses, loadBible, parseReference, searchBible, type BibleData, type SearchHit } from "../lib/bible";
+import { bibleLang, BOOK_NAMES, detectBibleLanguage, ensureChapter, getVerses, loadBible, parseReference, searchBible, type BibleData, type SearchHit } from "../lib/bible";
+import { ESV_SITE_URL, isOnlineBible, searchEsv } from "../lib/esv";
 import { addBookmark, findBookmark, removeBookmark } from "../lib/bookmarks";
 import { neighbour } from "../lib/overview";
 import { rangeLabel } from "../lib/slides";
@@ -83,7 +84,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
         if (!b) return setLoadError("This Bible's file is missing. Remove it and import it again.");
         set(b);
         // Build the search index in the background so the first keyword search is instant.
-        setTimeout(() => searchBible(b, "a"), 300);
+        if (!isOnlineBible(b)) setTimeout(() => searchBible(b, "a"), 300);
         // Record the language of Bibles imported before languages were tracked.
         const meta = library.bibles.find((m) => m.id === id);
         if (meta && !meta.language) {
@@ -95,6 +96,16 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   };
   useEffect(() => { setLoadError(null); load(bibleId, setBible); }, [bibleId]);
   useEffect(() => { load(secondId, setBible2); }, [secondId]);
+
+  // The ESV is read online: fetch the chapter being read when it isn't in memory yet. (Imported Bibles have every chapter.)
+  useEffect(() => {
+    if (!bible || !isOnlineBible(bible) || bible.books[book]?.chapters[chapter - 1]?.length !== 0) return;
+    let live = true;
+    ensureChapter(bible, book, chapter)
+      .then((b) => { if (live) { setLoadError(null); setBible(b); } })
+      .catch((e) => { if (live) setLoadError(e instanceof Error ? e.message : String(e)); });
+    return () => { live = false; };
+  }, [bible, book, chapter]);
 
   // Scroll once the verse is on screen (it may still be loading, e.g. after switching translation).
   useEffect(() => {
@@ -192,7 +203,15 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   };
 
   const keywordSearch = (bible: BibleData) => {
-    const a = searchBible(bible, query);
+    // The ESV's text isn't on this computer to search, so the ESV API searches it.
+    if (isOnlineBible(bible)) {
+      searchEsv(query).then((a) => showHits(bible, a), (e) => setSearchError(e instanceof Error ? e.message : String(e)));
+      return;
+    }
+    showHits(bible, searchBible(bible, query));
+  };
+
+  const showHits = (bible: BibleData, a: { hits: SearchHit[]; total: number }) => {
     if (!second) return setResults({ query, hits: a.hits, total: a.total });
     // Bilingual: search both translations and merge by verse, so English or Malayalam words find the passage.
     const b = searchBible(second, query);
@@ -455,6 +474,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                 <div className="reading" ref={readingRef}>
                   <p className="reading-hint muted small">Click a verse to select it. Shift-click another verse to select the passage between.</p>
                   <h2 className="chapter-heading">Chapter {chapter}</h2>
+                  {isOnlineBible(bible) && verses.length === 0 && !loadError && <p className="muted small">Loading {bookData.name} {chapter} from esv.org…</p>}
                   {second ? (
                     <div className="parallel" role="table" aria-label="Parallel Bible">
                       <div className="parallel-head" role="row">
@@ -522,7 +542,12 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                       </button>
                     )}
                   </nav>
-                  {meta?.license && <p className="reading-license">{meta.license}</p>}
+                  {meta?.license && (
+                    <p className="reading-license">
+                      {meta.license}
+                      {isOnlineBible(bible) && <> <a href={ESV_SITE_URL} target="_blank" rel="noreferrer">www.esv.org</a></>}
+                    </p>
+                  )}
                   {meta2?.license && <p className="reading-license" lang="ml">{meta2.license}</p>}
                 </div>
                 {xrOpen && (

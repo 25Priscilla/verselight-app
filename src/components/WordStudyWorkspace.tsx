@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { bibleLang, loadBible, matchRanges, searchBible, searchWords, type BibleData, type MatchMode, type SearchHit } from "../lib/bible";
+import { bibleLang, ESV_BIBLE_ID, loadBible, matchRanges, searchBible, searchWords, type BibleData, type MatchMode, type SearchHit } from "../lib/bible";
 import { addBookmark, bookmarkLabel, bookmarkVerses, findBookmark, lastVerse, removeBookmark } from "../lib/bookmarks";
 import { splitId } from "../lib/crossrefs";
 import type { ScriptureSpec } from "../lib/session";
@@ -92,6 +92,8 @@ export function WordStudyWorkspace({ active, currentBibleId, onOpenInBible, requ
     setBible(null);
     setLoadError(null);
     if (!bibleId) return;
+    // Word Study counts every verse, which needs the whole text on this computer. Crossway's terms don't allow that for the ESV.
+    if (bibleId === ESV_BIBLE_ID) return setLoadError("Word Study isn't available for the ESV, which is read online a chapter at a time. Choose another translation in the Translation menu.");
     loadBible(bibleId)
       .then((b) => {
         if (!b) return setLoadError("This Bible's file is missing. Import it again on the Bible screen.");

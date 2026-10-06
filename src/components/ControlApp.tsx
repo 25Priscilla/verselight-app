@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { loadBible, type BibleData } from "../lib/bible";
+import { ensureChapter, loadBible, type BibleData } from "../lib/bible";
+import { EsvError } from "../lib/esv";
 import { on, send, type NavCommand } from "../lib/bridge";
 import { canChooseDisplays, closePresentation, listDisplays, openPresentation, type DisplayInfo } from "../lib/display";
 import { chooseDisplay, displayConnected, displayLabel, sameDisplays } from "../lib/projector";
@@ -221,9 +222,11 @@ export function ControlApp() {
   }, [watchDisplays, fetchDisplays, stopPresenting]);
 
   // ---- Bible data for scripture sessions ----
-  const bibleSources = useCallback(async (spec: ScriptureSpec) => {
-    const [primary, second] = await Promise.all([loadBible(spec.primaryId), spec.secondId ? loadBible(spec.secondId) : Promise.resolve(null)]);
-    if (!primary) throw new Error("the Bible file is missing");
+  /** The Bibles for a session, with `chapter` in them (the ESV fetches it; imported Bibles already have it). */
+  const bibleSources = useCallback(async (spec: ScriptureSpec, chapter: number) => {
+    const [loaded, second] = await Promise.all([loadBible(spec.primaryId), spec.secondId ? loadBible(spec.secondId) : Promise.resolve(null)]);
+    if (!loaded) throw new Error("the Bible file is missing");
+    const primary = await ensureChapter(loaded, spec.book, chapter);
     const meta = library.bibles.find((b) => b.id === spec.primaryId)!;
     const meta2 = spec.secondId ? library.bibles.find((b) => b.id === spec.secondId) ?? null : null;
     return { primary, second: second as BibleData | null, meta, meta2 };
@@ -232,7 +235,7 @@ export function ControlApp() {
   /** ▶ Present Now: build the session, show the first slide and open the projector if it isn't open. */
   const presentScripture = useCallback(async (spec: ScriptureSpec) => {
     try {
-      const src = await bibleSources(spec);
+      const src = await bibleSources(spec, spec.chapter);
       const chapter = chapterSlides(spec, spec.chapter, src);
       if (chapter.length === 0) return setNotice("That chapter has no verses in this translation.");
       // Start at the first selected verse (or the next one this translation has).
@@ -271,10 +274,10 @@ export function ControlApp() {
     if (session.kind === "scripture" && n) {
       loading.current = true;
       try {
-        const src = await bibleSources(session.spec);
+        const src = await bibleSources(session.spec, n.chapter);
         return dispatch({ type: "extend", where: n.where, chapter: n.chapter, slides: chapterSlides(session.spec, n.chapter, src), advance: true });
-      } catch {
-        return setNotice("The next chapter couldn't be loaded: the Bible file is missing.");
+      } catch (e) {
+        return setNotice(e instanceof EsvError ? `The next chapter couldn't be loaded. ${e.message}` : "The next chapter couldn't be loaded: the Bible file is missing.");
       } finally {
         loading.current = false;
       }
