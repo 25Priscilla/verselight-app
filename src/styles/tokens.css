@@ -1,0 +1,97 @@
+/* VerseLight design tokens — "quiet sanctuary": warm graphite with a violet cast, a soft periwinkle accent,
+   and coral red reserved for going live and being live.
+
+   Use these names in new styles. The short names at the bottom (--ground, --panel, --ink, --mute, …) are
+   aliases kept so the existing screen styles keep working until each screen is redesigned. */
+:root {
+  /* ---- colour: surfaces ---- */
+  --bg: #17181f;              /* page background (also behind the projector window; keep it dark) */
+  --surface: #1d1e27;         /* sidebars, panels, cards */
+  --surface-2: #262733;       /* inputs on panels, raised items, menus */
+  --surface-hover: #2d2e3b;
+  --border: #30323f;          /* hairlines */
+  --border-strong: #4a4d66;   /* focused field borders */
+
+  /* ---- colour: text ---- */
+  --text: #ecebf2;
+  --text-muted: #9a9cae;      /* secondary text; at least 4.5:1 on every surface */
+  --text-soft: #cfcfda;       /* list text that isn't selected */
+
+  /* ---- colour: meaning ---- */
+  --accent: #a3b1ff;          /* selection and main actions */
+  --accent-hover: #b6c1ff;
+  --accent-soft: rgba(163, 177, 255, 0.14);
+  --accent-ink: #151733;      /* text on the accent colour */
+  --live: #ff5d6c;            /* Start, Live and Stop only */
+  --live-soft: rgba(255, 93, 108, 0.12);
+  --danger-text: #ff9aa3;
+  --success: #6fd3a0;
+  --warning: #f5c451;         /* warnings and favourites */
+
+  /* ---- type ---- */
+  --font-ui: "Manrope Variable", "Noto Sans Malayalam Variable", "Segoe UI", system-ui, sans-serif;
+  --font-read: "Lora Variable", "Noto Serif Malayalam Variable", Georgia, serif;
+  --text-xs: 12px;            /* hints and captions; nothing smaller */
+  --text-sm: 13px;            /* labels, list subtitles, small buttons */
+  --text-md: 14px;            /* body (screens move to 15px as they're redesigned) */
+  --text-lg: 16px;
+  --text-xl: 20px;            /* section and dialog titles */
+  --text-2xl: 28px;           /* page titles and empty-state headlines */
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- space (4px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ---- shape ---- */
+  --radius-sm: 7px;           /* controls */
+  --radius: 12px;             /* cards, panels */
+  --radius-lg: 16px;          /* dialogs, drawers */
+  --radius-full: 999px;       /* chips, pills */
+
+  /* ---- control sizes ---- */
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+
+  /* ---- elevation: only floating things have shadows ---- */
+  --shadow-menu: 0 14px 40px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 18px 50px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 30px 80px rgba(0, 0, 0, 0.55);
+  --shadow-toast: 0 12px 30px rgba(0, 0, 0, 0.4);
+  --backdrop: rgba(8, 8, 14, 0.6);
+
+  /* ---- motion ---- */
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---- layers ---- */
+  --z-menu: 40;
+  --z-drawer: 60;
+  --z-toast: 90;
+  --z-modal: 100;
+
+  /* ---- aliases for the existing screen styles ---- */
+  --ground: var(--bg);
+  --panel: var(--surface);
+  --raise: var(--surface-2);
+  --hover: var(--surface-hover);
+  --line: var(--border);
+  --ink: var(--text);
+  --mute: var(--text-muted);
+  --r-sm: var(--radius-sm);
+  --r: var(--radius);
+  --ui: var(--font-ui);
+  --read: var(--font-read);
+
+  color-scheme: dark;
+}

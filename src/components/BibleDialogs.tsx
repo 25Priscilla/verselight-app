@@ -4,8 +4,7 @@ import { deleteData } from "../lib/storage";
 import type { BibleMeta } from "../lib/types";
 import { parseCrossRefFile, saveCrossRefs, XREF_CHANGES, XREF_LICENSE_URL, XREF_SOURCE_URL, type CrossRefData } from "../lib/crossrefs";
 import { useLibrary } from "../state/library";
-import { Icon } from "./Icon";
-import { Field, Modal } from "./ui";
+import { Button, Field, Modal } from "./ui";
 
 export function ImportBibleDialog({ onClose, onImported }: { onClose: () => void; onImported: (meta: BibleMeta) => void }) {
   const { update } = useLibrary();
@@ -42,7 +41,11 @@ export function ImportBibleDialog({ onClose, onImported }: { onClose: () => void
   };
 
   return (
-    <Modal title="Import a Bible" onClose={onClose}>
+    <Modal title="Import a Bible" onClose={onClose}
+      actions={pending && <>
+        <Button variant="quiet" onClick={() => setPending(null)}>Choose another file</Button>
+        <Button variant="primary" disabled={!confirmed || !pending.abbreviation.trim() || busy} onClick={save}>Import Bible</Button>
+      </>}>
       <p className="muted">
         Choose a Bible JSON file from a source you're allowed to use. Verses display exactly as they appear in the file.
         Public-domain translations like the KJV are free to use; copyrighted ones like the NIV need the publisher's permission.
@@ -50,7 +53,7 @@ export function ImportBibleDialog({ onClose, onImported }: { onClose: () => void
       <input ref={input} type="file" accept=".json,application/json" hidden
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
       {!pending && (
-        <button className="btn primary" onClick={() => input.current?.click()}><Icon name="download" />Choose file</button>
+        <Button variant="primary" icon="download" onClick={() => input.current?.click()}>Choose file</Button>
       )}
       {error && <div className="alert">{error}</div>}
       {pending && (
@@ -69,10 +72,6 @@ export function ImportBibleDialog({ onClose, onImported }: { onClose: () => void
             <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
             I have the right to use and display this Bible text.
           </label>
-          <div className="modal-actions">
-            <button className="btn ghost" onClick={() => setPending(null)}>Choose another file</button>
-            <button className="btn primary" disabled={!confirmed || !pending.abbreviation.trim() || busy} onClick={save}>Import Bible</button>
-          </div>
         </>
       )}
     </Modal>
@@ -95,7 +94,7 @@ export function ManageBiblesDialog({ onClose }: { onClose: () => void }) {
                 <strong>{b.name}</strong> <span className="muted">{b.abbreviation}</span>
                 <div className="muted small">{b.license || "No license notice recorded"}</div>
               </div>
-              <button className="btn ghost danger" onClick={() => remove(b.id)}>Remove</button>
+              <Button variant="quiet" className="danger" onClick={() => remove(b.id)}>Remove</Button>
             </li>
           ))}
         </ul>
@@ -141,12 +140,16 @@ export function ImportCrossRefsDialog({ onClose, onImported }: { onClose: () => 
   };
 
   return (
-    <Modal title="Import cross references" onClose={onClose}>
+    <Modal title="Import cross references" onClose={onClose}
+      actions={data && <>
+        <Button variant="primary" disabled={busy} onClick={save}>Import cross references</Button>
+        <Button variant="quiet" onClick={onClose}>Cancel</Button>
+      </>}>
       <p className="muted small">
         Choose <code>cross_references.txt</code> from OpenBible.info. Run <code>npm run fetch-crossrefs</code> to download it into the
         <code> bibles</code> folder. The data is kept on this computer, so cross references work offline.
       </p>
-      <button className="btn" disabled={busy} onClick={() => input.current?.click()}><Icon name="plus" />{busy ? "Reading…" : "Choose file"}</button>
+      <Button icon="plus" disabled={busy} onClick={() => input.current?.click()}>{busy ? "Reading…" : "Choose file"}</Button>
       <input ref={input} type="file" accept=".txt,.json,text/plain,application/json" hidden
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
       {error && <div className="alert">{error}</div>}
@@ -158,10 +161,6 @@ export function ImportCrossRefsDialog({ onClose, onImported }: { onClose: () => 
             <a href={XREF_LICENSE_URL} target="_blank" rel="noreferrer">CC BY 4.0</a>. Drawn mainly from the public-domain Treasury of Scripture Knowledge.
           </p>
           <p className="muted small">{XREF_CHANGES} Verse text always comes from your own Bibles.</p>
-          <div className="row">
-            <button className="btn primary" disabled={busy} onClick={save}>Import cross references</button>
-            <button className="btn ghost" onClick={onClose}>Cancel</button>
-          </div>
         </div>
       )}
     </Modal>
