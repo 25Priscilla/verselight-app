@@ -9,24 +9,34 @@ import type { Library, LiveState, Slide, Song } from "../lib/types";
 import { useLibrary } from "../state/library";
 import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
 import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
-import { Icon } from "./Icon";
+import { HelpScreen } from "./HelpScreen";
+import { HomeScreen } from "./HomeScreen";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
-import { Rail, type Mode } from "./Rail";
-import { SongImportDialog } from "./SongImportDialog";
+import { SettingsScreen, type SettingsSection } from "./SettingsScreen";
+import { Sidebar, type Mode } from "./Sidebar";
 import { SongsWorkspace } from "./SongsWorkspace";
-import { Toast } from "./ui";
+import { ConfirmDialog, Toast, cx } from "./ui";
 import { WordStudyWorkspace, type VerseTarget } from "./WordStudyWorkspace";
+
+function useMediaQuery(query: string) {
+  const [match, setMatch] = useState(() => matchMedia(query).matches);
+  useEffect(() => {
+    const mq = matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, [query]);
+  return match;
+}
 
 const isTyping = (el: EventTarget | null) =>
   el instanceof HTMLElement && !!el.closest("input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, [contenteditable]");
 
 export function ControlApp() {
   const { library, update, replace, saveError } = useLibrary();
-  const [mode, setMode] = useState<Mode>(library.bibles.length ? "bible" : "songs");
+  const [mode, setMode] = useState<Mode>("home");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("projector");
   const [notice, setNotice] = useState<string | null>(null);
-  const [songImport, setSongImport] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const importRef = useRef<HTMLInputElement>(null);
 
   // ---- Word Study ↔ Bible: which translation is being read, and "open this verse" requests ----
   const [readingBibleId, setReadingBibleId] = useState(library.bibles[0]?.id ?? "");
@@ -35,6 +45,12 @@ export function ControlApp() {
     setOpenRequest({ ...t, nonce: Date.now() });
     setMode("bible");
   }, []);
+
+  // ---- Home's shortcuts into the Bible and Songs screens ----
+  const [bibleSearch, setBibleSearch] = useState(0);
+  const [songSearch, setSongSearch] = useState(0);
+  const [openSong, setOpenSong] = useState<{ id: string; nonce: number } | null>(null);
+  const openSettings = (section: SettingsSection) => { setSettingsSection(section); setMode("settings"); };
 
   // ---- the presentation session: the single source of truth for what is shown ----
   const [state, dispatch] = useReducer(sessionReducer, initialSession);
@@ -194,24 +210,37 @@ export function ControlApp() {
   }, [state.session]);
   const canExtend = state.session?.kind === "scripture";
 
+  // The presentation panel only appears while something is loaded or the projector is on; the rest of the
+  // time the workspace gets the full width. While it shows, the sidebar shrinks to icons to make room.
+  const presenting = !!state.session || projector !== "off";
+  const narrow = useMediaQuery("(max-width: 1100px)");
+
   // ---- backup ----
   const backup = async () => {
-    setMenuOpen(false);
     const date = new Date().toISOString().slice(0, 10);
     const ok = await saveFileAs(`verselight-backup-${date}.json`, JSON.stringify(library, null, 2)).catch(() => false);
     if (ok) setNotice("Library backed up.");
   };
+  // Restoring replaces the whole library, so the file is checked first and then the operator confirms.
+  const [pendingRestore, setPendingRestore] = useState<{ name: string; library: Library } | null>(null);
   const restore = async (file: File) => {
     try {
-      const parsed = JSON.parse(await file.text()) as Library;
-      if (!Array.isArray(parsed.items) || !Array.isArray(parsed.services)) throw new Error("it isn't a VerseLight backup");
-      replace(parsed);
-      dispatch({ type: "end" });
-      setNotice("Library restored. On a new computer, import your Bibles again.");
+      let parsed: Library | null = null;
+      try { parsed = JSON.parse(await file.text()) as Library; } catch { /* not JSON: reported below */ }
+      if (!parsed || !Array.isArray(parsed.items) || !Array.isArray(parsed.services)) throw new Error("it isn't a VerseLight backup file");
+      setPendingRestore({ name: file.name, library: parsed });
     } catch (e) {
-      setNotice(`${file.name} couldn't be restored: ${e instanceof Error ? e.message : e}`);
+      setNotice(`${file.name} couldn't be restored: ${e instanceof Error ? e.message : e}.`);
     }
   };
+  const confirmRestore = () => {
+    if (!pendingRestore) return;
+    replace(pendingRestore.library);
+    dispatch({ type: "end" });
+    setPendingRestore(null);
+    setNotice("Library restored. On a new computer, import your Bibles again.");
+  };
+  const restoreSongs = pendingRestore ? pendingRestore.library.items.filter((i) => i.kind === "song").length : 0;
 
   // ---- looks ----
   const lookFor = useCallback((slide: Slide | null) => lookForSlide(library, slide), [library]);
@@ -225,35 +254,41 @@ export function ControlApp() {
     });
 
   return (
-    <div className="app">
-      <Rail mode={mode} onMode={setMode} />
-      <div className="rail-foot">
-        <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Library menu" aria-expanded={menuOpen} title="Import songs and back up">
-          <Icon name="more" />
-        </button>
-        {menuOpen && (
-          <div className="menu" role="menu">
-            <button role="menuitem" onClick={() => { setMenuOpen(false); setSongImport(true); }}>Import songs…</button>
-            <button role="menuitem" onClick={backup}>Back up library…</button>
-            <button role="menuitem" onClick={() => { setMenuOpen(false); importRef.current?.click(); }}>Restore from backup…</button>
-          </div>
-        )}
-        <input ref={importRef} type="file" accept=".json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = ""; }} />
-      </div>
+    <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
+      <Sidebar mode={mode} onMode={setMode} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName} />
 
-      {songImport && (
-        <SongImportDialog
-          onClose={() => setSongImport(false)}
-          onImported={(n) => { setMode("songs"); setNotice(`Imported ${n} songs.`); }}
-        />
-      )}
 
-      <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest} />
+      <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
+        onManageBibles={() => openSettings("bibles")} focusSearch={bibleSearch} />
       <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible} />
-      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} />
+      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong} />
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
+      {mode === "home" && (
+        <HomeScreen
+          presenting={state.session && liveSlide ? { kind: state.session.kind, title: sessionTitle, slideLabel: liveSlide.label, index, count: slides.length } : null}
+          projector={projector} displayName={displayName} readingBibleId={readingBibleId}
+          onFindVerse={() => { setMode("bible"); setBibleSearch(Date.now()); }}
+          onFindSong={() => { setMode("songs"); setSongSearch(Date.now()); }}
+          onBackgrounds={() => setMode("backgrounds")}
+          onManage={() => openSettings("bibles")}
+          onOpenSong={(id) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }}
+          onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse })} />
+      )}
+      {mode === "settings" && (
+        <SettingsScreen section={settingsSection} onSection={setSettingsSection}
+          projector={projector} displayName={displayName} displays={displays} displayIndex={library.displayIndex}
+          onDisplay={(i) => update((lib) => ({ ...lib, displayIndex: i }))} onRefreshDisplays={refreshDisplays}
+          onBackup={backup} onRestore={restore} notify={setNotice} />
+      )}
+      {pendingRestore && (
+        <ConfirmDialog title="Replace your library with this backup?" confirmLabel="Restore backup"
+          message={<>Everything in VerseLight will be replaced with <strong>{pendingRestore.name}</strong> ({restoreSongs} {restoreSongs === 1 ? "song" : "songs"}):
+            songs, backgrounds, saved verses and settings. Anything added since that backup will be lost. To keep what you have now, back it up first.</>}
+          onCancel={() => setPendingRestore(null)} onConfirm={confirmRestore} />
+      )}
+      {mode === "help" && <HelpScreen onOpen={setMode} onSettings={openSettings} />}
 
-      <PresentationPanel
+      {presenting && <PresentationPanel
         title={sessionTitle}
         kind={state.session?.kind ?? null}
         slides={slides}
@@ -263,8 +298,6 @@ export function ControlApp() {
         blackout={state.blackout}
         projector={projector}
         displayName={displayName}
-        displays={displays}
-        displayIndex={library.displayIndex}
         onGoto={gotoSlide}
         onPrev={() => nav(-1)}
         onNext={() => nav(1)}
@@ -272,16 +305,12 @@ export function ControlApp() {
         onStart={openProjector}
         onStop={stopPresenting}
         onEnd={() => { stopPresenting(); dispatch({ type: "end" }); }}
-        onDisplay={(i) => update((lib) => ({ ...lib, displayIndex: i }))}
-        onRefreshDisplays={refreshDisplays}
-        theme={library.theme}
-        onTheme={(t) => update((lib) => ({ ...lib, theme: t }))}
+        defaultTheme={library.theme}
         lookFor={lookFor}
         looks={library.looks}
         slideLook={(key) => library.assign.slides[key] ?? null}
         onSlideLook={(key, lookId) => assignLook("slides", key, lookId)}
-        onOpenBackgrounds={() => setMode("backgrounds")}
-      />
+      />}
 
       {(notice || saveError) && (
         <Toast message={saveError ?? notice} onDismiss={saveError ? undefined : () => setNotice(null)} />

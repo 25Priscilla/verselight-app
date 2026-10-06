@@ -4,10 +4,16 @@ A desktop app for projecting Bible verses and song lyrics in church services. Bu
 
 ## The interface
 
-VerseLight has three areas: a sidebar for **Bible** and **Songs**, a working area for the selected content, and the **Presentation** panel on the right.
+VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (with **Bible Study** under it), **Songs** and **Backgrounds**, and at the bottom the **Projector** status, **Settings** and **Help**. The selected screen fills the rest of the window. While something is being presented, the **Presentation** panel appears on the right and the sidebar shrinks to icons (their names show as tooltips) to leave room. Windows narrower than 1100 px always use the icon sidebar.
+
+**Home**
+- Quick actions: **Find a Bible verse** and **Find a song** open that screen with the search box ready; **Change the background** opens Backgrounds; **Add or manage Bibles and songs** opens Settings → Bibles.
+- Recently used songs and the verses saved in Bible Study; click one to open it.
+- While something is being presented, a *Now presenting* card shows the current slide and the projector status.
+- With no Bible imported yet, a prompt to import one.
 
 **Bible**
-- Choose a translation at the top of the sidebar. The same menu imports and manages Bible files.
+- Choose a translation at the top of the book list. **Manage Bibles…** at the bottom of that menu opens **Settings → Bibles**, where Bible files are imported and removed.
 - Pick a book from the Old or New Testament list, then a chapter from the strip under the book name (the arrows step to the previous or next chapter).
 - Click a verse to select it. Shift-click another verse to select the passage between them.
 - Search by **Reference** (`John 3:16-18`, `john 3 16`, `jn 3:16`, `1 cor 13`, `Ps 23`, `Jude 3`) or by **Keyword** (every word must appear). Single-chapter books such as Jude and Philemon take a verse number directly. Clicking a result opens its chapter with the verse selected.
@@ -24,10 +30,25 @@ VerseLight has three areas: a sidebar for **Bible** and **Songs**, a working are
 
 **Presentation** (the laptop's control screen)
 - Current slide preview with its position (for example "17 / 36"), and the next slide.
-- **Previous**, **Next** and **Black** screen, the projector display, and **Stop presentation**.
+- **Previous**, **Next** and **Black** screen, and **Stop presentation**. Choose the projector display in **Settings → Projector**.
 - A connection status: *Projector off*, *Connecting to projector…* or *Live on <display name>*.
 - The slide list: click any slide to show it at once. The current slide is marked in red; verses you originally selected are outlined.
-- The **Aa** button sets the default font, text size, colours and background. The **⋯** button at the bottom of the sidebar backs up or restores your library.
+- **Close**, above the slide list, clears the presentation and hides the panel.
+
+**Backgrounds** sets the default font, text size, colours and background (the Default look) and your other looks. See [Presentation backgrounds](#presentation-backgrounds-looks).
+
+**Projector** (bottom of the sidebar) shows *Off*, *Connecting…* or *Live on <display name>*. Click it to open Settings → Projector.
+
+**Settings**
+- **Projector:** the projector status, and which screen shows the slides (*Second screen (automatic)* uses the first screen that isn't the main one).
+- **Bibles:** import or remove Bibles, and import or replace cross references. Removing a Bible asks first.
+- **Songs:** how many songs you have, and **Import songs** from files.
+- **Backup:** **Back up library** saves one file with your songs, looks, saved verses and settings (not the Bible texts). **Restore from backup** checks the file and asks before replacing your library.
+- **Keyboard:** the presentation keys. **About:** version and credits.
+
+**Help** explains how to present in four steps, how to present a verse or a song, Previous and Next, the black screen, stopping and closing, and the keys, with links to the right place in Settings.
+
+**Settings** holds the projector display, Bible and cross-reference files, song import, backup and restore, the keyboard shortcuts and credits.
 
 ## Requirements
 
@@ -81,7 +102,7 @@ Then import that file in the app under **Bibles → Import Bible file**. That da
 npm run fetch-malayalam-bible
 ```
 
-This downloads the **Malayalam Bible 1910 (Sathyavedapusthakam), revised in contemporary orthography** (`mal2015`) from eBible.org. It saves the Bible as `bibles/mal1910.verselight.json`. Import that file under **Bible → translation menu → Import a Bible**.
+This downloads the **Malayalam Bible 1910 (Sathyavedapusthakam), revised in contemporary orthography** (`mal2015`) from eBible.org. It saves the Bible as `bibles/mal1910.verselight.json`. Import that file under **Settings → Bibles → Import a Bible**.
 
 - **License (verified):** © 2015 The Free Bible Foundation, based on the public-domain 1910 edition, released under **Creative Commons Attribution-ShareAlike 4.0**. See https://ebible.org/mal2015/copyright.htm.
   - You may share and redistribute it with attribution.
@@ -100,7 +121,7 @@ In **Bible**, choose **English**, **മലയാളം** or **EN + മല**:
 - **Reference search:** accepts English or Malayalam book names (for example `John 3:16` or `യോഹന്നാൻ 3:16`).
 - **Keyword search:** searches both translations and shows each result in both languages.
 - **Presenting:** **Show on screen** chooses what the projector shows: both translations, English only or Malayalam only. Then choose **▶ Present Now**.
-- **Projector layout:** the Looks editor sets it: **Stacked** (English above Malayalam) or **Side by side**. The footer credits both translations, for example "John 3:16 (KJV · MAL1910)".
+- **Projector layout:** the Backgrounds screen sets it: **Stacked** (English above Malayalam) or **Side by side**. The footer credits both translations, for example "John 3:16 (KJV · MAL1910)".
 
 ### Verse numbering
 
@@ -126,7 +147,7 @@ For a passage, the references of every verse are combined. References with negat
 npm run fetch-crossrefs
 ```
 
-This downloads OpenBible.info's `cross-references.zip` and saves `bibles/cross_references.txt` unchanged. Then import it: open the Cross references panel and choose **Import cross references**, or use the translation menu. If the download is blocked, download the zip from https://www.openbible.info/labs/cross-references/ and run `npm run fetch-crossrefs -- --file path/to/cross-references.zip`.
+This downloads OpenBible.info's `cross-references.zip` and saves `bibles/cross_references.txt` unchanged. Then import it: open the Cross references panel and choose **Import cross references**, or use **Settings → Bibles**. If the download is blocked, download the zip from https://www.openbible.info/labs/cross-references/ and run `npm run fetch-crossrefs -- --file path/to/cross-references.zip`.
 
 - **License (verified):** Creative Commons Attribution 4.0 (CC BY 4.0), stated on the dataset page and in the file's header line. The data draws mainly on the public-domain *Treasury of Scripture Knowledge*.
 - **What VerseLight does to meet CC BY 4.0:**
@@ -152,7 +173,7 @@ The Read view stays the default, so opening a chapter during a service always sh
 
 ## Word Study
 
-**Study** in the left rail finds every verse where a word appears. It is for Bible study only and never presents anything; to show a verse, open it in the Bible and choose Present Now there.
+**Bible Study** (under Bible in the sidebar) finds every verse where a word appears. It is for Bible study only and never presents anything; to show a verse, open it in the Bible and choose Present Now there.
 
 - **Search:** type a word (for example `grace` or `കൃപ`) and press Enter. Several words find verses that contain all of them.
 - **Translation:** Word Study searches the translation selected on the Bible screen (the English one in the bilingual view). You can pick another in the **Translation** menu.
@@ -193,7 +214,7 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 
 ## Presentation backgrounds (Looks)
 
-A **look** is a saved presentation background plus text style. Open **Looks** in the left rail to create and edit them.
+A **look** is a saved presentation background plus text style. Open **Backgrounds** in the sidebar to create and edit them.
 
 - **Background:** solid colour, gradient (with direction), a built-in gallery, or your own image. Uploaded images are resized to fit a 1920 × 1080 screen and stored inside VerseLight, so they work offline.
 - **Adjust:** brightness, a dark overlay to keep text readable, and blur. Blur is scaled to the screen, so the preview matches the projector at any resolution. Only the background is filtered; text stays sharp.
@@ -202,8 +223,8 @@ A **look** is a saved presentation background plus text style. Open **Looks** in
 - **Where a look is used**, from most to least specific:
   1. one slide: the image button on a slide thumbnail in the presentation panel
   2. one song or passage: the image button in its header in the presentation panel
-  3. all Bible slides or all song slides: **Use this look for** in the Looks editor
-  4. the Default look, which the **Aa** button edits
+  3. all Bible slides or all song slides: **Use this look for** on the Backgrounds screen
+  4. the Default look, edited on the **Backgrounds** screen
 
 The projector, the live preview and every thumbnail work out each slide's look the same way, so the preview always shows exactly what the projector will show.
 
@@ -217,7 +238,7 @@ VerseLight includes no song lyrics. To add a library of public-domain hymns, run
 npm run fetch-hymns
 ```
 
-This downloads the catalog from [ChurchApps/WorshipCommonsContent](https://github.com/ChurchApps/WorshipCommonsContent) and saves `songs/worshipcommons-pd.json`. Then, in the app, open the **⋯** menu at the bottom left and choose **Import songs**.
+This downloads the catalog from [ChurchApps/WorshipCommonsContent](https://github.com/ChurchApps/WorshipCommonsContent) and saves `songs/worshipcommons-pd.json`. Then, in the app, open **Settings → Songs** and choose **Import songs**.
 
 - **Which songs:** English songs the repository files under its public-domain license, limited to those dated 1930 or earlier or dedicated CC0 by their writer (512 at the time of writing). Public-domain entries dated after 1930 without a CC0 dedication are skipped and listed when the script runs, because they often add newer material to an older hymn.
 - **What changes:** the words are kept exactly. Chord symbols such as `[F]` are removed, and section labels such as `Verse 1` become VerseLight tags such as `[Verse 1]`.
@@ -249,7 +270,7 @@ Much of the popular repertoire is still under copyright (in India, copyright las
 To add songs your church is licensed to use:
 
 - **Type or paste** them: Songs → **New Malayalam song** (choose മലയാളം first).
-- **Import files:** ⋯ menu → **Import songs**, then pick one or more files:
+- **Import files:** **Settings → Songs → Import songs**, then pick one or more files:
   - **OpenLyrics** (`.xml`), the open format exported by OpenLP and other worship software. Section names, verse order, authors and copyright are read, and chord marks are removed. If a file holds each verse in both Malayalam and a transliteration, the Malayalam verses are kept and the transliterated title is used for search.
   - **VerseLight song files** (`.json`); entries may include `language: "ml"` and `altTitle`.
 
@@ -259,14 +280,15 @@ Only project lyrics your church is licensed to show, for example under a CCLI Ch
 
 ## Keyboard shortcuts
 
-These work in both the control window (when you're not typing) and the projector window. Most presentation clickers send Page Up/Page Down, so they work too.
+These work in both the control window (when you're not typing) and the projector window. Most presentation clickers send Page Up/Page Down, so they work too. The same list is in **Settings → Keyboard** and on the **Help** screen.
 
 | Key | Action |
 | --- | --- |
 | → ↓ Space Page Down | Next slide |
 | ← ↑ Page Up | Previous slide |
 | B | Black screen on/off |
-| Esc (projector window) | Stop presenting |
+| Esc | Stop presenting (in a text box, Esc leaves the box first) |
+| Enter | Present the selected Bible verses (Bible screen) |
 
 ## Where data is stored
 
@@ -290,12 +312,16 @@ src/
   state/library.tsx         Library state, autosave and migration from v1
   components/
     ControlApp.tsx          Layout, live state, shortcuts
-    Rail.tsx                Bible / Songs switcher
+    Sidebar.tsx             Main navigation and projector status
+    HomeScreen.tsx          Home: quick actions, recent songs, saved verses
+    SettingsScreen.tsx      Projector, Bibles, Songs, Backup, Keyboard, About
+    HelpScreen.tsx          Beginner's guide to presenting
+    Page.tsx                Layout for the full-width screens
     BibleWorkspace.tsx      Translation, books, chapters, reading page, search, add bar
-    BibleDialogs.tsx        Import and manage Bibles
+    BibleDialogs.tsx        Import Bibles and cross references; confirm removing a Bible
     SongsWorkspace.tsx      Song library, lyrics editor, slide arrangement
-    PresentationPanel.tsx   Preview, transport, display picker, slide list
-    StylePopover.tsx        Text style settings
+    PresentationPanel.tsx   Preview, transport, slide list
+    ShortcutTable.tsx       The keyboard shortcut table (list in lib/shortcuts.ts)
     SlideRenderer.tsx       Draws a slide at any size (thumbnails, preview, projector)
     PresentationView.tsx    Projector window
 src-tauri/

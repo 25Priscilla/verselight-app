@@ -3,7 +3,6 @@
 /* ---------- presentation panel ---------- */
 .present { background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
 .present-head { position: relative; display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
-.present-head .popover { position: absolute; top: 48px; right: 12px; }
 .present-head h2 { font-size: 14px; font-weight: 750; margin-right: auto; }
 .stage { position: relative; margin: 0 16px; border-radius: var(--r); overflow: hidden; outline: 1px solid var(--line); transition: outline-color 0.2s, box-shadow 0.2s; }
 .btn.black-on { background: var(--ink); color: #000; border-color: var(--ink); }
@@ -47,10 +46,7 @@
 .up-next-end { display: grid; place-items: center; aspect-ratio: 16 / 9; border: 1px dashed var(--line); border-radius: 5px; font-size: 11px; color: var(--mute); }
 .up-next-title { grid-column: 2; grid-row: 2; font-size: 13px; font-weight: 650; align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.projector-row { display: flex; align-items: center; gap: 8px; margin: 14px 16px 0; color: var(--mute); }
-.projector-row select { flex: 1; min-width: 0; }
-.session-actions { margin: 8px 16px 0; }
-.present .hint { margin: 6px 16px 0; }
+.session-actions { margin: 14px 16px 0; }
 
 .slides-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 18px 16px 8px; padding-top: 14px; border-top: 1px solid var(--line); }
 .slides-head h3 { margin: 0; font-size: 13px; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

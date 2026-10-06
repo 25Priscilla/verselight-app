@@ -5,7 +5,7 @@ import { bibleLang, BOOK_NAMES, detectBibleLanguage, getVerses, loadBible, parse
 import { rangeLabel } from "../lib/slides";
 
 import { useLibrary } from "../state/library";
-import { ImportBibleDialog, ImportCrossRefsDialog, ManageBiblesDialog } from "./BibleDialogs";
+import { ImportBibleDialog, ImportCrossRefsDialog } from "./BibleDialogs";
 import { ChapterOverview } from "./ChapterOverview";
 import { CrossRefPanel } from "./CrossRefPanel";
 import { Icon } from "./Icon";
@@ -16,12 +16,16 @@ interface Selection { anchor: number; from: number; to: number }
 /** A request from another screen (Word Study) to open one verse in a given translation. */
 export interface OpenVerseRequest { bibleId: string; book: number; chapter: number; verse: number; nonce: number }
 
-export function BibleWorkspace({ active, onPresent, onTranslation, openRequest }: {
+export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, onManageBibles, focusSearch }: {
   active: boolean;
   onPresent: (spec: ScriptureSpec) => void;
   /** Reports the translation being read, so Word Study can search the same one */
   onTranslation?: (bibleId: string) => void;
   openRequest?: OpenVerseRequest | null;
+  /** Opens Settings → Bibles, where Bibles and cross references are imported and removed */
+  onManageBibles: () => void;
+  /** Changes when another screen (Home) asks for the search box to be ready for typing */
+  focusSearch?: number;
 }) {
   const { library, update } = useLibrary();
   const enBibles = library.bibles.filter((b) => bibleLang(b) === "en");
@@ -47,11 +51,12 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest }
   const [query, setQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
   const [results, setResults] = useState<{ query: string; hits: SearchHit[]; total: number } | null>(null);
-  const [dialog, setDialog] = useState<"import" | "manage" | "xrefs" | null>(null);
+  const [dialog, setDialog] = useState<"import" | "xrefs" | null>(null);
   const [scrollTo, setScrollTo] = useState<number | null>(null);
   const verseRefs = useRef(new Map<number, HTMLElement>());
   const readingRef = useRef<HTMLDivElement>(null);
   const chaptersRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Fall back to another Bible of the same language if the chosen one was removed.
   useEffect(() => {
@@ -93,6 +98,13 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest }
   }, [scrollTo, bible, book, chapter, active]);
 
   useEffect(() => { if (bibleId) onTranslation?.(bibleId); }, [bibleId, onTranslation]);
+
+  // Home's "Find a Bible verse": show the search box ready for a reference.
+  useEffect(() => {
+    if (!focusSearch) return;
+    setMode("reference");
+    requestAnimationFrame(() => searchRef.current?.focus());
+  }, [focusSearch]);
 
   // Open a verse sent from Word Study, in the translation it was found in.
   useEffect(() => {
@@ -204,17 +216,13 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest }
     <select className="translation" aria-label={label} value={value}
       onChange={(e) => {
         const v = e.target.value;
-        if (v === "__import") setDialog("import");
-        else if (v === "__manage") setDialog("manage");
-        else if (v === "__xrefs") setDialog("xrefs");
+        if (v === "__manage") onManageBibles();
         else set(v);
       }}>
       {list.length === 0 && <option value="">No Bible imported</option>}
       {list.map((b) => <option key={b.id} value={b.id}>{b.abbreviation} · {b.name}</option>)}
       <option disabled>──────────</option>
-      <option value="__import">Import a Bible…</option>
-      <option value="__xrefs">{library.crossRefs ? "Replace cross references…" : "Import cross references…"}</option>
-      {library.bibles.length > 0 && <option value="__manage">Manage Bibles…</option>}
+      <option value="__manage">Manage Bibles…</option>
     </select>
   );
   const bookButton = (i: number) => (
@@ -286,6 +294,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest }
                 </div>
                 <Icon name="search" />
                 <input
+                  ref={searchRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && runSearch()}
@@ -489,7 +498,6 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest }
       {dialog === "import" && (
         <ImportBibleDialog onClose={() => setDialog(null)} onImported={(m) => { if (bibleLang(m) === "ml") { setMlId(m.id); setView(enBibles.length ? "both" : "ml"); } else { setEnId(m.id); setView("en"); } openChapter(0, 1); }} />
       )}
-      {dialog === "manage" && <ManageBiblesDialog onClose={() => setDialog(null)} />}
       {dialog === "xrefs" && <ImportCrossRefsDialog onClose={() => setDialog(null)} onImported={() => setXrOpen(true)} />}
     </div>
   );

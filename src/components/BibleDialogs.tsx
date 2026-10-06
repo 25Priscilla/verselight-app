@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { bibleFileName, parseBibleFile, saveBible, type BibleData } from "../lib/bible";
 import { deleteData } from "../lib/storage";
 import type { BibleMeta } from "../lib/types";
 import { parseCrossRefFile, saveCrossRefs, XREF_CHANGES, XREF_LICENSE_URL, XREF_SOURCE_URL, type CrossRefData } from "../lib/crossrefs";
 import { useLibrary } from "../state/library";
-import { Button, Field, Modal } from "./ui";
+import { Button, ConfirmDialog, Field, Modal } from "./ui";
 
 export function ImportBibleDialog({ onClose, onImported }: { onClose: () => void; onImported: (meta: BibleMeta) => void }) {
   const { update } = useLibrary();
@@ -78,29 +78,22 @@ export function ImportBibleDialog({ onClose, onImported }: { onClose: () => void
   );
 }
 
-export function ManageBiblesDialog({ onClose }: { onClose: () => void }) {
-  const { library, update } = useLibrary();
-  const remove = async (id: string) => {
+/** Deletes a Bible's text from this computer and removes it from the library. */
+export function useRemoveBible() {
+  const { update } = useLibrary();
+  return useCallback(async (id: string) => {
     await deleteData(bibleFileName(id)).catch(() => undefined);
     update((lib) => ({ ...lib, bibles: lib.bibles.filter((b) => b.id !== id) }));
-  };
+  }, [update]);
+}
+
+/** Asks before removing a Bible. */
+export function RemoveBibleConfirm({ bible, onDone, onCancel }: { bible: BibleMeta; onDone: () => void; onCancel: () => void }) {
+  const remove = useRemoveBible();
   return (
-    <Modal title="Bibles" onClose={onClose}>
-      {library.bibles.length === 0 ? <p className="muted">No Bibles imported.</p> : (
-        <ul className="bible-list">
-          {library.bibles.map((b) => (
-            <li key={b.id}>
-              <div>
-                <strong>{b.name}</strong> <span className="muted">{b.abbreviation}</span>
-                <div className="muted small">{b.license || "No license notice recorded"}</div>
-              </div>
-              <Button variant="quiet" className="danger" onClick={() => remove(b.id)}>Remove</Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="muted small">Passages already in a presentation keep their text when a Bible is removed.</p>
-    </Modal>
+    <ConfirmDialog title={`Remove ${bible.abbreviation || bible.name}?`} confirmLabel="Remove Bible"
+      message={<>{bible.name} will be deleted from this computer. To use it again, you'll need to import the Bible file again. Passages already in a presentation keep their text.</>}
+      onCancel={onCancel} onConfirm={() => { remove(bible.id); onDone(); }} />
   );
 }
 

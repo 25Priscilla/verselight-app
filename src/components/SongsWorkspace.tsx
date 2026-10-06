@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { newId } from "../lib/id";
 import { nextLabel, parseLyrics, songOrder } from "../lib/lyrics";
 import { songSlidesAll } from "../lib/slides";
@@ -15,9 +15,13 @@ interface Props {
   active: boolean;
   themeFor: (slide: Slide) => Theme;
   onPresent: (song: Song, fromSlideKey?: string) => void;
+  /** Changes when Home asks for the search box to be ready for typing */
+  focusSearch?: number;
+  /** A song Home asked to open */
+  openSong?: { id: string; nonce: number } | null;
 }
 
-export function SongsWorkspace({ active, themeFor, onPresent }: Props) {
+export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openSong }: Props) {
   const { library, update } = useLibrary();
   const songs = library.items.filter((i): i is Song => i.kind === "song");
   const [selectedId, setSelectedId] = useState<string | null>(songs[0]?.id ?? null);
@@ -25,6 +29,21 @@ export function SongsWorkspace({ active, themeFor, onPresent }: Props) {
   const [lang, setLang] = useState<"all" | SongLanguage>("all");
   const [view, setView] = useState<"all" | "fav" | "recent">("all");
   const song = songs.find((s) => s.id === selectedId) ?? null;
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Home's "Find a song": the search box, ready for typing.
+  useEffect(() => {
+    if (focusSearch) requestAnimationFrame(() => searchRef.current?.focus());
+  }, [focusSearch]);
+
+  // Home's recently used songs: open that song, clearing any filter that would hide it in the list.
+  useEffect(() => {
+    if (!openSong) return;
+    setSelectedId(openSong.id);
+    setQuery("");
+    setView("all");
+    setLang("all");
+  }, [openSong?.nonce]);
 
   const filtered = useMemo(() => {
     let list = songs.filter((s) => lang === "all" || songLanguage(s) === lang);
@@ -70,7 +89,7 @@ export function SongsWorkspace({ active, themeFor, onPresent }: Props) {
         <div className="context-head">
           <div className="search compact">
             <Icon name="search" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search songs · പാട്ട് തിരയുക" aria-label="Search songs" />
+            <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search songs · പാട്ട് തിരയുക" aria-label="Search songs" />
             {query && <button className="icon-btn" onClick={() => setQuery("")} aria-label="Clear search"><Icon name="x" size={14} /></button>}
           </div>
           <div className="seg lang-seg" role="radiogroup" aria-label="Language">
@@ -108,7 +127,7 @@ export function SongsWorkspace({ active, themeFor, onPresent }: Props) {
               {query ? `No songs match “${query}”.`
                 : view === "fav" ? "No favorites yet. Tap the star on a song to keep it here."
                 : view === "recent" ? "Songs you present or add to a presentation will appear here."
-                : lang === "ml" ? "No Malayalam songs yet. Add one with New Malayalam song, or import OpenLyrics files from the ⋯ menu."
+                : lang === "ml" ? "No Malayalam songs yet. Add one with New Malayalam song, or import OpenLyrics files in Settings → Songs."
                 : "No songs yet."}
             </li>
           )}
