@@ -16,6 +16,7 @@
 .settings-inline select { flex: 1; min-width: 0; max-width: 480px; }
 .settings-note { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-soft); font-size: var(--text-sm); }
 .settings-note .icon { color: var(--accent); margin-top: 2px; }
+.settings-note.warning .icon { color: var(--warning); }
 .settings-fact { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-semibold); }
 .settings-fact .icon { color: var(--success); }
 .settings-fact.muted { font-weight: var(--weight-medium); }

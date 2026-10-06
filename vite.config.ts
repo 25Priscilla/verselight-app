@@ -13,5 +13,6 @@ export default defineConfig({
   server: { port: 1420, strictPort: true, watch: { ignored: ["**/src-tauri/**"] } },
   build: { target: ["es2021", "chrome105", "safari15"], outDir: "dist" },
   // npm test: logic tests run in Node; component tests opt into jsdom with a "@vitest-environment jsdom" comment.
-  test: { include: ["src/**/*.test.{ts,tsx}"], setupFiles: ["src/test/setup.ts"] },
+  // The whole-app tests render every screen in jsdom; run side by side they can pass 5 s on a slower laptop.
+  test: { include: ["src/**/*.test.{ts,tsx}"], setupFiles: ["src/test/setup.ts"], testTimeout: 20000 },
 });

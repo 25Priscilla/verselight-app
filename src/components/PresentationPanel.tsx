@@ -20,6 +20,8 @@ interface Props {
   blackout: boolean;
   projector: ProjectorStatus;
   displayName: string;
+  /** Why the projector isn't showing the slides (no second screen, screen unplugged, …), or null */
+  problem?: string | null;
   onGoto: (index: number) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -81,6 +83,7 @@ export function PresentationPanel(p: Props) {
         <h2>Presentation</h2>
         <span className={`status ${status.cls}`} role="status"><span className="dot" aria-hidden />{status.text}</span>
       </div>
+      {p.problem && <p className="present-note" role="note"><Icon name="info" size={14} /><span>{p.problem}</span></p>}
 
       {has ? (
         <>
