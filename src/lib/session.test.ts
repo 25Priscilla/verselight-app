@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BibleData } from "./bible";
 import {
-  atEdge, chapterNeighbours, chapterSlides, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey,
+  atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey,
   type ScriptureSpec, type Session, type SessionState,
 } from "./session";
 import type { Song } from "./types";
@@ -121,5 +121,27 @@ describe("song sessions", () => {
   it("follows the arrangement and leaves out hidden slides", () => {
     const arranged = { ...song, arrangement: ["Chorus", "Verse 2"], hidden: ["Verse 2#0"] };
     expect(sessionSlides({ kind: "song", songId: "s1" }, new Map([["s1", arranged]])).map((s) => s.label)).toEqual(["Chorus"]);
+  });
+
+  it("stays on the same words when the song on screen is rearranged, without changing Black", () => {
+    const session: Session = { kind: "song", songId: "s1" };
+    const before = sessionSlides(session, new Map([["s1", song]]));
+    let s = sessionReducer(initialSession, { type: "start", session, index: 3 }); // Verse 2
+    s = sessionReducer(s, { type: "blackout" });
+    const after = sessionSlides(session, new Map([["s1", { ...song, arrangement: ["Verse 2", "Chorus", "Verse 1"] }]]));
+    const at = followSlide(before[3].key, after, s.index);
+    expect(at).toBe(0);
+    s = sessionReducer(s, { type: "follow", index: at! });
+    expect(after[s.index].label).toBe("Verse 2");
+    expect(s.blackout).toBe(true);
+  });
+
+  it("doesn't move when the live slide is where it was, or was left out", () => {
+    const session: Session = { kind: "song", songId: "s1" };
+    const before = sessionSlides(session, new Map([["s1", song]]));
+    expect(followSlide(before[2].key, before, 2)).toBeNull();
+    const hidden = sessionSlides(session, new Map([["s1", { ...song, hidden: ["Verse 2#0"] }]]));
+    expect(followSlide(before[3].key, hidden, 3)).toBeNull();
+    expect(followSlide(null, before, 0)).toBeNull();
   });
 });

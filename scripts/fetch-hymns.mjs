@@ -54,6 +54,7 @@ async function main() {
   const songs = kept
     .map((r) => ({
       title: r.title.trim(),
+      language: "en",
       artist: (r.writer || "").trim(),
       year: r.year ?? null,
       copyright: r.licenseVersion === "CC0" ? "CC0 (dedicated by the writer)" : "Public domain",
@@ -81,7 +82,7 @@ async function main() {
     console.log(`Skipped ${skippedLate.length} public-domain entries dated after 1930 without a CC0 dedication:`);
     for (const r of skippedLate) console.log(`  - ${r.title} (${r.year})`);
   }
-  console.log("Import it in VerseLight: ⋯ menu at the bottom left > Import songs.");
+  console.log("Import it in VerseLight: Songs > Import (or Settings > Songs > Import songs).");
 }
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("fetch-hymns.mjs")) {

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { newId } from "../lib/id";
 import { readData, writeData } from "../lib/storage";
 import { detectLanguage } from "../lib/malayalam";
+import { migrateSongSlideKeys } from "../lib/slides";
 import type { Library, LibraryItem, Look, Song, Theme } from "../lib/types";
 
 const FILE = "library.json";
@@ -134,6 +135,7 @@ export function normalizeLibrary(parsed: Library): Library {
     assign: { bible: null, songs: null, items: {}, slides: {}, ...(parsed.assign as Partial<Library["assign"]> | undefined) },
     bookmarks: Array.isArray(parsed.bookmarks) ? parsed.bookmarks : [],
   };
+  lib.assign.slides = migrateSongSlideKeys(lib.assign.slides, lib.items.filter((i): i is Song => i.kind === "song"));
   if (!lib.services.some((s) => s.id === lib.activeServiceId)) {
     lib.activeServiceId = lib.services[0]?.id ?? null;
   }

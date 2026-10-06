@@ -3,7 +3,8 @@ import { planSongImport, readSongFiles, toSong, type SongFile } from "../lib/son
 import { useLibrary } from "../state/library";
 import { Button, Modal } from "./ui";
 
-export function SongImportDialog({ onClose, onImported }: { onClose: () => void; onImported: (count: number) => void }) {
+/** `onImported` gets how many songs were added and the id of the first one. */
+export function SongImportDialog({ onClose, onImported }: { onClose: () => void; onImported: (count: number, firstId: string) => void }) {
   const { library, update } = useLibrary();
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<SongFile | null>(null);
@@ -28,7 +29,7 @@ export function SongImportDialog({ onClose, onImported }: { onClose: () => void;
     if (!plan || plan.fresh.length === 0) return;
     const songs = plan.fresh.map(toSong);
     update((lib) => ({ ...lib, items: [...lib.items, ...songs] }));
-    onImported(songs.length);
+    onImported(songs.length, songs[0].id);
     onClose();
   };
 
@@ -63,8 +64,15 @@ export function SongImportDialog({ onClose, onImported }: { onClose: () => void;
           <p className="small">
             {file.songs.length} {file.songs.length === 1 ? "song" : "songs"} found
             {(() => { const ml = file.songs.filter((x) => x.language === "ml").length; return ml ? ` (${ml} Malayalam)` : ""; })()}. {plan.fresh.length} will be added
-            {plan.duplicates > 0 && `; ${plan.duplicates} are already in your library and will be skipped`}.
+            {plan.duplicates > 0 && `; ${plan.duplicates} ${plan.duplicates === 1 ? "is" : "are"} already in your library and will be skipped`}.
           </p>
+          {plan.skipped.length > 0 && (
+            <details className="import-skipped">
+              <summary>Already in your library ({plan.skipped.length})</summary>
+              <p className="muted small">A song with the same title and writer is already there. It is left exactly as it is; nothing is replaced.</p>
+              <ul>{plan.skipped.map((x, i) => <li key={i} lang={x.language}>{x.title}{x.artist ? ` · ${x.artist}` : ""}</li>)}</ul>
+            </details>
+          )}
           {file.license && <p className="muted small">{file.license}</p>}
           {file.source && <p className="muted small">Source: {file.source}</p>}
           <label className="check">

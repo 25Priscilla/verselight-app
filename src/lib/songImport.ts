@@ -3,7 +3,7 @@
  * VerseLight doesn't generate or alter song text.
  */
 import { newId } from "./id";
-import { detectLanguage, hasMalayalam } from "./malayalam";
+import { detectLanguage, hasMalayalam, searchKey } from "./malayalam";
 import type { LibraryItem, Song, SongLanguage } from "./types";
 
 export interface SongFileEntry {
@@ -38,23 +38,36 @@ export function parseSongFile(raw: string): SongFile {
   return { name: String(json.name ?? "Imported songs"), source: String(json.source ?? ""), license: String(json.license ?? ""), songs };
 }
 
-const key = (title: string, artist: string) =>
-  `${title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}|${artist.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}`;
+/**
+ * Two songs are the same song when their titles and writers match, ignoring case, punctuation and the
+ * different ways Malayalam can be typed (see searchKey). Songs with no title never match.
+ */
+export const songKey = (title: string, artist: string) => `${searchKey(title)}|${searchKey(artist)}`;
 
-/** Splits the file into songs that are new and songs already in the library (same title and writer). */
+/** Another song in the library with the same title and writer, if there is one. */
+export function findDuplicateSong(song: Pick<Song, "id" | "title" | "artist">, items: LibraryItem[]): Song | undefined {
+  if (!searchKey(song.title)) return undefined;
+  const k = songKey(song.title, song.artist);
+  return items.find((i): i is Song => i.kind === "song" && i.id !== song.id && songKey(i.title, i.artist) === k);
+}
+
+/**
+ * Splits the file into songs that are new and songs already in the library (same title and writer).
+ * Songs already there are never changed; a song that appears twice in the file is added once.
+ */
 export function planSongImport(file: SongFile, items: LibraryItem[]) {
-  const existing = new Set(items.filter((i): i is Song => i.kind === "song").map((s) => key(s.title, s.artist)));
+  const existing = new Set(items.filter((i): i is Song => i.kind === "song").map((s) => songKey(s.title, s.artist)));
   const fresh: SongFileEntry[] = [];
-  let duplicates = 0;
+  const skipped: SongFileEntry[] = [];
   for (const s of file.songs) {
-    const k = key(s.title, s.artist ?? "");
-    if (existing.has(k)) duplicates++;
+    const k = songKey(s.title, s.artist ?? "");
+    if (existing.has(k)) skipped.push(s);
     else {
       existing.add(k);
       fresh.push(s);
     }
   }
-  return { fresh, duplicates };
+  return { fresh, duplicates: skipped.length, skipped };
 }
 
 export function toSong(entry: SongFileEntry): Song {

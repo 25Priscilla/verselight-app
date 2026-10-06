@@ -56,11 +56,12 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
 
         <Topic icon="music" title="Present a song">
           <ol>
-            <li>Open <strong>Songs</strong> and search by title or by words from the lyrics.</li>
-            <li>Click the song, then press <strong>Present Now</strong>. You can also press the ▶ next to a song in the list.</li>
+            <li>Open <strong>Songs</strong> and search by title or by words from the lyrics. Press <kbd>Enter</kbd> to open the first match.</li>
+            <li>Check the slides on the right. Move a section with its arrows, or click a slide to leave it out.</li>
+            <li>Press <strong>Present Now</strong>. You can also press the ▶ next to a song in the list.</li>
             <li>To start part-way through, press the ▶ on that slide in the song.</li>
           </ol>
-          <p className="muted">Each verse and chorus is its own slide, in the order the song is sung. Changes to the words show on the screen straight away.</p>
+          <p className="muted">Each verse and chorus is its own slide, in the order the song is sung. The slide on the projector is marked <em>Now</em>. Changes to the words show on the screen straight away.</p>
         </Topic>
 
         <Topic icon="next" title="Previous and Next">
