@@ -78,9 +78,11 @@ export function chapterSlides(spec: ScriptureSpec, chapter: number, src: Sources
     });
   }
   const translations = mode === "both" && meta2 ? `${meta.abbreviation} · ${meta2.abbreviation}` : meta.abbreviation;
-  return verses.map((text, i) => {
+  return verses.flatMap((text, i) => {
+    // A verse number with no text in either translation (the ESV keeps omitted verses, like Matthew 17:21, as gaps) gets no slide.
+    if (!text && !(mode === "both" && other[i])) return [];
     const label = `${book.name} ${chapter}:${i + 1}`;
-    return {
+    return [{
       key: verseKey(spec.book, chapter, i + 1),
       itemId: "bible",
       kind: "scripture" as const,
@@ -89,7 +91,7 @@ export function chapterSlides(spec: ScriptureSpec, chapter: number, src: Sources
       footer: `${label} (${translations})`,
       lang,
       ...(mode === "both" ? { parallelLines: [(other[i] ?? "").trim()], parallelLang: lang2 } : {}),
-    };
+    }];
   });
 }
 

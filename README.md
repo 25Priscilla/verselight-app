@@ -117,12 +117,48 @@ Then import that file in the app under **Bibles → Import Bible file**. That da
 
 **NIV and other copyrighted translations.** Biblica licenses the NIV for online display only. Storing the full text offline needs written permission from Biblica, and quoting without permission is limited to 500 verses. Until you have a license, use **Enter verses manually** to paste individual passages from a licensed source, within Biblica's quotation limits, with the copyright notice filled in.
 
+**ESV (English Standard Version).** The ESV is © 2001 Crossway. VerseLight contains no ESV text and never downloads or saves the whole ESV. There are two legal ways to use it; see [ESV (English Standard Version)](#esv-english-standard-version) below.
+
 **Supported import formats** (JSON):
 
 1. VerseLight format:
    `{ "format": "verselight-bible", "name", "abbreviation", "license", "books": [{ "name", "chapters": [["verse 1", "verse 2"]] }] }`
 2. An array of books: `[{ "name"?, "chapters": [["verse 1", ...]] }]`. Missing names use the standard 66-book order.
 3. `{ "books": [{ "name", "chapters": [{ "verses": [{ "verse", "text" }] }] }] }`
+
+## ESV (English Standard Version)
+
+The ESV is copyrighted by Crossway. VerseLight does not include, bundle, download or save the ESV text, and the repository contains none. It can be used in two ways.
+
+### 1. Read it online with your church's ESV API key (recommended)
+
+1. Create a free key for your church at https://api.esv.org/account/create-application/ (non-commercial use).
+2. In VerseLight, open **Settings → Bibles → Import a Bible** and choose **Use the ESV online…**.
+3. Paste the key, accept the terms for non-commercial church use, and choose **Connect ESV**. VerseLight checks the key with a one-verse request first.
+
+**ESV** then appears in the Bible screen's English translation menu next to your other Bibles. Books, chapters, the verse menu, reference search, keyword search, the EN + മല parallel view and **Present Now** (including Next/Previous into the next chapter) all work as for an imported Bible.
+
+How it stays within Crossway's [ESV API terms](https://api.esv.org/#conditions):
+
+- **Chapters are fetched one at a time** as they are read or presented, so each request stays within the 500-verse/half-a-book query limit.
+- **No ESV text is saved to disk.** At most 500 verses, and never more than half of any book, are kept in memory, least recently used first (`src/lib/esv.ts`, `EsvChapterCache`). For one- and two-chapter books, which Crossway lets you fetch a chapter at a time, only one chapter is kept. Closing VerseLight discards it all.
+- **Copyright and link:** the Bible screen shows Crossway's notice and a link to www.esv.org under the text, and the Settings list records the notice.
+- **"ESV" with each quotation:** projector slides are credited in the footer, for example "John 3:16 (ESV)". The footer is controlled by the Look's **Show references** setting, so **keep Show references on for ESV slides**. Crossway's policy for church use (bulletins, projection) asks for "(ESV)" at the end of each quotation.
+- **The API key is yours:** it is stored on this computer only, in its own file (`esv-api-key.json` in the app-data folder, or IndexedDB in the browser preview). It is not in `library.json`, not in **Back up library** files, and never in this repository. Crossway's terms forbid sharing or publishing it. **Remove** on the ESV in Settings → Bibles deletes the key and the verses in memory.
+- **Usage limits:** Crossway allows 5,000 requests a day, 1,000 an hour and 60 a minute. One chapter is one request.
+
+Limits of reading online:
+
+- It needs an internet connection. If the ESV can't be reached, the Bible screen says so; imported Bibles keep working offline.
+- **Keyword search** uses the ESV API's search and shows its first 100 verses.
+- **Word Study** isn't available for the ESV: counting every occurrence needs the whole text on this computer, which the terms don't allow. Global Quick Search finds ESV references but searches words only in imported Bibles. Cross-reference and Overview previews show ESV text only for chapters already in memory.
+- The desktop app's content security policy (`src-tauri/tauri.conf.json`) allows network requests to `https://api.esv.org` only.
+
+### 2. Import a licensed ESV file
+
+If your church has **written permission from Crossway** to keep the ESV text offline (see https://www.crossway.org/permissions/), import that file under **Settings → Bibles → Import a Bible**, like the KJV. It must be in one of the supported formats above. If the file has no license notice, VerseLight suggests Crossway's. Without that permission, don't import an ESV file; use the API instead.
+
+Required notice (from Crossway): *Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.*
 
 ## Malayalam Bible and the parallel (bilingual) view
 
@@ -355,7 +391,7 @@ These work in both the control window (when you're not typing) and the projector
 - Windows: `%APPDATA%\app.verselight.desktop\`
 - macOS: `~/Library/Application Support/app.verselight.desktop/`
 
-`library.json` holds songs, services, scripture passages and the look settings. Each imported Bible is stored as `bible-<id>.json`. Background images are embedded in the library, so large photos make it bigger; images under 2 MB are best.
+`library.json` holds songs, services, scripture passages and the look settings. Each imported Bible is stored as `bible-<id>.json`. If the ESV is connected, its API key is in `esv-api-key.json` (no ESV text is ever stored). Background images are embedded in the library, so large photos make it bigger; images under 2 MB are best.
 
 ## Project structure
 
@@ -364,6 +400,7 @@ src/
   App.tsx                   Chooses the control window or the projector view
   lib/types.ts              Data model
   lib/bible.ts              Bible file import, reference parsing, keyword search
+  lib/esv.ts                The ESV read online (ESV API): key storage, in-memory chapter cache, search
   lib/bookmarks.ts          Saved verses and passages
   lib/crossrefs.ts          Cross-reference import and lookup (OpenBible.info)
   lib/overview.ts           Chapter Overview: sections, key verses, related chapters, next/previous chapter

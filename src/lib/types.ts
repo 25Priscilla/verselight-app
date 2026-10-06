@@ -150,6 +150,8 @@ export interface BibleMeta {
   language?: "en" | "ml";
   bookCount: number;
   importedAt: number;
+  /** "esv-api" for the ESV read online (no text stored; see esv.ts). Absent for imported Bible files. */
+  source?: "esv-api";
 }
 
 /** A saved background + text style preset. */

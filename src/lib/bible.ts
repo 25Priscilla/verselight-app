@@ -4,6 +4,7 @@
  * The one exception is display: the KJV brace markup (italic supplied words, margin notes) is
  * tidied when a Bible is loaded; see kjvText.ts. The stored file is unchanged.
  */
+import { ESV_SOURCE, esvBible, fetchEsvChapter, isOnlineBible } from "./esv";
 import { newId } from "./id";
 import { cleanKjvVerse, hasKjvMarkup } from "./kjvText";
 import { hasMalayalam, searchKey } from "./malayalam";
@@ -29,6 +30,11 @@ export interface BibleData {
   abbreviation: string;
   license: string;
   books: { name: string; chapters: string[][] }[];
+  /**
+   * Only for a Bible read online (the ESV, see esv.ts): never saved, and only the chapters held in memory have text.
+   * Absent for every imported Bible file.
+   */
+  source?: typeof ESV_SOURCE;
 }
 
 type Unknown = Record<string, unknown>;
@@ -115,7 +121,11 @@ export async function saveBible(data: BibleData): Promise<BibleMeta> {
   };
 }
 
+/** The library id of the ESV read online. Imported Bible files have random ids, so they never clash with it. */
+export const ESV_BIBLE_ID = ESV_SOURCE;
+
 export async function loadBible(id: string): Promise<BibleData | null> {
+  if (id === ESV_BIBLE_ID) return esvBible();
   const hit = cache.get(id);
   if (hit) return hit;
   const raw = await readData(fileName(id));
@@ -126,6 +136,16 @@ export async function loadBible(id: string): Promise<BibleData | null> {
 }
 
 export const bibleFileName = fileName;
+
+/**
+ * The Bible with this chapter's text in it. An imported Bible already has every chapter, so it comes back unchanged
+ * (the same object). The ESV fetches the chapter if it isn't in memory and returns a fresh copy that includes it.
+ */
+export async function ensureChapter(bible: BibleData, bookIndex: number, chapter: number): Promise<BibleData> {
+  if (!isOnlineBible(bible) || !bible.books[bookIndex]?.chapters[chapter - 1]) return bible;
+  await fetchEsvChapter(bookIndex, chapter);
+  return esvBible();
+}
 
 export function getVerses(
   bible: BibleData,
@@ -212,7 +232,8 @@ export function parseReference(bible: BibleData, input: string): ParsedRef | nul
   }
   const asked = Number(chapterStr ?? 1);
   const chapter = Math.min(Math.max(1, asked), book.chapters.length);
-  const count = book.chapters[chapter - 1]?.length ?? 0;
+  // An online chapter not fetched yet has no verse count to check against.
+  const count = book.chapters[chapter - 1]?.length || (isOnlineBible(bible) ? Infinity : 0);
   const adjusted = chapter !== asked ? { adjusted: "chapter" as const } : {};
   if (!fromStr) return { bookIndex, chapter, ...adjusted };
   const from = Math.min(Math.max(1, Number(fromStr)), count);

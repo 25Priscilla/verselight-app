@@ -4,6 +4,7 @@
  * per-Bible index), songs use songMatches/songRank, so it finds exactly what the Bible and Songs screens find.
  * Everything runs on the Bibles and songs already on this computer.
  */
+import { isOnlineBible } from "./esv";
 import { BOOK_NAMES, bibleLang, parseReference, searchBible, searchWords, type BibleData, type MatchMode } from "./bible";
 import { languageName } from "./languages";
 import { searchKey, songLanguage, songMatches, songRank } from "./malayalam";
@@ -71,9 +72,10 @@ export function findReference(sources: BibleSource[], query: string): BibleResul
     // being typed (like "an", inside "Daniel") isn't taken for a book.
     if (bare && !bookNameStarts(data, ref.bookIndex, query)) continue;
     const verses = book.chapters[ref.chapter - 1] ?? [];
-    if (!verses.length) continue;
+    // The ESV (read online) has text only for chapters in memory; the reference still opens it.
+    if (!verses.length && !isOnlineBible(data)) continue;
     const from = ref.from ?? 1;
-    const to = ref.to ?? (ref.from ? from : verses.length);
+    const to = ref.to ?? (ref.from ? from : verses.length || from);
     const label = ref.from ? `${book.name} ${ref.chapter}:${from}${to > from ? `–${to}` : ""}` : `${book.name} ${ref.chapter}`;
     return { bibleId: meta.id, book: ref.bookIndex, chapter: ref.chapter, verse: from, to, label, text: verses[from - 1] ?? "", lang: bibleLang(meta), translation: meta.abbreviation, reference: true };
   }
@@ -93,7 +95,8 @@ export function findVerses(sources: BibleSource[], query: string, limit = BIBLE_
   const hits: BibleResult[] = [];
   const seen = new Set<string>();
   let total = 0;
-  sources.forEach(({ meta, data }, i) => {
+  // Words are searched in the Bibles on this computer; the ESV (read online) has no text here to search.
+  sources.filter(({ data }) => !isOnlineBible(data)).forEach(({ meta, data }, i) => {
     const found = searchBible(data, query, { limit, mode: BIBLE_MATCH });
     if (i === 0) total = found.total;
     for (const h of found.hits) {
