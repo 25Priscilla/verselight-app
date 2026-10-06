@@ -66,7 +66,7 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
         <Topic icon="next" title="Previous and Next">
           <p>Press <strong>Next</strong> to go forward one slide and <strong>Previous</strong> to go back. The keyboard and most presentation clickers work too.</p>
           <p>To jump to any slide, click it in the slide list on the right.</p>
-          <p className="muted">The preview shows exactly what the projector shows, and underneath it you can see what comes next.</p>
+          <p className="muted">The preview shows exactly what the projector shows, with your place (for example <em>Slide 3 of 12</em>). Underneath it you can see what comes next.</p>
         </Topic>
 
         <Topic icon="square" title="Black screen">
@@ -75,8 +75,8 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
         </Topic>
 
         <Topic icon="stop" title="Stop and close">
-          <p><strong>Stop presentation</strong> (or <kbd>Esc</kbd>) turns the projector screen off but keeps your place. <strong>Start presentation</strong> brings it back on the same slide.</p>
-          <p><strong>Close</strong>, above the slide list, clears the presentation and hides the controls.</p>
+          <p><strong>Stop presentation</strong> (or <kbd>Esc</kbd>) turns the projector screen off but keeps your place. <strong>Start presenting</strong> brings it back on the same slide.</p>
+          <p><strong>Close</strong>, next to Stop presentation, clears the presentation and hides the controls.</p>
         </Topic>
 
         <Topic icon="monitor" title="Projector status">

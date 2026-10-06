@@ -28,12 +28,14 @@ VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (w
 - Slides are created automatically. Drag sections (or use the arrows) to reorder them, click a slide to leave it out, and add sections to the order again.
 - **▶ Present Now** shows the song on the projector; the ▶ on a slide starts from that slide. Edits made while presenting update the screen straight away.
 
-**Presentation** (the laptop's control screen)
-- Current slide preview with its position (for example "17 / 36"), and the next slide.
-- **Previous**, **Next** and **Black** screen, and **Stop presentation**. Choose the projector display in **Settings → Projector**.
-- A connection status: *Projector off*, *Connecting to projector…* or *Live on <display name>*.
-- The slide list: click any slide to show it at once. The current slide is marked in red; verses you originally selected are outlined.
-- **Close**, above the slide list, clears the presentation and hides the panel.
+**Presentation** (the laptop's control screen; the projector shows only the slide)
+- The projector status: *Projector off*, *Connecting to projector…* or *Live on <display name>*.
+- The current slide, marked *On screen now*, *Black screen* or *Preview only* (projector off), with your place: *Slide 3 of 12*.
+- Large **Previous**, **Next** and **Black** buttons. While the screen is black the button reads **Show**. Previous and Next are greyed out at the first and last slide, unless a Bible passage can run on into another chapter.
+- A preview of the next slide. At the end of a chapter it names the next chapter (for example *John 4 (next chapter)*); at the end it says *End of song* or *End of passage*.
+- **Start presenting** (while the projector is off) or **Stop presentation**, and **Close** beside it. Stop turns the projector screen off and keeps your place; Close clears the presentation and hides the panel.
+- The slide list: click any slide to show it at once. Each slide shows its number; the current slide is outlined in red and marked *Now*; verses you originally selected are outlined. The image button on a slide sets that slide's background; the menu opens inside the window, and **Esc** closes just the menu.
+- Choose the projector display in **Settings → Projector**.
 
 **Backgrounds** sets the default font, text size, colours and background (the Default look) and your other looks. See [Presentation backgrounds](#presentation-backgrounds-looks).
 
@@ -72,6 +74,14 @@ Installers are written to `src-tauri/target/release/bundle/`. Windows produces `
 The builds are unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch. On macOS, right-click the app and choose **Open**. For wider distribution, set up code signing: https://tauri.app/distribute/
 
 `npm run dev` also runs the UI in a normal browser for quick design work. There, the projector opens as a popup and data is stored in localStorage.
+
+## Tests
+
+```bash
+npm test
+```
+
+Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, black screen, song order), the presentation keys, and the presentation panel's controls and background menu.
 
 ## Bible text
 
@@ -206,9 +216,9 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 | Space, → (also ↓, Page Down, most clickers) | Next |
 | ← (also ↑, Page Up) | Previous |
 | B | Black screen on/off |
-| Esc | Stop presentation |
+| Esc | Stop presentation (an open menu closes first) |
 
-**Stopping and starting again.** **Stop presentation** (or Esc) closes the projector but keeps your place. **Start presentation** reopens it on the same slide. **Close** in the slide list clears the presentation.
+**Stopping and starting again.** **Stop presentation** (or Esc) closes the projector but keeps your place. **Start presenting** reopens it on the same slide. **Close**, next to Stop presentation, clears the presentation.
 
 **How it stays in sync.** There is one presentation state: the slides and the current slide. The laptop preview, the slide list and the projector all read that same state, and the projector is sent exactly the slide the preview shows, with the same background and black-screen setting. The projector reports back when its window opens; that is when the status turns to *Live*.
 
@@ -287,7 +297,7 @@ These work in both the control window (when you're not typing) and the projector
 | → ↓ Space Page Down | Next slide |
 | ← ↑ Page Up | Previous slide |
 | B | Black screen on/off |
-| Esc | Stop presenting (in a text box, Esc leaves the box first) |
+| Esc | Stop presenting (in a text box or an open menu, Esc closes that first) |
 | Enter | Present the selected Bible verses (Bible screen) |
 
 ## Where data is stored
@@ -309,6 +319,8 @@ src/
   lib/storage.ts            Offline storage (Rust commands, or localStorage in a browser)
   lib/bridge.ts             Messages between windows (Tauri events / BroadcastChannel)
   lib/display.ts            List displays, open and close the projector
+  lib/session.ts            The presentation session: slides, current slide, chapter run-on
+  lib/liveKeys.ts           Which key does what on the control screen
   state/library.tsx         Library state, autosave and migration from v1
   components/
     ControlApp.tsx          Layout, live state, shortcuts
@@ -320,7 +332,8 @@ src/
     BibleWorkspace.tsx      Translation, books, chapters, reading page, search, add bar
     BibleDialogs.tsx        Import Bibles and cross references; confirm removing a Bible
     SongsWorkspace.tsx      Song library, lyrics editor, slide arrangement
-    PresentationPanel.tsx   Preview, transport, slide list
+    PresentationPanel.tsx   Live controls: current and next slide, Previous/Next/Black, Start/Stop/Close, slide list
+    LookPicker.tsx          A slide's background menu
     ShortcutTable.tsx       The keyboard shortcut table (list in lib/shortcuts.ts)
     SlideRenderer.tsx       Draws a slide at any size (thumbnails, preview, projector)
     PresentationView.tsx    Projector window
