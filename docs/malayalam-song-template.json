@@ -1,0 +1,24 @@
+{
+  "format": "verselight-songs",
+  "name": "Malayalam songs (replace with a name for this file)",
+  "source": "Where these songs came from, if they all came from one place",
+  "license": "Permission or licence covering every song in this file, if there is one. A song's own \"license\" takes its place.",
+  "songs": [
+    {
+      "title": "മലയാളം പേര് (Malayalam title)",
+      "altTitle": "English or transliterated title",
+      "language": "ml",
+      "artist": "Writer or composer, if known",
+      "copyright": "Copyright notice, e.g. © 2001 Name",
+      "ccli": "",
+      "translator": "Who wrote the English translation, if anyone",
+      "license": "The permission you have for this song, e.g. Permission from the writer by email, 1 October 2026",
+      "source": "Where the words came from, e.g. a songbook or web address",
+      "lyrics": "[Verse 1]\nവരി ഒന്ന് (line one)\nവരി രണ്ട് (line two)\n\n[Chorus]\nപല്ലവി (chorus line)",
+      "translation": "[Verse 1]\nEnglish line one\nEnglish line two\n\n[Chorus]\nEnglish chorus line",
+      "translationLanguage": "en",
+      "display": "both",
+      "arrangement": ["Verse 1", "Chorus"]
+    }
+  ]
+}

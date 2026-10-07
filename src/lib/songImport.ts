@@ -20,6 +20,11 @@ export interface SongFileEntry {
   translation?: string;
   translationLanguage?: SongLanguage;
   display?: SongDisplay;
+  translator?: string;
+  /** Licence or permission for this song. Taken from the file's `license` when missing */
+  license?: string;
+  /** Where the words came from. Taken from `sourceUrl`, then the file's `source`, when missing */
+  source?: string;
   sourceUrl?: string;
 }
 
@@ -39,8 +44,17 @@ export function parseSongFile(raw: string): SongFile {
     (s): s is SongFileEntry => !!s && typeof s.title === "string" && typeof s.lyrics === "string" && s.lyrics.trim() !== "",
   );
   if (songs.length === 0) throw new Error("the file has no songs in it.");
-  return { name: String(json.name ?? "Imported songs"), source: String(json.source ?? ""), license: String(json.license ?? ""), songs };
+  const source = String(json.source ?? "");
+  const license = String(json.license ?? "");
+  // Each song keeps its own licence and source; the file's apply to songs that don't give one.
+  return {
+    name: String(json.name ?? "Imported songs"), source, license,
+    songs: songs.map((s) => ({ ...s, license: s.license?.trim() || license, source: s.source?.trim() || s.sourceUrl?.trim() || source })),
+  };
 }
+
+/** The songs with no licence or permission recorded. */
+export const songsWithoutLicense = (songs: SongFileEntry[]) => songs.filter((s) => !s.license?.trim());
 
 /**
  * Two songs are the same song when their titles and writers match, ignoring case, punctuation and the
@@ -75,6 +89,11 @@ export function planSongImport(file: SongFile, items: LibraryItem[]) {
 }
 
 export function toSong(entry: SongFileEntry): Song {
+  const extra = {
+    translator: (entry.translator ?? "").trim(),
+    license: (entry.license ?? "").trim(),
+    source: (entry.source || entry.sourceUrl || "").trim(),
+  };
   return {
     kind: "song",
     id: newId(),
@@ -84,6 +103,7 @@ export function toSong(entry: SongFileEntry): Song {
     artist: (entry.artist ?? "").trim(),
     copyright: (entry.copyright ?? "").trim(),
     ccli: (entry.ccli ?? "").trim(),
+    ...Object.fromEntries(Object.entries(extra).filter(([, v]) => v)),
     lyrics: entry.lyrics,
     ...(typeof entry.translation === "string" && entry.translation.trim()
       ? {

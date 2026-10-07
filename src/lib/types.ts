@@ -21,6 +21,12 @@ export interface Song {
   artist: string;
   copyright: string;
   ccli: string;
+  /** Who translated the lyrics, if anyone. Kept with the song only; not shown on screen */
+  translator?: string;
+  /** The licence or permission the church has to use this song, e.g. "Permission from the writer by email, Oct 2026" */
+  license?: string;
+  /** Where the words came from, e.g. a web address or a songbook */
+  source?: string;
   /**
    * Lyrics with section tags on their own line, e.g. "[Verse 1]", "[Chorus]", "[Bridge]".
    * A tag with no lines under it repeats the earlier section with that name.

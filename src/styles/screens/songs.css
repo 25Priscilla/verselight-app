@@ -13,6 +13,7 @@
 .song-actions { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
 .credits { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
 .credits input { font-size: 13px; padding: 6px 10px; background: var(--panel); }
+.credits-permission { grid-template-columns: 2fr 1.5fr 1fr; }
 .song-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; flex: 1; }
 .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; min-height: 32px; }
 .pane-head h2 { font-size: 14px; font-weight: 700; display: flex; gap: 6px; }
