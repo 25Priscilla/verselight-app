@@ -335,6 +335,11 @@ function SongEditor({ song, themeFor, onChange, onDelete, onPresent, liveKey, du
           <input value={song.copyright} placeholder="Copyright" onChange={(e) => set({ copyright: e.target.value })} aria-label="Copyright" />
           <input value={song.ccli} placeholder="CCLI song number" onChange={(e) => set({ ccli: e.target.value })} aria-label="CCLI song number" />
         </div>
+        <div className="credits credits-permission">
+          <input value={song.license ?? ""} placeholder="Licence or permission to use this song" onChange={(e) => set({ license: e.target.value })} aria-label="Licence or permission" />
+          <input value={song.source ?? ""} placeholder="Source (songbook or web address)" onChange={(e) => set({ source: e.target.value })} aria-label="Source" />
+          <input value={song.translator ?? ""} placeholder="Translator" onChange={(e) => set({ translator: e.target.value })} aria-label="Translator" />
+        </div>
 
         <div className={cx("song-body", bilingual && "bilingual")}>
           <section className="lyrics-pane">

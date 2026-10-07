@@ -13,7 +13,8 @@
     "fetch-hymns": "node scripts/fetch-hymns.mjs",
     "fetch-malayalam-bible": "node scripts/fetch-malayalam-bible.mjs",
     "fetch-crossrefs": "node scripts/fetch-crossrefs.mjs",
-    "fetch-sections": "node scripts/fetch-sections.mjs"
+    "fetch-sections": "node scripts/fetch-sections.mjs",
+    "docx-songs": "vite-node scripts/docx-songs.ts"
   },
   "dependencies": {
     "@fontsource-variable/crimson-pro": "^5.1.0",

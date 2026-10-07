@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { planSongImport, readSongFiles, toSong, type SongFile } from "../lib/songImport";
+import { planSongImport, readSongFiles, songsWithoutLicense, toSong, type SongFile } from "../lib/songImport";
 import { useLibrary } from "../state/library";
 import { Button, Modal } from "./ui";
 
@@ -11,6 +11,7 @@ export function SongImportDialog({ onClose, onImported }: { onClose: () => void;
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const plan = useMemo(() => (file ? planSongImport(file, library.items) : null), [file, library.items]);
+  const unlicensed = useMemo(() => (plan ? songsWithoutLicense(plan.fresh) : []), [plan]);
 
   const [skipped, setSkipped] = useState<string[]>([]);
   const onFiles = async (list: FileList | null) => {
@@ -72,6 +73,14 @@ export function SongImportDialog({ onClose, onImported }: { onClose: () => void;
               <p className="muted small">A song with the same title and writer is already there. It is left exactly as it is; nothing is replaced.</p>
               <ul>{plan.skipped.map((x, i) => <li key={i} lang={x.language}>{x.title}{x.artist ? ` · ${x.artist}` : ""}</li>)}</ul>
             </details>
+          )}
+          {unlicensed.length > 0 && (
+            <div className="alert" role="status">
+              {unlicensed.length === plan.fresh.length
+                ? `No licence or permission is recorded for ${unlicensed.length === 1 ? "this song" : "these songs"}.`
+                : `No licence or permission is recorded for ${unlicensed.length} of the ${plan.fresh.length} new songs.`}{" "}
+              You can still import them and add it later in each song's Licence or permission box.
+            </div>
           )}
           {file.license && <p className="muted small">{file.license}</p>}
           {file.source && <p className="muted small">Source: {file.source}</p>}

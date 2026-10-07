@@ -34,7 +34,7 @@ VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (w
 **Songs**
 - Search the song library by title, English or transliterated title, artist or lyrics (section tags such as `[Chorus]` aren't searched). Press **Enter** to open the first match. The list shows how many songs there are, or how many match.
 - **New song** writes a song; **Import** adds song files (the same import as Settings → Songs). With an empty library, the Songs screen explains both.
-- Enter the title, artist, copyright and CCLI number.
+- Enter the title, artist, copyright and CCLI number, and optionally the licence or permission, source and translator.
 - Write lyrics with section tags on their own line: `[Verse 1]`, `[Chorus]`, `[Bridge]`. The + buttons insert the next tag for you.
   - A blank line starts a new slide. In Auto mode, long sections are split into slides of four lines or fewer; you can also fix 1–4 lines per slide.
   - A tag with nothing under it repeats that section, so a chorus is written once.
@@ -357,6 +357,21 @@ To add songs your church is licensed to use:
 - **Import files:** **Import** on the Songs screen (or **Settings → Songs → Import songs**), then pick one or more files:
   - **OpenLyrics** (`.xml`), the open format exported by OpenLP and other worship software. Section names, verse order, authors and copyright are read, and chord marks are removed. If a file holds each verse in both Malayalam and a transliteration, the Malayalam verses are kept and the transliterated title is used for search.
   - **VerseLight song files** (`.json`); entries may include `language: "ml"`, `altTitle`, and a translation (`translation`, `translationLanguage`, `display`; see below).
+- **Record the permission** for each song: the song editor has **Licence or permission**, **Source** and **Translator** boxes under Copyright and CCLI. They are kept with the song only and never shown on the projector. Songs without them work as before.
+- **Template:** [docs/malayalam-song-template.json](docs/malayalam-song-template.json) shows a song file with every field (placeholder text only). Song files can set `license` and `source` for the whole file and on each song; a song's own value wins, and `sourceUrl` is read as a song's source. The import window warns when new songs have no licence or permission recorded, but doesn't stop you importing them. Keep your own song files in the `songs/` folder, which isn't committed to Git.
+
+### Malayalam songs from a Word document
+
+Keep Malayalam songs in one Word document that you add to over time, then prepare only the songs that are new:
+
+```bash
+npm run docx-songs -- path/to/songs.docx
+```
+
+- **Layout it reads:** a numbered heading in Latin letters (`1 Paattu onnu`), the Malayalam title on the next line, then section labels (`Chorus`, `Verse 1`, …), each followed by the Malayalam lines and then their transliteration.
+- **What it keeps:** the Malayalam title and lyrics exactly as written (nothing is corrected), and the heading as the English or transliterated title, without a bracketed number at the end such as `(43)`. Transliterated (Manglish) lines are left out; they are never stored as a translation. Writer, copyright, licence and source are left empty unless you add them.
+- **Only new songs:** it reads your VerseLight library (without changing it) and skips songs already there, using the same title-and-writer check as the import window. Songs that look like one already in the library or earlier in the document (same title with a different writer, same transliterated title, or same first line) are listed for review, not imported. So are songs VerseLight can't hold exactly as written, such as one label used for two sections, so no words are dropped.
+- **Output:** `songs/malayalam-new.json` and a report. Nothing is imported until you choose that file in **Settings → Songs → Import songs**. Use `--library <file>` to compare against another library file and `--out <file>` to save somewhere else.
 
 ## Songs in two languages
 
