@@ -121,7 +121,7 @@ describe("the projector on a second screen", () => {
     expect(panel.queryByRole("button", { name: /Start presenting/ })).toBeNull();
   });
 
-  it("keeps the projector in step with the laptop: Next, Previous, Black, Show and each slide's background", async () => {
+  it("keeps the projector in step with the laptop: Next, Previous, Blank, Show and each slide's background", async () => {
     await start();
     const panel = await presentSong();
     await projectorReportsBack();
@@ -133,9 +133,9 @@ describe("the projector on a second screen", () => {
     expect(onScreen()).toBe("Evening comes");
     fireEvent.click(panel.getByRole("button", { name: /Previous/ }));
     expect(onScreen()).toBe("Sing along now");
-    fireEvent.click(panel.getByRole("button", { name: /Black/ }));
+    fireEvent.click(panel.getByRole("button", { name: /Blank/ }));
     expect(projector()).toMatchObject({ blackout: true, slide: { lines: ["Sing along now"] } });
-    expect(panel.getByText("Black screen")).toBeTruthy();
+    expect(panel.getByText("Blank screen")).toBeTruthy();
     fireEvent.click(panel.getByRole("button", { name: /Show/ }));
     expect(projector().blackout).toBe(false);
   });

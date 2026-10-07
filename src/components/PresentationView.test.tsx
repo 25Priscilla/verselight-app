@@ -32,12 +32,15 @@ describe("PresentationView (the projector window)", () => {
     expect(container.querySelector(".projector")!.innerHTML).toMatch(/0000ff|0, 0, 255/i);
   });
 
-  it("goes black and comes back when told to", () => {
+  it("goes blank and comes back when told to", () => {
     const { container } = render(<PresentationView />);
     control({ ...live, blackout: true });
     expect(container.textContent).not.toContain("placeholder words");
+    // Blank shows the church background, not black.
+    expect(container.querySelector<HTMLElement>(".slide-blank")!.style.backgroundImage).toContain("church-background");
     control(live);
     expect(container.textContent).toContain("placeholder words");
+    expect(container.querySelector(".slide-blank")).toBeNull();
   });
 
   it("blocks the browser's right-click menu and page scrolling", () => {
@@ -110,12 +113,29 @@ describe("the church logo", () => {
     expect(container.textContent).toContain("placeholder words");
   });
 
-  it("hides with Black and comes back with Show", () => {
+  it("hides with Blank and comes back with Show", () => {
     const { container } = render(<PresentationView />);
     control({ ...live, logo: true, blackout: true });
     expect(logo(container)).toBeNull();
     control({ ...live, logo: true });
     expect(logo(container)).toBeTruthy();
+  });
+
+  it("gives text on the church background its readable treatment, and leaves other backgrounds as they are", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, theme: DEFAULT_THEME });
+    expect(container.querySelector(".slide[data-bg=church]")).toBeTruthy();
+    expect(container.querySelector(".slide-ref")!.textContent).toBe("John 3:16 (TEN)");
+    control(live);
+    expect(container.querySelector(".slide[data-bg]")).toBeNull();
+    expect(container.querySelector(".slide-ref")!.textContent).toBe("John 3:16 (TEN)");
+  });
+
+  it("is left off the church background, which carries the logo as a watermark", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, logo: true, theme: DEFAULT_THEME });
+    expect(logo(container)).toBeNull();
+    expect(container.textContent).toContain("placeholder words");
   });
 
   it("stays on while moving between Bible and songs, languages, backgrounds and Clear", () => {

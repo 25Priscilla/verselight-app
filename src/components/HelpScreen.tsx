@@ -89,8 +89,8 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
           <p className="muted">The preview shows exactly what the projector shows, with your place (for example <em>Slide 3 of 12</em>). Underneath it you can see what comes next.</p>
         </Topic>
 
-        <Topic icon="square" title="Black screen">
-          <p>Press <strong>Black</strong> (or <kbd>B</kbd>) to make the projector go black, for example during prayer or between items.</p>
+        <Topic icon="square" title="Blank screen">
+          <p>Press <strong>Blank</strong> (or <kbd>B</kbd>) to show only the church background, with no words, for example during prayer or between items.</p>
           <p>Press <strong>Show</strong> (or <kbd>B</kbd> again) to bring the slide back. Your place isn't lost.</p>
         </Topic>
 

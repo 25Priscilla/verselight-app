@@ -5,7 +5,9 @@
 .slide { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; container-type: size; color: var(--slide-color); font-family: var(--slide-font); display: flex; flex-direction: column; }
 .slide { background: #000; }
 .slide-bg { position: absolute; inset: 0; }
-.slide-dim, .slide-black { position: absolute; inset: 0; background: #000; }
+.slide-dim { position: absolute; inset: 0; background: #000; }
+/* Blank: the church background alone, whatever look the slide uses */
+.slide-blank { position: absolute; inset: 0; background: #fdf3df center / cover no-repeat; }
 .slide-body { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 7cqh 7cqw 3cqh; overflow: hidden; font-size: calc(var(--slide-size) * var(--fit) * 1cqh); line-height: 1.28; font-weight: 500; }
 .slide[data-align="center"] .slide-body { text-align: center; align-items: center; }
 .slide[data-align="left"] .slide-body { text-align: left; align-items: flex-start; }
@@ -41,7 +43,22 @@ html.projector-window, html.projector-window body { overflow: hidden; background
 .bilingual.song-pair.cols > .slide-lines { flex: 1 1 0; min-width: 0; }
 .bilingual.song-pair.stack { gap: 0.5em; }
 
-/* ---------- Church logo (projector only) ---------- */
+/* ---------- Text on the church background ---------- */
+/* The background is light and bright, and projectors wash out thin strokes, so the words are a little heavier and
+   carry a soft cream halo that keeps them clear of the flame and the waves. The reference sits on a cream pill, so it
+   reads even over the orange at the bottom. Neither changes the background itself. */
+.slide[data-bg="church"] .slide-body {
+  font-weight: 600;
+  text-shadow: 0 0 0.06em rgba(255, 251, 242, 0.95), 0 0 0.22em rgba(255, 249, 236, 0.9), 0 0 0.6em rgba(255, 246, 228, 0.7);
+}
+.slide[data-bg="church"] .verse-num { opacity: 0.85; }
+.slide[data-bg="church"] .slide-footer { opacity: 1; font-weight: 700; padding-top: 0.3em; }
+.slide[data-bg="church"] .slide-ref {
+  padding: 0.18em 0.8em; border-radius: 999px;
+  background: rgba(255, 250, 240, 0.88); box-shadow: 0 0 0.5em rgba(255, 246, 228, 0.6);
+}
+
+/* ---------- Church logo (projector only; the church background carries it as a watermark instead) ---------- */
 /* Small in the bottom-right corner, at its own aspect ratio. Text keeps clear of it: the reference stays centred
    between equal side margins wider than the logo, and with no reference the words stop above the logo. */
 .slide { --logo-h: 8cqh; --logo-w: calc(var(--logo-h) * 1928 / 816); --logo-x: 2.5cqw; --logo-y: 2.5cqh; }

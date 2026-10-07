@@ -1,16 +1,26 @@
 /**
- * Built-in background gallery. Every background is original artwork generated here as SVG:
- * no photos or third-party images, so there are no rights to clear, the files are tiny,
- * they work offline, and they stay sharp on any projector resolution.
+ * Built-in background gallery. Apart from the church's own background, every background is original
+ * artwork generated here as SVG: no photos or third-party images, so there are no rights to clear,
+ * the files are tiny, they work offline, and they stay sharp on any projector resolution.
  * Randomness is seeded, so each background looks the same every time and in every window.
  */
+
+import churchBackground from "../assets/church-background.webp";
+
+/** The church's own background, with its logo as a faint watermark. Blank shows it with no words. */
+export const CHURCH_BACKGROUND_ID = "church";
+export const CHURCH_BACKGROUND_URL = churchBackground;
 
 export interface GalleryItem {
   id: string;
   name: string;
   /** Suggested text colour for this background */
   text: string;
-  svg: string;
+  /** Whether text on it should have a shadow (light backgrounds read better without) */
+  shadow?: boolean;
+  svg?: string;
+  /** A bundled image instead of generated SVG */
+  url?: string;
 }
 
 function rng(seed: number) {
@@ -176,6 +186,7 @@ function mist(): string {
 }
 
 export const GALLERY: GalleryItem[] = [
+  { id: CHURCH_BACKGROUND_ID, name: "Church", text: "#3b1f0e", shadow: false, url: CHURCH_BACKGROUND_URL },
   { id: "dawn", name: "Dawn", text: "#fffaf0", svg: dawn() },
   { id: "rays", name: "Light rays", text: "#ffffff", svg: rays() },
   { id: "water", name: "Still water", text: "#f4fbfb", svg: water() },
@@ -191,7 +202,7 @@ export function galleryUrl(id: string): string {
   let url = urls.get(id);
   if (!url) {
     const item = GALLERY.find((g) => g.id === id) ?? GALLERY[0];
-    url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(item.svg)}`;
+    url = item.url ?? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(item.svg ?? "")}`;
     urls.set(id, url);
   }
   return url;
