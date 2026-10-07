@@ -1,5 +1,5 @@
 /* Presentation panel: the laptop's live controls while presenting.
-   Top to bottom: status · current slide · Previous / Next / Black · next slide · Start or Stop, and Close · all slides.
+   Top to bottom: status · current slide · Previous / Next / Blank · next slide · Start or Stop, and Close · all slides.
    Everything above the slide list stays put; only the slide list scrolls. */
 
 .present { background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
@@ -33,7 +33,7 @@
 .black-badge { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #fff; color: #000; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
 .stage-title { font-weight: 750; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ---------- Previous / Next / Black ---------- */
+/* ---------- Previous / Next / Blank ---------- */
 .controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, auto); gap: 8px; padding: 12px 16px 0; }
 .controls .ctl { min-height: var(--control-lg); padding: 0 10px; font-size: 14px; gap: 5px; }
 .controls .ctl.next { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 15px; }

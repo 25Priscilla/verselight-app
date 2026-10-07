@@ -46,8 +46,8 @@ VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (w
 
 **Presentation** (the laptop's control screen; the projector shows only the slide)
 - The projector status: *Projector off*, *Connecting to projector…* or *Live on <display name>*.
-- The current slide, marked *On screen now*, *Black screen* or *Preview only* (projector off), with your place: *Slide 3 of 12*.
-- Large **Previous**, **Next** and **Black** buttons. While the screen is black the button reads **Show**. Previous and Next are greyed out at the first and last slide, unless a Bible passage can run on into another chapter.
+- The current slide, marked *On screen now*, *Blank screen* or *Preview only* (projector off), with your place: *Slide 3 of 12*.
+- Large **Previous**, **Next** and **Blank** buttons. **Blank** shows only the church background, with no words; while it is on the button reads **Show**. Previous and Next are greyed out at the first and last slide, unless a Bible passage can run on into another chapter.
 - A preview of the next slide. At the end of a chapter it names the next chapter (for example *John 4 (next chapter)*); at the end it says *End of song* or *End of passage*.
 - **Start presenting** (while the projector is off) or **Stop presentation**, and **Close** beside it. Stop turns the projector screen off and keeps your place; Close clears the presentation and hides the panel.
 - The slide list: click any slide to show it at once. Each slide shows its number; the current slide is outlined in red and marked *Now*; verses you originally selected are outlined. The image button on a slide sets that slide's background; the menu opens inside the window, and **Esc** closes just the menu.
@@ -64,7 +64,7 @@ VerseLight opens on **Home**. The sidebar on the left has **Home**, **Bible** (w
 - **Backup:** **Back up library** saves one file with your songs, looks, saved verses and settings (not the Bible texts). **Restore from backup** checks the file and asks before replacing your library.
 - **Keyboard:** the presentation keys. **About:** version and credits.
 
-**Help** explains how to present in four steps, how to present a verse or a song, Previous and Next, the black screen, stopping and closing, and the keys, with links to the right place in Settings.
+**Help** explains how to present in four steps, how to present a verse or a song, Previous and Next, the blank screen, stopping and closing, and the keys, with links to the right place in Settings.
 
 **Settings** holds the projector display, Bible and cross-reference files, song import, backup and restore, the keyboard shortcuts and credits.
 
@@ -97,9 +97,9 @@ The builds are unsigned, so Windows SmartScreen and macOS Gatekeeper will warn o
 npm test
 ```
 
-Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, black screen, song order), the presentation keys, the presentation panel's controls and background menu, song lyrics, slides, search and import (including Malayalam), the Songs screen, songs with a translation (editing, saving, loading, and presenting each language or both), and presenting a song from the Songs screen through to what the projector is sent. The projector tests simulate the screens (choosing one, one window only, Stop and Start, no second screen, a missing or unplugged screen) and the projector window itself; they can't prove a physical projector works, so test with the real projector before a service.
+Runs the automated tests with Vitest: the presentation session (verse-by-verse slides, Previous/Next, chapter run-on, blank screen, song order), the presentation keys, the presentation panel's controls and background menu, song lyrics, slides, search and import (including Malayalam), the Songs screen, songs with a translation (editing, saving, loading, and presenting each language or both), and presenting a song from the Songs screen through to what the projector is sent. The projector tests simulate the screens (choosing one, one window only, Stop and Start, no second screen, a missing or unplugged screen) and the projector window itself; they can't prove a physical projector works, so test with the real projector before a service.
 
-The Bible tests cover reference and keyword search, saved verses and passages, Chapter Overview data, Word Study counts, and the Bible screen end to end: book, chapter and verse navigation, selecting passages, cross references, Overview, Word Study, English and Malayalam, and presenting (one verse, a passage, Previous/Next across a chapter boundary, Black/Show, Stop/Start/Close and the keys). They use made-up placeholder Bibles, never real Bible text.
+The Bible tests cover reference and keyword search, saved verses and passages, Chapter Overview data, Word Study counts, and the Bible screen end to end: book, chapter and verse navigation, selecting passages, cross references, Overview, Word Study, English and Malayalam, and presenting (one verse, a passage, Previous/Next across a chapter boundary, Blank/Show, Stop/Start/Close and the keys). They use made-up placeholder Bibles, never real Bible text.
 
 ## Bible text
 
@@ -275,13 +275,13 @@ The workflow is: **select a Bible passage or a song → preview → ▶ Present 
 | --- | --- |
 | Space, → (also ↓, Page Down, most clickers) | Next |
 | ← (also ↑, Page Up) | Previous |
-| B | Black screen on/off |
+| B | Blank screen on/off |
 | Esc | Stop presentation (an open menu closes first) |
 | Ctrl + K | Global Quick Search (doesn't affect the presentation) |
 
 **Stopping and starting again.** **Stop presentation** (or Esc) closes the projector but keeps your place. **Start presenting** reopens it on the same slide. **Close**, next to Stop presentation, clears the presentation.
 
-**How it stays in sync.** There is one presentation state: the slides and the current slide. The laptop preview, the slide list and the projector all read that same state, and the projector is sent exactly the slide the preview shows, with the same background and black-screen setting. The projector reports back when its window opens; that is when the status turns to *Live*.
+**How it stays in sync.** There is one presentation state: the slides and the current slide. The laptop preview, the slide list and the projector all read that same state, and the projector is sent exactly the slide the preview shows, with the same background and Blank setting. The projector reports back when its window opens; that is when the status turns to *Live*.
 
 ### Projector and second screen
 
@@ -300,7 +300,7 @@ Limitations: display names come from Windows (*Display 1*, *Display 2*), not the
 
 A **look** is a saved presentation background plus text style. Open **Backgrounds** in the sidebar to create and edit them.
 
-- **Background:** solid colour, gradient (with direction), a built-in gallery, or your own image. Uploaded images are resized to fit a 1920 × 1080 screen and stored inside VerseLight, so they work offline.
+- **Background:** solid colour, gradient (with direction), a built-in gallery, or your own image. The default is the church background, with the church logo as a faint watermark and dark text. Uploaded images are resized to fit a 1920 × 1080 screen and stored inside VerseLight, so they work offline.
 - **Adjust:** brightness, a dark overlay to keep text readable, and blur. Blur is scaled to the screen, so the preview matches the projector at any resolution. Only the background is filtered; text stays sharp.
 - **Text:** font, font size, colour, shadow, alignment, and whether references and song credits show.
 - **Presets:** **Save as new look** keeps the current settings as a preset. Three starter looks are included.
@@ -312,7 +312,7 @@ A **look** is a saved presentation background plus text style. Open **Background
 
 The projector, the live preview and every thumbnail work out each slide's look the same way, so the preview always shows exactly what the projector will show.
 
-**Gallery artwork** is original and generated by VerseLight itself (`src/lib/gallery.ts`), so it carries no third-party image rights. For uploaded images, use photos you own or are licensed to project.
+**Gallery artwork** is original and generated by VerseLight itself (`src/lib/gallery.ts`), so it carries no third-party image rights, apart from the church background (`src/assets/church-background.webp`), which is the church's own. For uploaded images, use photos you own or are licensed to project.
 
 ## Song library
 
@@ -382,7 +382,7 @@ These work in both the control window (when you're not typing) and the projector
 | --- | --- |
 | → ↓ Space Page Down | Next slide |
 | ← ↑ Page Up | Previous slide |
-| B | Black screen on/off |
+| B | Blank screen on/off |
 | Esc | Stop presenting (in a text box or an open menu, Esc closes that first) |
 | Enter | Present the selected Bible verses (Bible screen) |
 
@@ -427,7 +427,7 @@ src/
     WordStudyWorkspace.tsx  Bible Study: word search, word facts, saved verses
     BibleDialogs.tsx        Import Bibles and cross references; confirm removing a Bible
     SongsWorkspace.tsx      Song library, lyrics editor, slide arrangement
-    PresentationPanel.tsx   Live controls: current and next slide, Previous/Next/Black, Start/Stop/Close, slide list
+    PresentationPanel.tsx   Live controls: current and next slide, Previous/Next/Blank, Start/Stop/Close, slide list
     LookPicker.tsx          A slide's background menu
     ShortcutTable.tsx       The keyboard shortcut table (list in lib/shortcuts.ts)
     SlideRenderer.tsx       Draws a slide at any size (thumbnails, preview, projector)

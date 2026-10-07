@@ -167,7 +167,7 @@ function LogoCard({ showLogo, onShowLogo }: Pick<Props, "showLogo" | "onShowLogo
   return (
     <Card title="Church logo">
       <Checkbox label="Show the church logo on the projector" checked={showLogo} onChange={(e) => onShowLogo(e.target.checked)} />
-      <p className="muted small">Shown small in the bottom-right corner on every Bible and song slide. It hides with Black.</p>
+      <p className="muted small">Shown small in the bottom-right corner on every Bible and song slide. It hides with Blank, and on the church background, which already shows it as a faint watermark.</p>
     </Card>
   );
 }

@@ -120,7 +120,7 @@ export function ControlApp() {
       logo: settings.showLogo }),
     [liveSlide, library, state.blackout, state.clear, settings.showLogo],
   );
-  // The projector draws exactly what the laptop preview draws: the same slide, look and black state.
+  // The projector draws exactly what the laptop preview draws: the same slide, look and Blank state.
   const stateRef = useRef(liveState);
   stateRef.current = liveState;
   useEffect(() => { send("live-state", liveState); }, [liveState]);

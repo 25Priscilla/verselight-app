@@ -107,7 +107,7 @@ export type SessionAction =
   | { type: "start"; session: Session; index: number }
   | { type: "goto"; index: number; count: number }
   | { type: "step"; delta: number; count: number }
-  /** The slides changed under the live slide (a song was edited): stay on it, without changing Black */
+  /** The slides changed under the live slide (a song was edited): stay on it, without changing Blank */
   | { type: "follow"; index: number }
   | { type: "extend"; where: "before" | "after"; chapter: number; slides: Slide[]; advance: boolean }
   | { type: "blackout" }

@@ -1,14 +1,15 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import churchLogo from "../assets/church-logo.webp";
-import { galleryUrl } from "../lib/gallery";
+import { CHURCH_BACKGROUND_ID, CHURCH_BACKGROUND_URL, galleryUrl } from "../lib/gallery";
 import { FONTS, type Slide, type Theme } from "../lib/types";
 
 interface Props {
   slide: Slide | null;
   theme: Theme;
+  /** Blank: the church background with no words (the `blackout` name is from when it was black) */
   blackout?: boolean;
   clear?: boolean;
-  /** Draw the church logo in the bottom-right corner (the projector only); hidden while Black */
+  /** Draw the church logo in the bottom-right corner (the projector only); hidden while Blank and on the church background, which carries it as a watermark */
   logo?: boolean;
   className?: string;
 }
@@ -40,6 +41,9 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
   const [height, setHeight] = useState(0);
   const showText = !!slide && !clear && !blackout;
   const showFooter = showText && theme.showReference && !!slide?.footer;
+  // The church background is light and carries the logo, so it gets its own readable text treatment and no corner logo.
+  const onChurch = theme.backgroundKind === "gallery" && theme.galleryId === CHURCH_BACKGROUND_ID;
+  const cornerLogo = !!logo && !blackout && !onChurch;
 
   useLayoutEffect(() => {
     const body = bodyRef.current;
@@ -59,7 +63,7 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
     const ro = new ResizeObserver(measure);
     if (frameRef.current) ro.observe(frameRef.current);
     return () => ro.disconnect();
-  }, [slide, theme.fontSize, theme.fontFamily, theme.showReference, theme.bilingualLayout, showText, logo]);
+  }, [slide, theme.fontSize, theme.fontFamily, theme.showReference, theme.bilingualLayout, showText, cornerLogo, onChurch]);
 
   // Blur is stored as pixels at 1080p and scaled to this frame, so every size matches the projector.
   const blurPx = ((theme.blur ?? 0) * height) / 1080;
@@ -97,7 +101,7 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
   );
 
   return (
-    <div ref={frameRef} className={`slide ${logo ? "has-logo" : ""} ${className ?? ""}`} data-footer={showFooter || undefined} style={style} data-align={theme.align} lang={slide?.lang}>
+    <div ref={frameRef} className={`slide ${cornerLogo ? "has-logo" : ""} ${className ?? ""}`} data-footer={showFooter || undefined} data-bg={onChurch ? "church" : undefined} style={style} data-align={theme.align} lang={slide?.lang}>
       <div className="slide-bg" style={bgStyle} />
       {(theme.overlay ?? 0) > 0 && <div className="slide-dim" style={{ opacity: theme.overlay }} />}
       <div ref={bodyRef} className={`slide-body ${theme.shadow ? "has-shadow" : ""}`}>
@@ -121,10 +125,10 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
         ) : null}
       </div>
       {showFooter && (
-        <div className="slide-footer">{slide?.footer}</div>
+        <div className="slide-footer"><span className="slide-ref">{slide?.footer}</span></div>
       )}
-      {logo && !blackout && <img className="slide-logo" src={churchLogo} alt="" draggable={false} />}
-      {blackout && <div className="slide-black" />}
+      {cornerLogo && <img className="slide-logo" src={churchLogo} alt="" draggable={false} />}
+      {blackout && <div className="slide-blank" style={{ backgroundImage: `url("${CHURCH_BACKGROUND_URL}")` }} />}
     </div>
   );
 }

@@ -307,7 +307,7 @@ describe("presenting from the Bible", () => {
     expect(onScreen()).toBe("filler 42.3.18");
   });
 
-  it("black, show, stop, start and close work, and so do the keys", async () => {
+  it("blank, show, stop, start and close work, and so do the keys", async () => {
     await openBible();
     await search("John 3:1");
     const panel = await present();
@@ -317,7 +317,7 @@ describe("presenting from the Bible", () => {
     expect(projector().blackout).toBe(true);
     fireEvent.click(panel.getByRole("button", { name: /Show/ }));
     expect(projector().blackout).toBe(false);
-    fireEvent.click(panel.getByRole("button", { name: /Black/ }));
+    fireEvent.click(panel.getByRole("button", { name: /Blank/ }));
     expect(projector().blackout).toBe(true);
     fireEvent.keyDown(window, { key: "ArrowLeft" }); // moving on shows the screen again
     expect(projector()).toMatchObject({ blackout: false, slide: { label: "John 3:1" } });

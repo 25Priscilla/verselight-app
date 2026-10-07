@@ -1,30 +1,32 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { newId } from "../lib/id";
 import { readData, writeData } from "../lib/storage";
+import { CHURCH_BACKGROUND_ID } from "../lib/gallery";
 import { detectLanguage } from "../lib/malayalam";
 import { migrateSongSlideKeys } from "../lib/slides";
 import type { Library, LibraryItem, Look, Song, Theme } from "../lib/types";
 
 const FILE = "library.json";
 
+/** The church background, with dark text that reads well on its light centre. */
 export const DEFAULT_THEME: Theme = {
-  backgroundKind: "gradient",
+  backgroundKind: "gallery",
   backgroundColor: "#141a2b",
   gradientFrom: "#1d2742",
   gradientTo: "#0d1120",
   backgroundImage: "",
   imageDim: 0.45,
   gradientAngle: 160,
-  galleryId: "rays",
+  galleryId: CHURCH_BACKGROUND_ID,
   brightness: 1,
   overlay: 0,
   blur: 0,
   bilingualLayout: "stacked",
   fontFamily: "lora",
   fontSize: 8.5,
-  textColor: "#fbf7ee",
+  textColor: "#3b1f0e",
   align: "center",
-  shadow: true,
+  shadow: false,
   showReference: true,
 };
 
@@ -114,6 +116,12 @@ export function starterLooks(): Look[] {
   ];
 }
 
+/** A default look nobody changed from the old navy gradient moves to the church background. */
+function churchDefault(t: Partial<Theme> | undefined): Partial<Theme> | undefined {
+  const untouched = t?.backgroundKind === "gradient" && t.gradientFrom === "#1d2742" && t.gradientTo === "#0d1120" && t.textColor === "#fbf7ee";
+  return untouched ? { ...t, backgroundKind: "gallery", galleryId: CHURCH_BACKGROUND_ID, textColor: DEFAULT_THEME.textColor, shadow: false } : t;
+}
+
 function migrateTheme(t: Partial<Theme> | undefined): Theme {
   const theme = { ...DEFAULT_THEME, ...t };
   // v0.2 only darkened images; keep colour and gradient looks exactly as they were.
@@ -129,7 +137,7 @@ export function normalizeLibrary(parsed: Library): Library {
     version: 2,
     items: (parsed.items ?? starter.items).map(migrateItem),
     services: parsed.services?.length ? parsed.services : starter.services,
-    theme: migrateTheme(parsed.theme),
+    theme: migrateTheme(churchDefault(parsed.theme)),
     looks: Array.isArray(parsed.looks)
       ? parsed.looks.map((l) => ({ ...l, theme: migrateTheme(l.theme) }))
       : starterLooks(),

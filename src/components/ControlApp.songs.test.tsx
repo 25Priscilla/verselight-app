@@ -74,9 +74,9 @@ describe("presenting a song", () => {
     expect(projector().theme.backgroundColor).toBe("#0000ff");
   });
 
-  it("turns the screen black and shows it again", async () => {
+  it("blanks the screen and shows it again", async () => {
     const panel = await presentSong();
-    fireEvent.click(panel.getByRole("button", { name: /Black/ }));
+    fireEvent.click(panel.getByRole("button", { name: /Blank/ }));
     expect(projector().blackout).toBe(true);
     expect(panel.getByRole("button", { name: /Show/ })).toBeTruthy();
     fireEvent.click(panel.getByRole("button", { name: /Show/ }));
@@ -86,7 +86,7 @@ describe("presenting a song", () => {
   it("stays on the same words when the song on screen is rearranged", async () => {
     const panel = await presentSong();
     fireEvent.click(panel.getByRole("button", { name: /^Next/ })); // Chorus
-    fireEvent.click(panel.getByRole("button", { name: /Black/ }));
+    fireEvent.click(panel.getByRole("button", { name: /Blank/ }));
     fireEvent.click(screen.getAllByRole("button", { name: "Move Chorus up" })[0]);
     expect(onScreen()).toBe("Sing along now");
     expect(panel.getByText("Slide 1 of 3")).toBeTruthy();

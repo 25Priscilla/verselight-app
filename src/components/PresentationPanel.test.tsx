@@ -33,11 +33,11 @@ describe("PresentationPanel", () => {
     expect(screen.getByRole("button", { name: /Slide 3: Genesis 1:3 \(showing now\)/ }).getAttribute("aria-current")).toBe("true");
   });
 
-  it("runs Previous, Next, Black, Stop and Close", () => {
+  it("runs Previous, Next, Blank, Stop and Close", () => {
     const p = setup();
     fireEvent.click(screen.getByRole("button", { name: /Previous/ }));
     fireEvent.click(screen.getByRole("button", { name: /^Next/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Black/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Blank/ }));
     fireEvent.click(screen.getByRole("button", { name: /Stop presentation/ }));
     fireEvent.click(screen.getByRole("button", { name: "Close presentation" }));
     expect([p.onPrev, p.onNext, p.onBlackout, p.onStop, p.onEnd].map((f) => vi.mocked(f).mock.calls.length)).toEqual([1, 1, 1, 1, 1]);
@@ -57,10 +57,10 @@ describe("PresentationPanel", () => {
     expect(screen.queryByRole("button", { name: /Stop presentation/ })).toBeNull();
   });
 
-  it("switches Black to Show while the screen is black", () => {
+  it("switches Blank to Show while the screen is blank", () => {
     setup({ blackout: true });
     expect(screen.getByRole("button", { name: /Show/ }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByText("Screen is black")).toBeTruthy();
+    expect(screen.getByText("Screen is blank")).toBeTruthy();
   });
 
   it("disables Previous on the first slide and Next on the last, unless another chapter follows", () => {

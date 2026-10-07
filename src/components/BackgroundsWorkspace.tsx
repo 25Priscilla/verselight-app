@@ -196,7 +196,7 @@ export function BackgroundsWorkspace({ active, liveSample }: Props) {
               <div className="gallery">
                 {GALLERY.map((g) => (
                   <button key={g.id} className={`gallery-item ${theme.galleryId === g.id ? "on" : ""}`}
-                    onClick={() => setTheme({ backgroundKind: "gallery", galleryId: g.id, textColor: g.text })}
+                    onClick={() => setTheme({ backgroundKind: "gallery", galleryId: g.id, textColor: g.text, ...(g.shadow !== undefined && { shadow: g.shadow }) })}
                     aria-pressed={theme.galleryId === g.id}>
                     <SlideRenderer slide={null} theme={{ ...theme, backgroundKind: "gallery", galleryId: g.id, overlay: 0, blur: 0, brightness: 1 }} />
                     <span>{g.name}</span>

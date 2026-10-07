@@ -41,7 +41,7 @@ interface Props {
 
 /**
  * The laptop's live controls. The projector shows only the slide; everything else lives here:
- *   status · current slide and its position · Previous / Next / Black · what's next · Start or Stop, and Close · all slides
+ *   status · current slide and its position · Previous / Next / Blank · what's next · Start or Stop, and Close · all slides
  */
 export function PresentationPanel(p: Props) {
   const [picker, setPicker] = useState<{ key: string; anchor: HTMLElement } | null>(null);
@@ -76,7 +76,7 @@ export function PresentationPanel(p: Props) {
     p.projector === "live" ? { cls: "live", text: `Live on ${p.displayName || "projector"}` }
       : p.projector === "opening" ? { cls: "opening", text: "Connecting to projector…" }
         : { cls: "off", text: "Projector off" };
-  const stageTag = p.projector === "live" ? (p.blackout ? "Black screen" : "On screen now") : p.projector === "opening" ? "Connecting…" : "Preview only";
+  const stageTag = p.projector === "live" ? (p.blackout ? "Blank screen" : "On screen now") : p.projector === "opening" ? "Connecting…" : "Preview only";
   const endText = p.kind === "song" ? "End of song" : "End of passage";
 
   return (
@@ -96,7 +96,7 @@ export function PresentationPanel(p: Props) {
             </div>
             <div className={cx("stage-frame", p.projector === "live" && "on-air", p.blackout && "is-black")}>
               <SlideRenderer slide={live} theme={p.lookFor(live).theme} blackout={p.blackout} />
-              {p.blackout && <span className="black-badge">Screen is black</span>}
+              {p.blackout && <span className="black-badge">Screen is blank</span>}
             </div>
             <div className="stage-title" title={live?.label}>{live?.label}</div>
           </section>
@@ -109,8 +109,8 @@ export function PresentationPanel(p: Props) {
               Next<Icon name="next" />
             </button>
             <button className={cx("btn ctl black", p.blackout && "black-on")} onClick={p.onBlackout} aria-pressed={p.blackout}
-              title={p.blackout ? "Show the slide again (B)" : "Make the projector black (B)"}>
-              {p.blackout ? <Icon name="eye" size={16} /> : <Icon name="square" size={13} />}{p.blackout ? "Show" : "Black"}
+              title={p.blackout ? "Show the slide again (B)" : "Show only the church background (B)"}>
+              {p.blackout ? <Icon name="eye" size={16} /> : <Icon name="square" size={13} />}{p.blackout ? "Show" : "Blank"}
             </button>
           </div>
 
