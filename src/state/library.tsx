@@ -55,7 +55,7 @@ function starterLibrary(): Library {
         updatedAt: now,
       },
     ],
-    services: [{ id: newId(), name: "Presentation", itemIds: [], updatedAt: now }],
+    services: [{ id: newId(), name: SERVICE_NAME, itemIds: [], entries: [], updatedAt: now }],
     bibles: [],
     theme: DEFAULT_THEME,
     looks: starterLooks(),
@@ -148,8 +148,13 @@ export function normalizeLibrary(parsed: Library): Library {
   if (!lib.services.some((s) => s.id === lib.activeServiceId)) {
     lib.activeServiceId = lib.services[0]?.id ?? null;
   }
+  // The Planner shows the service's name. The placeholder service every library started with is named for it.
+  lib.services = lib.services.map((s) => (s.name === "Presentation" && !s.itemIds.length && !s.entries?.length ? { ...s, name: SERVICE_NAME } : s));
   return lib;
 }
+
+/** The Planner's title until the operator names the service */
+export const SERVICE_NAME = "Sunday Service";
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const [library, setLibrary] = useState<Library | null>(null);

@@ -97,7 +97,7 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
       return {
         ...lib,
         items: lib.items.filter((i) => i.id !== id),
-        services: lib.services.map((sv) => ({ ...sv, itemIds: sv.itemIds.filter((x) => x !== id) })),
+        services: lib.services.map((sv) => ({ ...sv, itemIds: sv.itemIds.filter((x) => x !== id), entries: sv.entries?.filter((e) => e.kind !== "song" || e.songId !== id) })),
         assign: { ...lib.assign, items, slides },
       };
     });

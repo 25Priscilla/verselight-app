@@ -3,7 +3,7 @@ import { Icon, type IconName } from "./Icon";
 import type { ProjectorStatus } from "./PresentationPanel";
 import { cx } from "./ui";
 
-export type Mode = "home" | "bible" | "study" | "songs" | "backgrounds" | "settings" | "help";
+export type Mode = "home" | "bible" | "study" | "songs" | "planner" | "backgrounds" | "settings" | "help";
 
 interface Props {
   mode: Mode;
@@ -42,6 +42,7 @@ export function Sidebar({ mode, onMode, onProjector, projector, displayName, sea
         {item("bible", "book", "Bible")}
         {item("study", "study", "Bible Study", true)}
         {item("songs", "music", "Songs")}
+        {item("planner", "calendar", "Planner")}
         {item("backgrounds", "image", "Backgrounds")}
       </ul>
       <ul className="nav nav-foot">

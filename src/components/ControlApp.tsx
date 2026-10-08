@@ -6,19 +6,21 @@ import { canChooseDisplays, closePresentation, listDisplays, openPresentation, t
 import { chooseDisplay, displayConnected, displayLabel, sameDisplays } from "../lib/projector";
 import { liveKeyAction } from "../lib/liveKeys";
 import { lookForSlide } from "../lib/looks";
-import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
+import { atEdge, chapterNeighbours, chapterSlides, followSlide, initialSession, neighbourChapter, passageSlides, sessionReducer, sessionSlides, verseKey, type ScriptureSpec } from "../lib/session";
+import { entriesToward, entryInfo, planEntries } from "../lib/plan";
 import type { BibleResult } from "../lib/globalSearch";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings } from "../lib/settings";
 import { saveFileAs } from "../lib/storage";
 import { displayChoices, hasTranslation, songDisplay } from "../lib/lyrics";
 import { songLanguage } from "../lib/malayalam";
-import type { Library, LiveState, Slide, Song, SongDisplay } from "../lib/types";
+import type { Library, LiveState, PlanEntry, Slide, Song, SongDisplay } from "../lib/types";
 import { useLibrary } from "../state/library";
 import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
 import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
 import { GlobalSearch } from "./GlobalSearch";
 import { HelpScreen } from "./HelpScreen";
 import { HomeScreen } from "./HomeScreen";
+import { PlannerWorkspace } from "./PlannerWorkspace";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
 import { SettingsScreen, type SettingsSection } from "./SettingsScreen";
 import { Sidebar, type Mode } from "./Sidebar";
@@ -261,6 +263,78 @@ export function ControlApp() {
     if (projector === "off") await openProjector();
   }, [update, projector, openProjector]);
 
+  // ---- the Planner: which service item is presented. Each item is an ordinary song or Bible session. ----
+  const entries = useMemo(() => planEntries(library), [library]);
+  const planEntryId = state.session?.plan?.entryId ?? null;
+  const planAt = planEntryId ? entries.findIndex((e) => e.id === planEntryId) : -1;
+  const entryName = useCallback((i: number) => `${i + 1}. ${entryInfo(entries[i], songs, library.bibles).title}`, [entries, songs, library.bibles]);
+
+  /**
+   * Loads one service item, on its first slide or (coming back with Previous) its last. Returns why it couldn't be
+   * shown, or null once it is loaded. A reading shows exactly its planned verses.
+   */
+  const loadEntry = useCallback(async (entry: PlanEntry, at: "start" | "end"): Promise<string | null> => {
+    const plan = { entryId: entry.id };
+    if (entry.kind === "song") {
+      const song = songs.get(entry.songId);
+      if (!song) return "the song was deleted";
+      const list = sessionSlides({ kind: "song", songId: song.id }, songs);
+      if (list.length === 0) return "the song has no slides";
+      update((lib) => ({ ...lib, items: lib.items.map((i) => (i.id === song.id && i.kind === "song" ? { ...i, lastUsedAt: Date.now() } : i)) }));
+      dispatch({ type: "start", session: { kind: "song", songId: song.id, plan }, index: at === "end" ? list.length - 1 : 0 });
+      return null;
+    }
+    const spec: ScriptureSpec = entry.passage;
+    if (!library.bibles.some((b) => b.id === spec.primaryId)) return "its Bible translation was removed";
+    try {
+      const src = await bibleSources(spec, spec.chapter);
+      const slides = passageSlides(spec, chapterSlides(spec, spec.chapter, src));
+      if (slides.length === 0) return "those verses aren't in this translation";
+      const bookName = slides[0].label.replace(/ \d+:\d+$/, "");
+      const chaptersInBook = src.primary.books[spec.book]?.chapters.length ?? spec.chapter;
+      dispatch({
+        type: "start",
+        session: { kind: "scripture", spec, chapters: [spec.chapter], slides, bookName, chaptersInBook, bounded: true, plan },
+        index: at === "end" ? slides.length - 1 : 0,
+      });
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : String(e);
+    }
+  }, [songs, library.bibles, bibleSources, update]);
+
+  /**
+   * Presents the first item that can be shown, trying `positions` in order. Items that can't be shown (a deleted
+   * song, a removed Bible) are skipped and named in a notice. Returns false when none could be shown.
+   */
+  const presentFirstOf = useCallback(async (positions: number[], at: "start" | "end") => {
+    const skipped: string[] = [];
+    for (const i of positions) {
+      const problem = await loadEntry(entries[i], at);
+      if (problem === null) {
+        if (skipped.length) setNotice(`Skipped ${skipped.join("; ")}.`);
+        (document.activeElement as HTMLElement | null)?.blur();
+        if (projectorRef.current === "off") await openProjector();
+        return true;
+      }
+      skipped.push(`${entryName(i)} (${problem})`);
+    }
+    if (skipped.length) setNotice(`Couldn't present ${skipped.join("; ")}.`);
+    return false;
+  }, [entries, loadEntry, entryName, openProjector]);
+
+  /** Planner Present: carries on with the service item already loaded, or starts at the first item. */
+  const presentPlan = useCallback(async () => {
+    if (planAt >= 0) {
+      (document.activeElement as HTMLElement | null)?.blur();
+      if (projectorRef.current === "off") await openProjector();
+      return;
+    }
+    await presentFirstOf(entries.map((_, i) => i), "start");
+  }, [planAt, entries, presentFirstOf, openProjector]);
+  /** A Planner row clicked while presenting: that item goes on screen from its first slide. */
+  const presentEntryAt = useCallback((i: number) => { void presentFirstOf([i], "start"); }, [presentFirstOf]);
+
   /**
    * Next / Previous: one slide at a time. Inside the loaded slides this is immediate; only at an end of a Bible
    * session does it wait to load the neighbouring chapter (and ignores presses until that chapter is in).
@@ -269,6 +343,17 @@ export function ControlApp() {
   const nav = useCallback(async (delta: number) => {
     const session = state.session;
     if (!session || loading.current) return;
+    // From the Planner: past the item's last slide (or before its first) is the next (or previous) service item.
+    const toward = planAt >= 0 && atEdge(index, slides.length, delta) ? entriesToward(entries.length, planAt, delta) : [];
+    if (toward.length) {
+      loading.current = true;
+      try {
+        await presentFirstOf(toward, delta > 0 ? "start" : "end");
+      } finally {
+        loading.current = false;
+      }
+      return;
+    }
     const n = session.kind === "scripture" && atEdge(index, slides.length, delta)
       ? neighbourChapter(session, index, slides.length, delta, session.chaptersInBook) : null;
     if (session.kind === "scripture" && n) {
@@ -283,7 +368,7 @@ export function ControlApp() {
       }
     }
     dispatch({ type: "step", delta, count: slides.length });
-  }, [state.session, index, slides.length, bibleSources]);
+  }, [state.session, index, slides.length, bibleSources, planAt, entries.length, presentFirstOf]);
 
   const gotoSlide = useCallback((i: number) => dispatch({ type: "goto", index: i, count: slides.length }), [slides.length]);
 
@@ -337,6 +422,18 @@ export function ControlApp() {
     return new Set(Array.from({ length: sp.to - sp.from + 1 }, (_, i) => verseKey(sp.book, sp.chapter, sp.from + i)));
   }, [state.session]);
   const neighbours = useMemo(() => chapterNeighbours(state.session), [state.session]);
+  const planItems = planAt >= 0 ? {
+    before: planAt > 0 ? entryName(planAt - 1) : null,
+    after: planAt < entries.length - 1 ? entryName(planAt + 1) : null,
+  } : undefined;
+
+  // The next reading's chapter is fetched ahead (the ESV reads online), so Next moves into it without a wait.
+  const nextEntry = planAt >= 0 ? entries[planAt + 1] : undefined;
+  useEffect(() => {
+    if (nextEntry?.kind === "bible" && library.bibles.some((b) => b.id === nextEntry.passage.primaryId)) {
+      bibleSources(nextEntry.passage, nextEntry.passage.chapter).catch(() => undefined);
+    }
+  }, [nextEntry, bibleSources, library.bibles]);
 
   // A song with a translation can switch languages while it is on screen; the choice is saved with the song.
   const liveSong = state.session?.kind === "song" ? songs.get(state.session.songId) : undefined;
@@ -407,6 +504,11 @@ export function ControlApp() {
         request={studyRequest} onPresent={presentScripture} />
       <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong}
         liveKey={state.session?.kind === "song" && liveSlide ? liveSlide.key : null} notify={setNotice} />
+      {mode === "planner" && (
+        <PlannerWorkspace readingBibleId={readingBibleId} liveEntryId={planAt >= 0 ? planEntryId : null}
+          live={planAt >= 0 && projector !== "off"} canJump={planAt >= 0 || projector !== "off"}
+          onPresent={presentPlan} onPresentEntry={presentEntryAt} />
+      )}
       <BackgroundsWorkspace active={mode === "backgrounds"} liveSample={liveSlide} />
       {mode === "home" && (
         <HomeScreen
@@ -443,6 +545,7 @@ export function ControlApp() {
         index={index}
         selectionKeys={selectionKeys}
         neighbours={neighbours}
+        items={planItems}
         blackout={state.blackout}
         projector={projector}
         displayName={displayName}

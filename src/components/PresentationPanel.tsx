@@ -17,6 +17,8 @@ interface Props {
   selectionKeys: Set<string>;
   /** Bible sessions: the chapters Previous and Next can still run into ("John 2"), or null */
   neighbours: { before: string | null; after: string | null };
+  /** Presenting from the Planner: the service items Previous and Next cross into at either end ("3. How Great Thou Art"), or null */
+  items?: { before: string | null; after: string | null };
   blackout: boolean;
   projector: ProjectorStatus;
   displayName: string;
@@ -50,8 +52,9 @@ export function PresentationPanel(p: Props) {
   const next = p.slides[p.index + 1] ?? null;
   const has = p.slides.length > 0;
   const total = p.slides.length;
-  const atStart = p.index <= 0 && !p.neighbours.before;
-  const atEnd = p.index >= total - 1 && !p.neighbours.after;
+  const atStart = p.index <= 0 && !p.neighbours.before && !p.items?.before;
+  const atEnd = p.index >= total - 1 && !p.neighbours.after && !p.items?.after;
+  const nextItem = !next && !p.neighbours.after ? p.items?.after ?? null : null;
 
   // Keep the current slide visible in the list as the operator moves through it.
   // Only the list scrolls (by hand, not scrollIntoView), so the preview and controls above never move.
@@ -102,10 +105,10 @@ export function PresentationPanel(p: Props) {
           </section>
 
           <div className="controls" role="group" aria-label="Slide controls">
-            <button className="btn ctl" onClick={p.onPrev} disabled={atStart} title="Previous slide (← or Page Up)">
+            <button className="btn ctl" onClick={p.onPrev} disabled={atStart} title={p.index <= 0 && p.items?.before ? `Previous item: ${p.items.before} (← or Page Up)` : "Previous slide (← or Page Up)"}>
               <Icon name="prev" />Previous
             </button>
-            <button className="btn ctl next" onClick={p.onNext} disabled={atEnd} title="Next slide (Space, → or Page Down)">
+            <button className="btn ctl next" onClick={p.onNext} disabled={atEnd} title={nextItem ? `Next item: ${nextItem} (Space, → or Page Down)` : "Next slide (Space, → or Page Down)"}>
               Next<Icon name="next" />
             </button>
             <button className={cx("btn ctl black", p.blackout && "black-on")} onClick={p.onBlackout} aria-pressed={p.blackout}
@@ -124,10 +127,10 @@ export function PresentationPanel(p: Props) {
           <div className="up-next" aria-label="Next slide">
             <div className="up-next-frame">
               {next ? <SlideRenderer slide={next} theme={p.lookFor(next).theme} />
-                : <span className="up-next-end">{p.neighbours.after ? "Next chapter" : "End"}</span>}
+                : <span className="up-next-end">{p.neighbours.after ? "Next chapter" : nextItem ? "Next item" : "End"}</span>}
             </div>
             <span className="up-next-label">Next</span>
-            <span className="up-next-title">{next?.label ?? (p.neighbours.after ? `${p.neighbours.after} (next chapter)` : endText)}</span>
+            <span className="up-next-title">{next?.label ?? (p.neighbours.after ? `${p.neighbours.after} (next chapter)` : nextItem ?? endText)}</span>
           </div>
 
           <div className="session-actions">
