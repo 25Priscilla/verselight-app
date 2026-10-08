@@ -24,6 +24,9 @@ export interface ScriptureSpec {
   to: number;
 }
 
+/** A session started from the Planner: which entry it is. Next and Previous cross into the neighbouring entries. */
+export interface PlanCursor { entryId: string }
+
 export type Session =
   | {
       kind: "scripture";
@@ -34,8 +37,11 @@ export type Session =
       /** The book's name as shown on the slides, and how many chapters it has */
       bookName: string;
       chaptersInBook: number;
+      /** Only the verses spec.from–spec.to (a Planner reading): never runs on into other verses or chapters */
+      bounded?: boolean;
+      plan?: PlanCursor;
     }
-  | { kind: "song"; songId: string };
+  | { kind: "song"; songId: string; plan?: PlanCursor };
 
 export interface SessionState {
   session: Session | null;
@@ -93,6 +99,12 @@ export function chapterSlides(spec: ScriptureSpec, chapter: number, src: Sources
       ...(mode === "both" ? { parallelLines: [(other[i] ?? "").trim()], parallelLang: lang2 } : {}),
     }];
   });
+}
+
+/** A planned reading's slides: only its own verses (John 3:16 is John 3:16, not the rest of the chapter). */
+export function passageSlides(spec: ScriptureSpec, chapter: Slide[]): Slide[] {
+  const wanted = new Set(Array.from({ length: spec.to - spec.from + 1 }, (_, i) => verseKey(spec.book, spec.chapter, spec.from + i)));
+  return chapter.filter((s) => wanted.has(s.key));
 }
 
 /** The session's slides. Song slides are read from the library each time, so edits show at once. */
@@ -174,7 +186,7 @@ export const atEdge = (index: number, count: number, delta: number) => (delta > 
 
 /** For a Bible session: the chapters it can still run into, named for the operator ("John 4"), or null at the book's ends. */
 export function chapterNeighbours(session: Session | null): { before: string | null; after: string | null } {
-  if (!session || session.kind !== "scripture") return { before: null, after: null };
+  if (!session || session.kind !== "scripture" || session.bounded) return { before: null, after: null };
   const first = Math.min(...session.chapters);
   const last = Math.max(...session.chapters);
   return {
@@ -185,7 +197,7 @@ export function chapterNeighbours(session: Session | null): { before: string | n
 
 /** For a Bible session: the chapter Next or Previous should load when the operator runs off an end. */
 export function neighbourChapter(session: Session | null, index: number, count: number, delta: number, chaptersInBook: number) {
-  if (!session || session.kind !== "scripture") return null;
+  if (!session || session.kind !== "scripture" || session.bounded) return null;
   if (delta > 0 && index >= count - 1) {
     const next = Math.max(...session.chapters) + 1;
     return next <= chaptersInBook ? { where: "after" as const, chapter: next } : null;

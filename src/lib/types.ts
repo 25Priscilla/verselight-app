@@ -96,8 +96,34 @@ export interface Service {
   id: Id;
   name: string;
   itemIds: Id[];
+  /** The Planner's order of service. Entries point at songs and Bible passages; nothing is copied. */
+  entries?: PlanEntry[];
   updatedAt: number;
 }
+
+/** A Bible passage by position, in the translations chosen when it was added (same shape as session.ts ScriptureSpec). */
+export interface PlanPassage {
+  primaryId: Id;
+  secondId?: Id;
+  onScreen: "both" | "first" | "second";
+  /** 0-based book in the standard order; chapter and verses 1-based */
+  book: number;
+  chapter: number;
+  from: number;
+  to: number;
+}
+
+/** One item in the order of service. `label` is its role, e.g. "Opening Song"; missing means "Song" or "Bible Reading". */
+export type PlanEntry =
+  | { id: Id; kind: "song"; songId: Id; label?: string }
+  | {
+      id: Id; kind: "bible"; passage: PlanPassage; label?: string;
+      /** The reference as the chosen Bible names its book, e.g. a Malayalam book name (display only) */
+      reference?: string;
+    };
+
+/** A plan entry before it has an id (each kind keeps its own fields) */
+export type NewPlanEntry = PlanEntry extends infer E ? (E extends PlanEntry ? Omit<E, "id"> : never) : never;
 
 export type BackgroundKind = "color" | "gradient" | "image" | "gallery";
 
