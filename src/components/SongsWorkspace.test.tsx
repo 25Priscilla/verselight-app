@@ -71,6 +71,31 @@ describe("Songs: finding a song", () => {
     expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പ്രഭാത ഗാനം"]);
     expect(screen.getByText("1 of 3 songs")).toBeTruthy();
   });
+
+  it("filters by English, Malayalam and Tamil only, counting transliterations as their language", async () => {
+    const items = [
+      song({ id: "e1", title: "English Song" }),
+      song({ id: "m2", title: "മലയാളം പാട്ട്", language: "ml", lyrics: "[Slide 1]\nവരി", translation: "[Slide 1]\nvari", translationLanguage: "ml-Latn" }),
+      song({ id: "m3", title: "Manglish Paattu", language: "ml-Latn", lyrics: "[Slide 1]\nvari" }),
+      song({ id: "t1", title: "தமிழ் பாடல்", language: "ta", lyrics: "[Slide 1]\nவரி", translation: "[Slide 1]\nvari", translationLanguage: "ta-Latn" }),
+      song({ id: "k1", title: "ಕನ್ನಡ ಹಾಡು", language: "kn", lyrics: "[Slide 1]\nಸಾಲು", translation: "[Slide 1]\nsaalu", translationLanguage: "kn-Latn" }),
+      song({ id: "x1", title: "Canto", language: "es", lyrics: "[Slide 1]\nCantad" }),
+    ];
+    await setup(items);
+    const group = within(screen.getByRole("radiogroup", { name: "Language" }));
+    expect(group.getAllByRole("radio").map((r) => r.textContent)).toEqual(["All", "English", "മലയാളം", "தமிழ்"]);
+    const titles = () => [...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent);
+    fireEvent.click(group.getByRole("radio", { name: "മലയാളം" }));
+    expect(titles()).toEqual(["മലയാളം പാട്ട്", "Manglish Paattu"]);
+    fireEvent.click(group.getByRole("radio", { name: "தமிழ்" }));
+    expect(titles()).toEqual(["தமிழ் பாடல்"]);
+    fireEvent.click(group.getByRole("radio", { name: "English" }));
+    expect(titles()).toEqual(["English Song"]);
+    fireEvent.click(group.getByRole("radio", { name: "All" }));
+    expect(titles()).toHaveLength(6);
+    // Nothing about the songs changes
+    for (const s of items) expect(songOf(s.id)).toEqual(s);
+  });
 });
 
 describe("Songs: writing and arranging", () => {
@@ -302,11 +327,12 @@ describe("Songs: a song with a translation", () => {
     expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പാട്ട്"]);
   });
 
-  it("offers a filter for a language once a song uses it", async () => {
+  it("keeps the same three language filters whatever languages the songs use", async () => {
     await setup([song()]);
-    expect(screen.queryByRole("radio", { name: "தமிழ்" })).toBeNull();
-    fireEvent.change(screen.getByLabelText("Lyrics language"), { target: { value: "ta" } });
-    expect(songOf("s1").language).toBe("ta");
-    expect(screen.getByRole("radio", { name: "தமிழ்" })).toBeTruthy();
+    const filters = () => within(screen.getByRole("radiogroup", { name: "Language" })).getAllByRole("radio").map((r) => r.textContent);
+    expect(filters()).toEqual(["All", "English", "മലയാളം", "தமிழ்"]);
+    fireEvent.change(screen.getByLabelText("Lyrics language"), { target: { value: "kn" } });
+    expect(songOf("s1").language).toBe("kn");
+    expect(filters()).toEqual(["All", "English", "മലയാളം", "தமிழ்"]);
   });
 });

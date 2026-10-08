@@ -14,6 +14,12 @@ import { Button, EmptyState, Segmented, cx } from "./ui";
 
 const collator = new Intl.Collator(["ml", "en"], { sensitivity: "base", numeric: true });
 
+/** The languages the song list can be filtered by. */
+const FILTER_LANGS: SongLanguage[] = ["en", "ml", "ta"];
+/** Which of those a song is listed under: its languages, counting a transliteration ("ml-Latn") as its base language. */
+const filterGroups = (s: Song) =>
+  [...new Set(songLanguages(s).map((l) => l.replace(/-Latn$/i, "")))].filter((l) => FILTER_LANGS.includes(l));
+
 interface Props {
   active: boolean;
   themeFor: (slide: Slide) => Theme;
@@ -56,7 +62,7 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
   }, [openSong?.nonce]);
 
   const filtered = useMemo(() => {
-    let list = songs.filter((s) => lang === "all" || songLanguages(s).includes(lang));
+    let list = songs.filter((s) => lang === "all" || filterGroups(s).includes(lang));
     if (view === "fav") list = list.filter((s) => s.favorite);
     if (view === "recent") list = list.filter((s) => s.lastUsedAt);
     if (query.trim()) list = list.filter((s) => songMatches(s, query));
@@ -65,13 +71,13 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
   }, [songs, query, lang, view]);
 
   const toggleFavorite = (s: Song) => save({ ...s, favorite: !s.favorite });
-  // English and Malayalam are always offered; other languages appear once a song uses them.
+  // English, Malayalam and Tamil are always offered; songs in other languages are listed under All.
   const counts = useMemo(() => {
-    const n = new Map<SongLanguage, number>([["en", 0], ["ml", 0]]);
-    for (const s of songs) for (const l of songLanguages(s)) n.set(l, (n.get(l) ?? 0) + 1);
+    const n = new Map<SongLanguage, number>(FILTER_LANGS.map((l) => [l, 0]));
+    for (const s of songs) for (const l of filterGroups(s)) n.set(l, (n.get(l) ?? 0) + 1);
     return n;
   }, [songs]);
-  const filterLangs = [...counts.keys()];
+  const filterLangs = FILTER_LANGS;
 
   const save = (s: Song) =>
     update((lib) => ({ ...lib, items: lib.items.map((i) => (i.id === s.id ? { ...s, updatedAt: Date.now() } : i)) }));
