@@ -8,6 +8,14 @@
 .slide-dim { position: absolute; inset: 0; background: #000; }
 /* Blank: the church background alone, whatever look the slide uses */
 .slide-blank { position: absolute; inset: 0; background: #fdf3df center / cover no-repeat; }
+/* The full-colour logo laid exactly over the background's watermark (x 1393, y 50, 470 wide in the 1920×1080 image),
+   following the image's cover scale. On a screen narrower than 16:9 the cover crop cuts the image's right side, so the
+   logo moves in just enough to keep the same right margin and stay whole. */
+.slide-blank-logo {
+  --bg-s: max(100cqw / 1920, 100cqh / 1080);
+  position: absolute; left: min(50cqw + 433 * var(--bg-s), 100cqw - 528 * var(--bg-s)); top: calc(50cqh - 490 * var(--bg-s));
+  width: calc(470 * var(--bg-s)); height: auto; pointer-events: none;
+}
 .slide-body { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 7cqh 7cqw 3cqh; overflow: hidden; font-size: calc(var(--slide-size) * var(--fit) * 1cqh); line-height: 1.28; font-weight: 500; }
 .slide[data-align="center"] .slide-body { text-align: center; align-items: center; }
 .slide[data-align="left"] .slide-body { text-align: left; align-items: flex-start; }

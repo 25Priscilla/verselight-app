@@ -128,7 +128,12 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
         <div className="slide-footer"><span className="slide-ref">{slide?.footer}</span></div>
       )}
       {cornerLogo && <img className="slide-logo" src={churchLogo} alt="" draggable={false} />}
-      {blackout && <div className="slide-blank" style={{ backgroundImage: `url("${CHURCH_BACKGROUND_URL}")` }} />}
+      {blackout && (
+        <div className="slide-blank" style={{ backgroundImage: `url("${CHURCH_BACKGROUND_URL}")` }}>
+          {/* The full-colour logo over the background's faint watermark, so Blank shows the church's own logo */}
+          <img className="slide-blank-logo" src={churchLogo} alt="" draggable={false} />
+        </div>
+      )}
     </div>
   );
 }

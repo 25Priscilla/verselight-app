@@ -38,6 +38,8 @@ describe("PresentationView (the projector window)", () => {
     expect(container.textContent).not.toContain("placeholder words");
     // Blank shows the church background, not black.
     expect(container.querySelector<HTMLElement>(".slide-blank")!.style.backgroundImage).toContain("church-background");
+    // ...with the church's full-colour logo on it, whatever the corner-logo setting.
+    expect(container.querySelector(".slide-blank > img.slide-blank-logo")!.getAttribute("src")).toMatch(/church-logo.*\.webp/);
     control(live);
     expect(container.textContent).toContain("placeholder words");
     expect(container.querySelector(".slide-blank")).toBeNull();
