@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { ensureChapter, loadBible, type BibleData } from "../lib/bible";
+import { bibleLang, ensureChapter, loadBible, type BibleData } from "../lib/bible";
 import { EsvError } from "../lib/esv";
 import { on, send, type NavCommand } from "../lib/bridge";
 import { canChooseDisplays, closePresentation, listDisplays, openPresentation, type DisplayInfo } from "../lib/display";
@@ -13,17 +13,17 @@ import { DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings } from "../
 import { saveFileAs } from "../lib/storage";
 import { displayChoices, hasTranslation, songDisplay } from "../lib/lyrics";
 import { songLanguage } from "../lib/malayalam";
-import type { Library, LiveState, PlanEntry, Slide, Song, SongDisplay } from "../lib/types";
+import type { Library, LiveState, PlanEntry, Slide, Song, SongDisplay, SongLanguage } from "../lib/types";
 import { useLibrary } from "../state/library";
 import { BackgroundsWorkspace } from "./BackgroundsWorkspace";
-import { BibleWorkspace, type OpenVerseRequest } from "./BibleWorkspace";
+import { BibleWorkspace, type BibleToolRequest, type OpenVerseRequest } from "./BibleWorkspace";
 import { GlobalSearch } from "./GlobalSearch";
 import { HelpScreen } from "./HelpScreen";
 import { HomeScreen } from "./HomeScreen";
 import { PlannerWorkspace } from "./PlannerWorkspace";
 import { PresentationPanel, type ProjectorStatus } from "./PresentationPanel";
 import { SettingsScreen, type SettingsSection } from "./SettingsScreen";
-import { Sidebar, type Mode } from "./Sidebar";
+import { Sidebar, type Mode, type Tool } from "./Sidebar";
 import { SongsWorkspace } from "./SongsWorkspace";
 import { ConfirmDialog, Toast, cx } from "./ui";
 import { WordStudyWorkspace, type StudyRequest, type VerseTarget } from "./WordStudyWorkspace";
@@ -77,6 +77,16 @@ export function ControlApp() {
   const openSearchVerse = useCallback((r: BibleResult) =>
     openInBible({ bibleId: r.bibleId, book: r.book, chapter: r.chapter, verse: r.verse, to: r.to }), [openInBible]);
   const studyWord = useCallback((word: string) => openStudy({ word }), [openStudy]);
+
+  // ---- Tools (sidebar and Home): open a view inside the Bible or Songs screen ----
+  const [bibleTool, setBibleTool] = useState<BibleToolRequest | null>(null);
+  const [songLanguageRequest, setSongLanguageRequest] = useState<{ lang: SongLanguage; nonce: number } | null>(null);
+  const canParallel = library.bibles.some((b) => bibleLang(b) === "en") && library.bibles.some((b) => bibleLang(b) === "ml");
+  const openTool = useCallback((t: Tool) => {
+    if (t === "malayalam-songs") { setSongLanguageRequest({ lang: "ml", nonce: Date.now() }); setMode("songs"); return; }
+    setBibleTool({ tool: t, nonce: Date.now() });
+    setMode("bible");
+  }, []);
 
   // ---- the presentation session: the single source of truth for what is shown ----
   const [state, dispatch] = useReducer(sessionReducer, initialSession);
@@ -492,17 +502,17 @@ export function ControlApp() {
 
   return (
     <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
-      <Sidebar mode={mode} onMode={setMode} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName}
+      <Sidebar mode={mode} onMode={setMode} onTool={openTool} canParallel={canParallel} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName}
         search={<GlobalSearch compact={presenting || narrow} readingBibleId={readingBibleId}
           onOpenVerse={openSearchVerse} onOpenSong={openSongById} onStudyWord={studyWord} />} />
 
 
       <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
         onManageBibles={() => openSettings("bibles")} focusSearch={bibleSearch}
-        onStudyWord={(word) => openStudy({ word })} onSaved={() => openStudy({ tab: "saved" })} />
+        onStudyWord={(word) => openStudy({ word })} onSaved={() => openStudy({ tab: "saved" })} toolRequest={bibleTool} />
       <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible}
         request={studyRequest} onPresent={presentScripture} />
-      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong}
+      <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong} showLanguage={songLanguageRequest}
         liveKey={state.session?.kind === "song" && liveSlide ? liveSlide.key : null} notify={setNotice} />
       {mode === "planner" && (
         <PlannerWorkspace readingBibleId={readingBibleId} liveEntryId={planAt >= 0 ? planEntryId : null}
@@ -514,12 +524,20 @@ export function ControlApp() {
         <HomeScreen
           presenting={state.session && liveSlide ? { kind: state.session.kind, title: sessionTitle, slideLabel: liveSlide.label, index, count: slides.length } : null}
           projector={projector} displayName={displayName} readingBibleId={readingBibleId}
+          displays={displays} canChooseDisplays={canChooseDisplays()} displayChoice={choice}
+          projectorProblem={projector === "off" ? projectorProblem : null} canParallel={canParallel}
           onFindVerse={() => { setMode("bible"); setBibleSearch(Date.now()); }}
           onFindSong={() => { setMode("songs"); setSongSearch(Date.now()); }}
-          onBackgrounds={() => setMode("backgrounds")}
+          onProjector={() => openSettings("projector")}
+          onRefreshDisplays={refreshDisplays}
           onManage={() => openSettings("bibles")}
+          onStudy={() => openStudy({ tab: "books" })}
+          onTool={openTool}
+          onHelp={() => setMode("help")}
           onOpenSong={openSongById}
-          onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse, to: b.to })} />
+          onOpenVerse={(bibleId, b) => openInBible({ bibleId, book: b.book, chapter: b.chapter, verse: b.verse, to: b.to })}
+          onPresentVerse={presentScripture}
+          onPresentSong={presentSong} />
       )}
       {mode === "settings" && (
         <SettingsScreen section={settingsSection} onSection={setSettingsSection}

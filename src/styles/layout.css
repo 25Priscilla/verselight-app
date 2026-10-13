@@ -26,6 +26,15 @@
 .nav-item.on .icon { color: var(--accent); }
 .nav-item.sub { min-height: var(--control-sm); padding-left: 44px; font-size: var(--text-sm); font-weight: var(--weight-medium); }
 .nav-label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-item:disabled { opacity: 0.5; cursor: default; background: none; color: var(--text-soft); }
+
+/* The main items scroll on short windows; Projector, Settings and Help stay at the bottom */
+.nav-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 calc(-1 * var(--space-1)); padding: 0 var(--space-1); }
+/* Tools: a group that opens and closes, remembered between visits */
+.nav-group .nav-label { flex: 1; }
+.nav-chevron { display: grid; place-items: center; color: var(--text-muted); }
+.nav-sub { margin-top: var(--space-1); }
+.nav-sub .nav-item.sub { padding-left: 30px; gap: 10px; }
 
 /* Projector status: a dot on the monitor icon, and the state under the label */
 .projector-item { min-height: 48px; }
@@ -44,6 +53,8 @@
 .nav-compact .brand { justify-content: center; padding-left: 0; padding-right: 0; }
 .nav-compact .brand-name, .nav-compact .sidebar .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .nav-compact .sidebar .nav-item { justify-content: center; padding: 0; }
+.nav-compact .nav-chevron { display: none; }
+.nav-compact .nav-sub { padding-top: var(--space-1); border-top: 1px solid var(--border); }
 
 /* ---------- Global Quick Search (Ctrl+K): in the sidebar on every screen, results float beside it ---------- */
 .gsearch { margin-top: calc(-1 * var(--space-1)); }
