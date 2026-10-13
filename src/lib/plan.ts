@@ -6,6 +6,7 @@
  * existing `services` list (the active service), so it is saved, backed up and restored with everything else.
  */
 import { BOOK_NAMES } from "./bible";
+import { hasMalayalam } from "./malayalam";
 import { slidesFor } from "./slides";
 import type { BibleMeta, Library, PlanEntry, PlanPassage, Service, Song } from "./types";
 
@@ -60,6 +61,9 @@ export function passageTranslations(p: PlanPassage, bibles: BibleMeta[]): string
 export interface EntryInfo {
   label: string;
   title: string;
+  /** A Malayalam song's Manglish title, shown smaller under the title; empty when there is none */
+  subtitle: string;
+  subtitleLang?: string;
   /** Small text after a reading's reference: its translation */
   tag: string;
   lang?: string;
@@ -67,18 +71,34 @@ export interface EntryInfo {
   problem: string | null;
 }
 
+/**
+ * A song's titles for a Planner row. A Malayalam song shows its Malayalam title with its Manglish title under it,
+ * taken from the song's own `altTitle` (the only place VerseLight keeps a song's title in Latin letters). Nothing is
+ * transliterated or made up: with no Manglish title, only the Malayalam title shows. Every other song is shown as before.
+ */
+export function songTitles(song: Song): { title: string; subtitle: string; lang?: string } {
+  const title = song.title.trim();
+  const alt = (song.altTitle ?? "").trim();
+  const same = title.toLowerCase() === alt.toLowerCase();
+  // A song saved the other way round (Manglish title, Malayalam alternative title): the Malayalam title still comes first.
+  if (alt && !same && !hasMalayalam(title) && hasMalayalam(alt)) return { title: alt, subtitle: title, lang: "ml" };
+  if (title && alt && !same && hasMalayalam(title) && !hasMalayalam(alt)) return { title, subtitle: alt, lang: "ml" };
+  return { title: song.title || song.altTitle || "Untitled song", subtitle: "", lang: song.language };
+}
+
 /** What a Planner row shows for an entry. */
 export function entryInfo(e: PlanEntry, songs: Map<string, Song>, bibles: BibleMeta[]): EntryInfo {
   const label = entryLabel(e);
   if (e.kind === "song") {
     const song = songs.get(e.songId);
-    if (!song) return { label, title: "Song not found", tag: "", problem: "This song was deleted." };
-    const title = song.title || song.altTitle || "Untitled song";
-    return { label, title, tag: "", lang: song.language, problem: slidesFor(song).length ? null : "This song has no slides." };
+    if (!song) return { label, title: "Song not found", subtitle: "", tag: "", problem: "This song was deleted." };
+    const { title, subtitle, lang } = songTitles(song);
+    return { label, title, subtitle, subtitleLang: subtitle ? "ml-Latn" : undefined, tag: "", lang,
+      problem: slidesFor(song).length ? null : "This song has no slides." };
   }
   const p = e.passage;
   const problem = bibles.some((b) => b.id === p.primaryId) ? null : "This Bible translation was removed.";
-  return { label, title: e.reference || passageReference(p), tag: passageTranslations(p, bibles), problem };
+  return { label, title: e.reference || passageReference(p), subtitle: "", tag: passageTranslations(p, bibles), problem };
 }
 
 /**

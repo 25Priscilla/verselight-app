@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeLibrary } from "../state/library";
-import { activeService, entriesToward, entryInfo, entryLabel, moveEntry, passageReference, passageTranslations, planEntries, setEntries, WHOLE_CHAPTER } from "./plan";
+import { activeService, entriesToward, entryInfo, entryLabel, moveEntry, passageReference, passageTranslations, planEntries, setEntries, songTitles, WHOLE_CHAPTER } from "./plan";
 import { chapterNeighbours, neighbourChapter, passageSlides, verseKey, type Session } from "./session";
 import type { BibleMeta, Library, NewPlanEntry, PlanEntry, PlanPassage, Slide, Song } from "./types";
 
@@ -71,6 +71,47 @@ describe("what a row shows", () => {
     expect(entryInfo(e("1", { kind: "song", songId: "empty" }), songs, bibles).problem).toMatch(/no slides/);
     expect(entryInfo(e("1", { kind: "bible", passage: { ...john316, primaryId: "gone" } }), songs, bibles).problem).toMatch(/removed/);
     expect(entryInfo(e("1", { kind: "bible", passage: john316, reference: "യോഹന്നാൻ 3:16" }), songs, bibles).title).toBe("യോഹന്നാൻ 3:16");
+  });
+});
+
+describe("a Malayalam song's Manglish title", () => {
+  const malayalam = (patch: Partial<Song>): Song => ({ ...song("m", "എല്ലാം നന്മയ്ക്കായി"), language: "ml", ...patch });
+
+  it("shows the Malayalam title first and the song's own Manglish title (altTitle) under it, trimmed", () => {
+    const s = malayalam({ altTitle: "  Ellaam nanmaikkaye  " });
+    expect(songTitles(s)).toEqual({ title: "എല്ലാം നന്മയ്ക്കായി", subtitle: "Ellaam nanmaikkaye", lang: "ml" });
+    expect(entryInfo(e("1", { kind: "song", songId: "m" }), new Map([["m", s]]), bibles))
+      .toMatchObject({ title: "എല്ലാം നന്മയ്ക്കായി", subtitle: "Ellaam nanmaikkaye", subtitleLang: "ml-Latn" });
+  });
+
+  it("keeps the Malayalam title first for a song saved the other way round (Manglish title, Malayalam altTitle)", () => {
+    const s = malayalam({ title: "Oronalilum piriyathanthyatholam", altTitle: "ഓരോനാളിലും പിരിയാതന്ത്യത്തോളം" });
+    expect(songTitles(s)).toMatchObject({ title: "ഓരോനാളിലും പിരിയാതന്ത്യത്തോളം", subtitle: "Oronalilum piriyathanthyatholam" });
+  });
+
+  it("with no altTitle, shows only the Malayalam title: transliterated or translated lyrics are never used as a title", () => {
+    const s = {
+      ...malayalam({ altTitle: "", lyrics: "[Verse 1]\nഎല്ലാം നന്മയ്ക്കായി", translation: "[Verse 1]\nEllaam nanmaikkaye", translationLanguage: "ml-Latn" }),
+      transliteration: "[Verse 1]\nEllaam nanmaikkaye",
+    } as Song;
+    expect(songTitles(s)).toEqual({ title: "എല്ലാം നന്മയ്ക്കായി", subtitle: "", lang: "ml" });
+    expect(songTitles(malayalam({ altTitle: "   " })).subtitle).toBe("");
+    expect(songTitles(malayalam({ altTitle: undefined })).subtitle).toBe("");
+  });
+
+  it("shows other songs exactly as before", () => {
+    expect(songTitles({ ...song("en", "Amazing Grace"), altTitle: "Grace hymn", language: "en" }))
+      .toEqual({ title: "Amazing Grace", subtitle: "", lang: "en" });
+    expect(songTitles({ ...song("ta", "தமிழ் பாடல்"), altTitle: "Tamil paadal", language: "ta" }))
+      .toEqual({ title: "தமிழ் பாடல்", subtitle: "", lang: "ta" });
+    expect(songTitles({ ...song("lt", "Enne Nadathum"), altTitle: "", language: "ml-Latn" }))
+      .toEqual({ title: "Enne Nadathum", subtitle: "", lang: "ml-Latn" });
+    expect(songTitles({ ...song("u", ""), altTitle: "Only alt" }).title).toBe("Only alt");
+  });
+
+  it("never shows the same title twice", () => {
+    expect(songTitles(malayalam({ altTitle: " എല്ലാം നന്മയ്ക്കായി " })).subtitle).toBe("");
+    expect(songTitles(malayalam({ title: "Ellaam", altTitle: "ellaam" })).subtitle).toBe("");
   });
 });
 

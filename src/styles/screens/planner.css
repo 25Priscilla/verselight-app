@@ -35,6 +35,7 @@ button.plan-main:hover { background: var(--surface-2); }
 .plan-title { font-weight: var(--weight-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plan-row.on .plan-title { color: var(--accent); }
 .plan-tag { margin-left: var(--space-2); font-size: var(--text-xs); font-weight: var(--weight-medium); color: var(--text-muted); }
+.plan-subtitle { font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plan-problem { font-size: var(--text-xs); color: var(--warning); }
 .plan-row.missing .plan-title { color: var(--text-muted); }
 .plan-rename { width: min(260px, 100%); padding: 1px 6px !important; font-size: var(--text-xs); line-height: 18px !important; }
