@@ -77,6 +77,20 @@ describe("the Planner screen", () => {
     expect((screen.getByRole("textbox", { name: "Service name" }) as HTMLInputElement).value).toBe("Sunday Service");
   });
 
+  it("shows a Malayalam song's Manglish title under its Malayalam title, smaller", async () => {
+    const items = [...SONGS, { ...song("ml", "എല്ലാം നന്മയ്ക്കായി", "[Verse 1]\nവരി"), language: "ml", altTitle: "Ellaam nanmaikkaye" }];
+    await openPlanner([{ id: "m", kind: "song", songId: "ml" }, { id: "g", kind: "song", songId: "grace" }], items);
+    const [ml, en] = rows();
+    expect(ml.querySelector(".plan-title")!.textContent).toBe("എല്ലാം നന്മയ്ക്കായി");
+    expect(ml.querySelector(".plan-subtitle")!.textContent).toBe("Ellaam nanmaikkaye");
+    expect(ml.querySelector(".plan-subtitle")!.getAttribute("lang")).toBe("ml-Latn");
+    expect(en.querySelector(".plan-title")!.textContent).toBe("Amazing Grace");
+    expect(en.querySelector(".plan-subtitle")).toBeNull();
+    // Display only: the song is saved exactly as it was.
+    const saved = JSON.parse(localStorage.getItem("verselight:library.json")!) as Library;
+    expect(saved.items.find((i) => i.id === "ml")).toEqual(items[2]);
+  });
+
   it("adds a song and a Bible passage from the existing library and Bibles", async () => {
     await openPlanner([]);
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
