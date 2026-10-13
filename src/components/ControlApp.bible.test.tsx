@@ -205,7 +205,7 @@ describe("cross references", () => {
   it("lists related passages for the selected verse and opens one", async () => {
     await openBible();
     await search("John 3:16");
-    fireEvent.click(screen.getByRole("button", { name: /Cross references/ }));
+    fireEvent.click(within(selectionBar() as HTMLElement).getByRole("button", { name: /Cross references/ }));
     const panel = within(await screen.findByRole("complementary", { name: "Cross references" }));
     await panel.findByText("Romans 5:8");
     expect(panel.getByText("1 John 4:9–10")).toBeTruthy();
@@ -217,7 +217,7 @@ describe("cross references", () => {
   it("shows a clean empty state for a verse without references", async () => {
     await openBible();
     await search("John 3:17");
-    fireEvent.click(screen.getByRole("button", { name: /Cross references/ }));
+    fireEvent.click(within(selectionBar() as HTMLElement).getByRole("button", { name: /Cross references/ }));
     const panel = within(await screen.findByRole("complementary", { name: "Cross references" }));
     expect(await panel.findByText("No cross references for John 3:17.")).toBeTruthy();
   });
@@ -225,7 +225,7 @@ describe("cross references", () => {
   it("offers to import cross references when there are none", async () => {
     await openBible({ xrefs: false });
     await search("John 3:16");
-    fireEvent.click(screen.getByRole("button", { name: /Cross references/ }));
+    fireEvent.click(within(selectionBar() as HTMLElement).getByRole("button", { name: /Cross references/ }));
     const panel = within(screen.getByRole("complementary", { name: "Cross references" }));
     expect(panel.getByText("Cross references aren't imported yet.")).toBeTruthy();
     expect(panel.getByRole("button", { name: /Import cross references/ })).toBeTruthy();

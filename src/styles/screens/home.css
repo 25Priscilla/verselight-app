@@ -1,34 +1,124 @@
-/* Home: quick actions, what's presenting, and recently used songs and saved verses. */
+/* Home: today's verse, the four main jobs, recent songs and saved verses, the tools, the projector and a few tips.
+   A deep navy version of the design tokens, set on Home only, so the other screens keep their look. */
 
-.home-callout, .home-now { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
-.home-callout { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
-.home-callout > div, .home-now-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.home-callout p { margin: 0; }
-.home-callout-icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-full); background: var(--accent-soft); color: var(--accent); }
-.home-now { border-color: color-mix(in srgb, var(--live) 35%, var(--border)); }
+.home-page {
+  --bg: #0b1324;
+  --surface: #101b31;
+  --surface-2: #16233d;
+  --surface-hover: #1c2c4b;
+  --border: #22345a;
+  --border-strong: #3a5488;
+  --text-muted: #a0aecb;
+  --text-soft: #d3dbec;
+  background:
+    radial-gradient(1200px 500px at 70% -10%, rgba(64, 104, 196, 0.16), transparent 60%),
+    var(--bg);
+}
+.home-page .page-inner { container: home / inline-size; max-width: 1280px; gap: var(--space-6); padding-top: var(--space-8); }
+.home-page .page-head h1 { font-family: var(--font-ui); font-weight: var(--weight-bold); }
+.home-page .page-intro { margin-top: var(--space-1); font-size: var(--text-md); }
+
+/* Main column and, beside it, the projector and tips */
+.home-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--space-6); align-items: start; }
+.home-main, .home-rail { min-width: 0; display: flex; flex-direction: column; gap: var(--space-5); }
+
+/* Panels: one level only, no cards inside cards */
+.home-panel { min-width: 0; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-5) var(--space-5);
+  border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(180deg, var(--surface-2), var(--surface) 70%); }
+.home-panel-title { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--text-lg); font-weight: var(--weight-bold); }
+.home-panel-title .icon { color: var(--accent); }
+
+/* ---- Now presenting ---- */
+.home-now { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-5); border-radius: var(--radius); border: 1px solid color-mix(in srgb, var(--live) 40%, var(--border)); background: var(--surface); }
+.home-now-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .home-now-label { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 .home-now-text strong { font-size: var(--text-lg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.home-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.home-action { display: flex; align-items: center; gap: var(--space-4); min-height: 88px; padding: var(--space-4) var(--space-5); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); text-align: left; transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
-.home-action:hover { background: var(--surface-2); border-color: var(--border-strong); }
-.home-action > .icon:last-child { color: var(--text-muted); transition: transform var(--dur-fast) var(--ease); }
-.home-action:hover > .icon:last-child { color: var(--text); transform: translateX(2px); }
-.home-action-icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-full); background: var(--accent-soft); color: var(--accent); }
-.home-action-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.home-action-title { font-size: var(--text-lg); font-weight: var(--weight-bold); }
-.home-action-sub { font-size: var(--text-sm); color: var(--text-muted); }
+/* ---- Today's verse: plain navy under the words, the built-in "Cross at dusk" artwork fading in on the right ---- */
+.home-banner { position: relative; overflow: hidden; min-height: 168px; display: flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: linear-gradient(110deg, #0d1730 0%, #13234a 100%); }
+.home-banner-art { position: absolute; inset: 0 0 0 auto; width: 52%; background-size: cover; background-position: center 65%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 45%); mask-image: linear-gradient(90deg, transparent 0%, #000 45%); }
+.home-banner-body { position: relative; max-width: 62%; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-6) var(--space-8); color: #fff; }
+.home-banner-label { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: 0.08em; text-transform: uppercase; color: #c7d4f2; }
+.home-banner-title { font-size: var(--text-xl); }
+.home-banner-verse { margin: 0; font: 500 21px/1.45 var(--font-read); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.home-banner-ref { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: #dbe3f5; }
+.home-banner-note { margin: 0; color: #dbe3f5; font-size: var(--text-md); }
+.home-banner-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.home-banner .home-banner-open { color: #e6ecfa; }
+.home-banner .home-banner-open:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; }
 
-.home-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); align-items: start; }
-.home-list { list-style: none; margin: 0 calc(-1 * var(--space-2)); padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.home-list button { width: 100%; display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: none; color: var(--text); text-align: left; }
-.home-list button:hover:not(:disabled) { background: var(--surface-2); }
-.home-list button > .icon { margin-top: 3px; color: var(--text-muted); }
-.home-list-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+/* ---- The four main jobs ---- */
+.home-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.home-card { --tone: #4f7cf0; position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); min-height: 132px; padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--tone) 35%, var(--border)); border-radius: var(--radius); text-align: left; color: var(--text);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 26%, var(--surface)) 0%, var(--surface) 85%);
+  transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.home-card:hover { border-color: color-mix(in srgb, var(--tone) 70%, var(--border)); }
+.home-card.tone-songs { --tone: #8b5cf6; }
+.home-card.tone-projector { --tone: #14a38b; }
+.home-card.tone-library { --tone: #5b7bb8; }
+.home-card-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: var(--space-2); border-radius: 10px;
+  background: color-mix(in srgb, var(--tone, var(--accent)) 30%, transparent); color: #fff; }
+.home-now .home-card-icon { --tone: var(--live); margin: 0; }
+.home-card-title { font-size: var(--text-lg); font-weight: var(--weight-bold); }
+.home-card-sub { font-size: var(--text-sm); color: var(--text-muted); padding-right: var(--space-5); }
+.home-card > .icon:last-child { position: absolute; right: var(--space-4); bottom: var(--space-4); color: var(--text-muted); transition: transform var(--dur-fast) var(--ease); }
+.home-card:hover > .icon:last-child { color: var(--text); transform: translateX(2px); }
+
+/* ---- Recent and Quick tools, side by side ---- */
+.home-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.home-group { display: flex; flex-direction: column; gap: var(--space-1); }
+.home-group + .home-group { padding-top: var(--space-2); border-top: 1px solid var(--border); }
+.home-group-title { margin: 0; font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.home-group > p { margin: var(--space-1) 0 var(--space-2); }
+
+.home-list, .home-tools { list-style: none; margin: 0 calc(-1 * var(--space-2)); padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.home-list li { display: flex; align-items: center; gap: var(--space-1); border-radius: var(--radius-sm); }
+.home-list li:hover { background: var(--surface-hover); }
+.home-list-open, .home-tools button { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: none; color: var(--text); text-align: left; }
+.home-tools button:hover:not(:disabled) { background: var(--surface-hover); }
+.home-tools button:disabled { opacity: 0.55; cursor: default; }
+.home-tools button > .icon:last-child { flex: none; color: var(--text-muted); }
+.home-list-present { flex: none; margin-right: var(--space-1); color: var(--live); }
+.home-list-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
+.home-list-icon.song { background: rgba(139, 92, 246, 0.2); color: #c4b1ff; }
+.home-list-icon.verse { background: rgba(79, 124, 240, 0.2); color: #a9c1ff; }
+.home-list-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .home-list-title { font-weight: var(--weight-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .home-list-sub { font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.home-verse { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-family: var(--font-read); }
+.home-verse { white-space: normal; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; font-family: var(--font-read); }
 
-@media (max-width: 1100px) {
-  .home-actions, .home-lists { grid-template-columns: minmax(0, 1fr); }
+/* ---- Projector ---- */
+.home-projector-status { display: flex; }
+.home-projector-line { margin: 0; font-size: var(--text-sm); color: var(--text-soft); line-height: 1.5; }
+.home-projector-line strong { color: var(--text); }
+.home-projector-note { display: flex; gap: var(--space-2); margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--surface-2); font-size: var(--text-sm); color: var(--text-soft); }
+.home-projector-note .icon { flex: none; margin-top: 2px; color: var(--warning); }
+.home-projector-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.home-link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 2px; }
+.home-link:hover { color: var(--accent-hover); }
+
+/* ---- Quick tips ---- */
+.home-tips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-soft); }
+.home-tips li { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: baseline; gap: var(--space-2); }
+.home-tips kbd { justify-self: start; padding: 1px 7px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface-2); font: var(--weight-semibold) var(--text-xs)/1.6 var(--font-ui); color: var(--text); white-space: nowrap; }
+.home-tips span kbd { padding: 0 5px; }
+
+/* ---- Narrower space (a smaller window, or the presentation panel open): the side column moves under the main one,
+   then everything stacks. Measured on Home's own width, so it reacts to the presentation panel too. ---- */
+@container home (max-width: 1020px) {
+  .home-grid { grid-template-columns: minmax(0, 1fr); }
+  .home-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+@container home (max-width: 760px) {
+  .home-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-card { min-height: 0; }
+}
+@container home (max-width: 620px) {
+  .home-split, .home-rail { grid-template-columns: minmax(0, 1fr); }
+  .home-banner-body { max-width: none; padding: var(--space-5); }
+  .home-banner-art { width: 100%; opacity: 0.35; }
 }
