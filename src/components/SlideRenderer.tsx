@@ -40,7 +40,10 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
   const [fit, setFit] = useState(1);
   const [height, setHeight] = useState(0);
   const showText = !!slide && !clear && !blackout;
-  const showFooter = showText && theme.showReference && !!slide?.footer;
+  const showRef = showText && theme.showReference && !!slide?.footer;
+  // A Bible reference heads the slide so whoever is reading finds the passage at a glance; song credits stay below.
+  const refOnTop = showRef && slide?.kind === "scripture";
+  const showFooter = showRef && !refOnTop;
   // The church background is light and carries the logo, so it gets its own readable text treatment and no corner logo.
   const onChurch = theme.backgroundKind === "gallery" && theme.galleryId === CHURCH_BACKGROUND_ID;
   const cornerLogo = !!logo && !blackout && !onChurch;
@@ -101,9 +104,12 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
   );
 
   return (
-    <div ref={frameRef} className={`slide ${cornerLogo ? "has-logo" : ""} ${className ?? ""}`} data-footer={showFooter || undefined} data-bg={onChurch ? "church" : undefined} style={style} data-align={theme.align} lang={slide?.lang}>
+    <div ref={frameRef} className={`slide ${cornerLogo ? "has-logo" : ""} ${className ?? ""}`} data-footer={showFooter || undefined} data-ref={refOnTop ? "top" : undefined} data-bg={onChurch ? "church" : undefined} style={style} data-align={theme.align} lang={slide?.lang}>
       <div className="slide-bg" style={bgStyle} />
       {(theme.overlay ?? 0) > 0 && <div className="slide-dim" style={{ opacity: theme.overlay }} />}
+      {refOnTop && (
+        <div className={`slide-header ${theme.shadow ? "has-shadow" : ""}`}><span className="slide-ref">{slide?.footer}</span></div>
+      )}
       <div ref={bodyRef} className={`slide-body ${theme.shadow ? "has-shadow" : ""}`}>
         {showText && slide.kind === "scripture" && slide.parallelLines ? (
           <div className={`bilingual ${theme.bilingualLayout === "columns" ? "cols" : "stack"}`}>

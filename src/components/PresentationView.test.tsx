@@ -158,9 +158,101 @@ describe("the church logo", () => {
 
   it("keeps the reference clear of the logo, and the words above it when there is no reference", () => {
     const { container } = render(<PresentationView />);
+    // A song credit at the foot is kept between margins wider than the logo.
+    control({ ...live, logo: true, slide: { ...song, footer: "Writer  |  © Test" } });
+    expect(container.querySelector(".slide.has-logo[data-footer] .slide-footer")).toBeTruthy();
+    // A Bible reference heads the slide, so the words stop above the logo.
     control({ ...live, logo: true });
-    expect(container.querySelector(".slide[data-footer] .slide-footer")).toBeTruthy();
+    expect(container.querySelector(".slide.has-logo[data-ref=top]:not([data-footer]) > .slide-header")).toBeTruthy();
     control({ ...live, logo: true, slide: song });
     expect(container.querySelector(".slide.has-logo:not([data-footer])")).toBeTruthy();
+  });
+});
+
+describe("the Bible reference at the top of the slide", () => {
+  // The slide's parts from top to bottom, by class name.
+  const order = (c: HTMLElement) => [...c.querySelector(".projector > .slide")!.children].map((el) => el.classList[0]);
+  const header = (c: HTMLElement) => c.querySelector(".projector > .slide > .slide-header > .slide-ref");
+  const verse = (c: HTMLElement) => [...c.querySelectorAll(".slide-body .slide-scripture")].map((p) => [p.getAttribute("lang"), p.textContent?.trim()]);
+
+  it("heads an English verse and sits above the words, never at the foot", () => {
+    const { container } = render(<PresentationView />);
+    control(live);
+    expect(header(container)!.textContent).toBe("John 3:16 (TEN)");
+    expect(order(container)).toEqual(["slide-bg", "slide-header", "slide-body"]);
+    expect(container.querySelector(".slide-footer")).toBeNull();
+    expect(container.querySelector(".slide[data-footer]")).toBeNull();
+    expect(verse(container)).toEqual([[null, "placeholder words"]]);
+  });
+
+  it("heads a Malayalam verse in Malayalam, with the slide marked as Malayalam", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: { ...slide, lines: ["വാക്യം"], lang: "ml", footer: "യോഹന്നാൻ 3:16 (TML)" } });
+    expect(header(container)!.textContent).toBe("യോഹന്നാൻ 3:16 (TML)");
+    expect(container.querySelector(".slide[lang=ml] > .slide-header")).toBeTruthy();
+    expect(verse(container)).toEqual([["ml", "വാക്യം"]]);
+    expect(container.querySelector(".slide-footer")).toBeNull();
+  });
+
+  it("heads both languages together, with each language kept whole and apart, stacked or side by side", () => {
+    const { container } = render(<PresentationView />);
+    const pair: Slide = { ...slide, lang: "en", parallelLines: ["സ്നേഹം വാക്കുകൾ"], parallelLang: "ml", footer: "John 3:16 (TEN · TML)" };
+    for (const bilingualLayout of ["stacked", "columns"] as const) {
+      control({ ...live, slide: pair, theme: { ...live.theme, bilingualLayout } });
+      expect(header(container)!.textContent).toBe("John 3:16 (TEN · TML)");
+      expect(order(container)).toEqual(["slide-bg", "slide-header", "slide-body"]);
+      expect([...container.querySelector(".slide-body > .bilingual")!.children].map((el) => el.className)).toEqual(["slide-scripture", "bilingual-rule", "slide-scripture"]);
+      expect(verse(container)).toEqual([["en", "placeholder words"], ["ml", "സ്നേഹം വാക്കുകൾ"]]);
+      expect(container.querySelector(".slide-footer")).toBeNull();
+    }
+  });
+
+  it("follows the verse as it moves on and back", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, slide: { ...slide, key: "v:42.3.17", lines: ["next words"], footer: "John 3:17 (TEN)" } });
+    expect(header(container)!.textContent).toBe("John 3:17 (TEN)");
+    expect(verse(container)).toEqual([[null, "next words"]]);
+    control(live);
+    expect(header(container)!.textContent).toBe("John 3:16 (TEN)");
+    expect(verse(container)).toEqual([[null, "placeholder words"]]);
+  });
+
+  it("keeps the church background's readable treatment", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, theme: DEFAULT_THEME });
+    expect(container.querySelector(".slide[data-bg=church][data-ref=top] > .slide-header > .slide-ref")!.textContent).toBe("John 3:16 (TEN)");
+  });
+
+  it("hides with the words under Blank, which keeps the church background and its full-colour logo", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, logo: true, blackout: true });
+    expect(container.querySelector(".slide-header")).toBeNull();
+    expect(container.querySelector(".slide[data-ref]")).toBeNull();
+    expect(container.textContent).not.toContain("John 3:16");
+    expect(container.querySelector<HTMLElement>(".slide-blank")!.style.backgroundImage).toContain("church-background");
+    expect(container.querySelector(".slide-blank > img.slide-blank-logo")!.getAttribute("src")).toMatch(/church-logo.*\.webp/);
+    control(live);
+    expect(header(container)!.textContent).toBe("John 3:16 (TEN)");
+  });
+
+  it("is left off when the look turns references off, and with Clear", () => {
+    const { container } = render(<PresentationView />);
+    control({ ...live, theme: { ...live.theme, showReference: false } });
+    expect(container.querySelector(".slide-header, .slide-footer")).toBeNull();
+    expect(verse(container)).toEqual([[null, "placeholder words"]]);
+    control({ ...live, clear: true });
+    expect(container.querySelector(".slide-header, .slide-footer")).toBeNull();
+  });
+
+  it("leaves song slides as they were: the credit stays at the foot and nothing heads the slide", () => {
+    const { container } = render(<PresentationView />);
+    const song: Slide = { key: "b1/Verse 1/0#0", itemId: "b1", kind: "song", label: "Verse 1", lines: ["Line one"], footer: "Writer  |  © Test" };
+    control({ ...live, slide: song });
+    expect(order(container)).toEqual(["slide-bg", "slide-body", "slide-footer"]);
+    expect(container.querySelector(".slide[data-footer] > .slide-footer > .slide-ref")!.textContent).toBe("Writer  |  © Test");
+    expect(container.querySelector(".slide-header, .slide[data-ref]")).toBeNull();
+    control({ ...live, slide: { ...song, lines: ["വരി ഒന്ന്"], lang: "ml", parallelLines: ["Line one"], parallelLang: "en" } });
+    expect(order(container)).toEqual(["slide-bg", "slide-body", "slide-footer"]);
+    expect(container.querySelector(".slide-header")).toBeNull();
   });
 });
