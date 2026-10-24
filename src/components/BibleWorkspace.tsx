@@ -19,7 +19,11 @@ interface Selection { anchor: number; from: number; to: number }
 /** A request from another screen (Word Study, Home) to open a verse or passage in a given translation. */
 export interface OpenVerseRequest { bibleId: string; book: number; chapter: number; verse: number; to?: number; nonce: number }
 
-export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, onManageBibles, focusSearch, onStudyWord, onSaved }: {
+/** A request from Home or the sidebar's Tools to open one of the Bible's own study views. */
+export type BibleTool = "overview" | "crossrefs" | "parallel";
+export interface BibleToolRequest { tool: BibleTool; nonce: number }
+
+export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, onManageBibles, focusSearch, onStudyWord, onSaved, toolRequest }: {
   active: boolean;
   onPresent: (spec: ScriptureSpec) => void;
   /** Reports the translation being read, so Word Study can search the same one */
@@ -33,6 +37,8 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   onStudyWord?: (word: string) => void;
   /** Opens Bible Study's saved verses */
   onSaved?: () => void;
+  /** Changes when another screen asks for Overview, Cross references or English + Malayalam side by side */
+  toolRequest?: BibleToolRequest | null;
 }) {
   const { library, update } = useLibrary();
   const enBibles = library.bibles.filter((b) => bibleLang(b) === "en");
@@ -136,6 +142,14 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
     setOverview(false);
     openChapter(openRequest.book, openRequest.chapter, { from: openRequest.verse, to: openRequest.to ?? openRequest.verse });
   }, [openRequest?.nonce]);
+
+  // Home or the sidebar's Tools: switch to the same view the buttons on this screen switch to.
+  useEffect(() => {
+    if (!toolRequest) return;
+    if (toolRequest.tool === "overview") setOverview(true);
+    else if (toolRequest.tool === "crossrefs") { setOverview(false); setXrOpen(true); }
+    else if (enBibles.length && mlBibles.length) { setOverview(false); setView("both"); }
+  }, [toolRequest?.nonce]);
 
   // Keep the current chapter chip visible in the scrolling strip.
   useEffect(() => {

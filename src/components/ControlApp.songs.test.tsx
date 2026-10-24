@@ -112,7 +112,7 @@ describe("presenting a song", () => {
   it("records the song as recently used for Home", async () => {
     await presentSong();
     fireEvent.click(screen.getByRole("button", { name: "Home" }));
-    const recent = screen.getByText("Recently used songs").closest("section, .card, div")!.parentElement!;
+    const recent = screen.getByRole("list", { name: "Recent songs" });
     expect(within(recent).getByText("Morning Song")).toBeTruthy();
   });
 });

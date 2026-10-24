@@ -94,6 +94,7 @@ export function PlannerWorkspace({ readingBibleId, liveEntryId, live, canJump, o
                     <span className="plan-title" lang={info.lang}>
                       {info.title}{info.tag && <span className="plan-tag">{info.tag}</span>}
                     </span>
+                    {info.subtitle && <span className="plan-subtitle" lang={info.subtitleLang}>{info.subtitle}</span>}
                     {info.problem && <span className="plan-problem">{info.problem}</span>}
                   </span>
                 </>

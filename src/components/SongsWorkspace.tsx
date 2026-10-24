@@ -28,12 +28,14 @@ interface Props {
   focusSearch?: number;
   /** A song Home asked to open */
   openSong?: { id: string; nonce: number } | null;
+  /** A language Home or the sidebar's Tools asked to list (e.g. Malayalam songs) */
+  showLanguage?: { lang: SongLanguage; nonce: number } | null;
   /** The slide on the projector, when a song is being presented */
   liveKey: string | null;
   notify: (message: string) => void;
 }
 
-export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openSong, liveKey, notify }: Props) {
+export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openSong, showLanguage, liveKey, notify }: Props) {
   const { library, update } = useLibrary();
   const songs = library.items.filter((i): i is Song => i.kind === "song");
   const [selectedId, setSelectedId] = useState<string | null>(songs[0]?.id ?? null);
@@ -60,6 +62,14 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
   useEffect(() => {
     if (openSong) show(openSong.id);
   }, [openSong?.nonce]);
+  // Home's "Malayalam songs": the whole list in that language, searchable by Malayalam or Manglish words.
+  useEffect(() => {
+    if (!showLanguage) return;
+    setQuery("");
+    setView("all");
+    setLang(showLanguage.lang);
+    requestAnimationFrame(() => searchRef.current?.focus());
+  }, [showLanguage?.nonce]);
 
   const filtered = useMemo(() => {
     let list = songs.filter((s) => lang === "all" || filterGroups(s).includes(lang));
