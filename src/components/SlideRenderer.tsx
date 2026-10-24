@@ -115,9 +115,17 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
     const ro = new ResizeObserver(measure);
     if (frameRef.current) ro.observe(frameRef.current);
     // Malayalam, Tamil and Kannada fonts may finish loading after the first measure; measure again with the real shapes.
+    // Fonts load separately and on first use, so `ready` can settle before the Malayalam face arrives: measure again
+    // each time any font finishes loading, too.
     let live = true;
-    document.fonts?.ready.then(() => { if (live) measure(); });
-    return () => { live = false; ro.disconnect(); };
+    const remeasure = () => { if (live) measure(); };
+    document.fonts?.ready.then(remeasure);
+    document.fonts?.addEventListener("loadingdone", remeasure);
+    return () => {
+      live = false;
+      ro.disconnect();
+      document.fonts?.removeEventListener("loadingdone", remeasure);
+    };
   }, [slide, theme.fontSize, theme.fontFamily, theme.showReference, theme.bilingualLayout, showText, cornerLogo, onChurch]);
 
   // Blur is stored as pixels at 1080p and scaled to this frame, so every size matches the projector.
