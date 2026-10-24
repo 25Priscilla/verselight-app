@@ -51,6 +51,19 @@ html.projector-window, html.projector-window body { overflow: hidden; background
 .bilingual.song-pair.cols > .slide-lines { flex: 1 1 0; min-width: 0; }
 .bilingual.song-pair.stack { gap: 0.5em; }
 
+/* ---------- Song lyrics, read from the back of the church ---------- */
+/* Lyrics get the screen's room: smaller margins (still clear of a TV's overscan), a slimmer credit and tighter but
+   safe line spacing, so the shrink-to-fit leaves the words as large as possible. Scripture keeps its own spacing. */
+.slide[data-kind="song"] .slide-body { padding: 5cqh 5cqw 2cqh; }
+.slide[data-kind="song"] .slide-footer { padding-bottom: 3cqh; font-size: 2.8cqh; }
+.slide[data-kind="song"] .slide-lines:is(:lang(ml), :lang(ta), :lang(kn)) { line-height: 1.42; }
+/* A transliteration (Manglish, "ml-Latn") reads under its own script: a little smaller and set in plain Latin
+   spacing, so the two are told apart at a glance and the pair still fits large. */
+.slide[data-kind="song"] .slide-lines[lang$="-Latn"] { font-size: 0.88em; line-height: 1.3; }
+.slide[data-kind="song"] .bilingual.song-pair.stack { gap: 0.35em; }
+/* Set while measuring found that each lyric line fits whole at nearly full size (see SlideRenderer). */
+.slide-body[data-nowrap] .slide-lines > div { white-space: nowrap; }
+
 /* ---------- Text on the church background ---------- */
 /* The background is light and bright, and projectors wash out thin strokes, so the words are a little heavier and
    carry a soft cream halo that keeps them clear of the flame and the waves. The reference sits on a cream pill, so it
@@ -74,3 +87,19 @@ html.projector-window, html.projector-window body { overflow: hidden; background
 .slide.has-logo .slide-footer { padding-inline: calc(var(--logo-w) + var(--logo-x) + 1.5cqw); }
 .slide.has-logo[data-align="left"] .slide-footer { padding-left: 7cqw; }
 .slide.has-logo:not([data-footer]) .slide-body { padding-bottom: calc(var(--logo-h) + var(--logo-y) + 1cqh); }
+
+/* ---------- The church background's flame (see lib/churchFlame.ts) ---------- */
+/* The flame is pinned to the left edge and sized by the frame; the wave is laid exactly over the background's own wave,
+   in front of the flame, so the flame's base always tucks behind it. */
+.slide-flame { position: absolute; left: 0; max-width: none; pointer-events: none; }
+.slide-wave { position: absolute; inset: 0; background: center / cover no-repeat; pointer-events: none; }
+/* The faint logo watermark (x 1385, y 42, 487 × 214 in the artwork, a tint that darkens the cream it sits on). It follows
+   the same rule as Blank's full-colour logo above: where it is in the artwork on 16:9, and on a narrower screen it moves
+   in just enough to keep the artwork's right margin, instead of being cut off by the cover crop. */
+.slide-blank { isolation: isolate; }
+.slide-watermark {
+  --bg-s: max(100cqw / 1920, 100cqh / 1080);
+  position: absolute; left: min(50cqw + 425 * var(--bg-s), 100cqw - 536 * var(--bg-s)); top: calc(50cqh - 498 * var(--bg-s));
+  width: calc(487 * var(--bg-s)); height: calc(214 * var(--bg-s)); max-width: none;
+  mix-blend-mode: multiply; pointer-events: none;
+}
