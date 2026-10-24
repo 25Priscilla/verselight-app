@@ -1,6 +1,11 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import churchPlain from "../assets/church-background-plain.webp";
+import churchFlame from "../assets/church-flame.webp";
 import churchLogo from "../assets/church-logo.webp";
-import { CHURCH_BACKGROUND_ID, CHURCH_BACKGROUND_URL, galleryUrl } from "../lib/gallery";
+import churchWatermark from "../assets/church-watermark.webp";
+import churchWave from "../assets/church-wave.webp";
+import { churchFlameLayout } from "../lib/churchFlame";
+import { CHURCH_BACKGROUND_ID, galleryUrl } from "../lib/gallery";
 import { FONTS, type Slide, type Theme } from "../lib/types";
 
 interface Props {
@@ -20,13 +25,31 @@ function backgroundStyle(t: Theme): CSSProperties {
       return { background: t.backgroundColor };
     case "gradient":
       return { background: `linear-gradient(${t.gradientAngle ?? 160}deg, ${t.gradientFrom}, ${t.gradientTo})` };
-    case "gallery":
-      return { background: `${t.backgroundColor} center / cover no-repeat url("${galleryUrl(t.galleryId)}")` };
+    case "gallery": {
+      // The church background is drawn without its flame and logo watermark; ChurchArtwork adds them back.
+      const url = t.galleryId === CHURCH_BACKGROUND_ID ? churchPlain : galleryUrl(t.galleryId);
+      return { background: `${t.backgroundColor} center / cover no-repeat url("${url}")` };
+    }
     case "image":
       return t.backgroundImage
         ? { background: `${t.backgroundColor} center / cover no-repeat url("${t.backgroundImage}")` }
         : { background: t.backgroundColor };
   }
+}
+
+/**
+ * The church background's flame, pinned to the left edge at a size that suits this frame, with the wave in front of it,
+ * and its logo watermark, which moves in from the right on screens narrower than 16:9 so it is never cut off.
+ */
+function ChurchArtwork({ width, height }: { width: number; height: number }) {
+  const layout = churchFlameLayout(width, height);
+  return (
+    <>
+      {layout && <img className="slide-flame" src={churchFlame} alt="" draggable={false} style={{ top: layout.top, width: layout.width, height: layout.height }} />}
+      <div className="slide-wave" style={{ backgroundImage: `url("${churchWave}")` }} />
+      <img className="slide-watermark" src={churchWatermark} alt="" draggable={false} />
+    </>
+  );
 }
 
 /**
@@ -39,6 +62,7 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
   const bodyRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(1);
   const [height, setHeight] = useState(0);
+  const [width, setWidth] = useState(0);
   const showText = !!slide && !clear && !blackout;
   const showRef = showText && theme.showReference && !!slide?.footer;
   // A Bible reference heads the slide so whoever is reading finds the passage at a glance; song credits stay below.
@@ -51,21 +75,57 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
   useLayoutEffect(() => {
     const body = bodyRef.current;
     if (!body) return;
+    // Side by side, a lyric block can spill into its neighbour without the body overflowing, so each block is checked too.
+    const overflows = () => body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1
+      || [...body.querySelectorAll<HTMLElement>(".slide-lines")].some((l) => l.scrollWidth > l.clientWidth + 1);
+    const setScale = (s: number) => body.style.setProperty("--fit", String(s));
+    // The largest scale (never below 35%) at which the text fits, so long slides lose no more size than they must.
+    const largestFit = () => {
+      setScale(1);
+      if (!overflows()) return 1;
+      let lo = 0.35;
+      let hi = 1;
+      for (let i = 0; i < 9; i++) {
+        const mid = (lo + hi) / 2;
+        setScale(mid);
+        if (overflows()) hi = mid;
+        else lo = mid;
+      }
+      setScale(lo);
+      return lo;
+    };
     const measure = () => {
       setHeight(frameRef.current?.clientHeight ?? 0);
-      let scale = 1;
-      body.style.setProperty("--fit", "1");
-      // Shrink in small steps until the text fits (never below 35%).
-      while (scale > 0.35 && (body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1)) {
-        scale *= 0.92;
-        body.style.setProperty("--fit", String(scale));
+      setWidth(frameRef.current?.clientWidth ?? 0);
+      delete body.dataset.nowrap;
+      let scale = largestFit();
+      // A lyric line reads best whole: keep each line on one line unless that would make the words much smaller.
+      if (body.querySelector(".slide-lines")) {
+        body.dataset.nowrap = "";
+        const whole = largestFit();
+        if (whole >= scale * 0.88) scale = whole;
+        else {
+          delete body.dataset.nowrap;
+          setScale(scale);
+        }
       }
       setFit(scale);
     };
     measure();
     const ro = new ResizeObserver(measure);
     if (frameRef.current) ro.observe(frameRef.current);
-    return () => ro.disconnect();
+    // Malayalam, Tamil and Kannada fonts may finish loading after the first measure; measure again with the real shapes.
+    // Fonts load separately and on first use, so `ready` can settle before the Malayalam face arrives: measure again
+    // each time any font finishes loading, too.
+    let live = true;
+    const remeasure = () => { if (live) measure(); };
+    document.fonts?.ready.then(remeasure);
+    document.fonts?.addEventListener("loadingdone", remeasure);
+    return () => {
+      live = false;
+      ro.disconnect();
+      document.fonts?.removeEventListener("loadingdone", remeasure);
+    };
   }, [slide, theme.fontSize, theme.fontFamily, theme.showReference, theme.bilingualLayout, showText, cornerLogo, onChurch]);
 
   // Blur is stored as pixels at 1080p and scaled to this frame, so every size matches the projector.
@@ -76,6 +136,7 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
     // Grow the blurred layer past the edges so the blur doesn't fade in from the sides.
     inset: blurPx > 0.2 ? `${-blurPx * 2}px` : 0,
   };
+  const bgGrow = blurPx > 0.2 ? blurPx * 4 : 0;
   const style = {
     "--slide-font": FONTS[theme.fontFamily].css,
     "--slide-size": theme.fontSize,
@@ -104,8 +165,11 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
   );
 
   return (
-    <div ref={frameRef} className={`slide ${cornerLogo ? "has-logo" : ""} ${className ?? ""}`} data-footer={showFooter || undefined} data-ref={refOnTop ? "top" : undefined} data-bg={onChurch ? "church" : undefined} style={style} data-align={theme.align} lang={slide?.lang}>
-      <div className="slide-bg" style={bgStyle} />
+    <div ref={frameRef} className={`slide ${cornerLogo ? "has-logo" : ""} ${className ?? ""}`} data-kind={showText ? slide.kind : undefined} data-footer={showFooter || undefined} data-ref={refOnTop ? "top" : undefined} data-bg={onChurch ? "church" : undefined} style={style} data-align={theme.align} lang={slide?.lang}>
+      <div className="slide-bg" style={bgStyle}>
+        {/* The blurred layer is grown past the frame's edges, so the flame is laid out for that larger box */}
+        {onChurch && <ChurchArtwork width={width + bgGrow} height={height + bgGrow} />}
+      </div>
       {(theme.overlay ?? 0) > 0 && <div className="slide-dim" style={{ opacity: theme.overlay }} />}
       {refOnTop && (
         <div className={`slide-header ${theme.shadow ? "has-shadow" : ""}`}><span className="slide-ref">{slide?.footer}</span></div>
@@ -135,7 +199,8 @@ export function SlideRenderer({ slide, theme, blackout, clear, logo, className }
       )}
       {cornerLogo && <img className="slide-logo" src={churchLogo} alt="" draggable={false} />}
       {blackout && (
-        <div className="slide-blank" style={{ backgroundImage: `url("${CHURCH_BACKGROUND_URL}")` }}>
+        <div className="slide-blank" style={{ backgroundImage: `url("${churchPlain}")` }}>
+          <ChurchArtwork width={width} height={height} />
           {/* The full-colour logo over the background's faint watermark, so Blank shows the church's own logo */}
           <img className="slide-blank-logo" src={churchLogo} alt="" draggable={false} />
         </div>
