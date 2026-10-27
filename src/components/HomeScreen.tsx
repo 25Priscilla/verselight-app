@@ -47,7 +47,6 @@ interface Props {
   onProjector: () => void;
   onRefreshDisplays: () => void;
   onManage: () => void;
-  onStudy: () => void;
   onTool: (t: Tool) => void;
   onHelp: () => void;
   onOpenSong: (id: string) => void;
@@ -106,7 +105,7 @@ export function HomeScreen(p: Props) {
               <RecentSongs songs={recentSongs} onOpen={p.onOpenSong} onPresent={p.onPresentSong} />
               <SavedVerses bookmarks={saved} readingBibleId={p.readingBibleId} onOpen={p.onOpenVerse} onPresent={p.onPresentVerse} />
             </section>
-            <QuickTools canParallel={p.canParallel} onStudy={p.onStudy} onTool={p.onTool} onHelp={p.onHelp} />
+            <QuickTools canParallel={p.canParallel} onTool={p.onTool} onHelp={p.onHelp} />
           </div>
         </div>
 
@@ -236,7 +235,7 @@ function RecentSongs({ songs, onOpen, onPresent }: { songs: Song[]; onOpen: (id:
   );
 }
 
-/** Verses saved in Bible Study, shown with their text from the translation they were saved in (or the one being read). */
+/** Verses saved on the Bible screen, shown with their text from the translation they were saved in (or the one being read). */
 function SavedVerses({ bookmarks, readingBibleId, onOpen, onPresent }: {
   bookmarks: Bookmark[];
   readingBibleId: string;
@@ -283,17 +282,14 @@ function SavedVerses({ bookmarks, readingBibleId, onOpen, onPresent }: {
             );
           })}
         </ul>
-      ) : <p className="muted small">Verses you save in Bible Study will appear here.</p>}
+      ) : <p className="muted small">Verses you save on the Bible screen will appear here.</p>}
     </div>
   );
 }
 
-/** The study and song tools, each opening the view it already has on the Bible, Bible Study, Songs or Help screen. */
-function QuickTools({ canParallel, onStudy, onTool, onHelp }: { canParallel: boolean; onStudy: () => void; onTool: (t: Tool) => void; onHelp: () => void }) {
+/** The Bible and song tools, each opening the view it already has on the Bible, Songs or Help screen. */
+function QuickTools({ canParallel, onTool, onHelp }: { canParallel: boolean; onTool: (t: Tool) => void; onHelp: () => void }) {
   const tools: { icon: IconName; title: string; text: string; onClick: () => void; disabled?: boolean; lang?: string }[] = [
-    { icon: "study", title: "Word study", text: "Bible Study: find every verse with a word", onClick: onStudy },
-    { icon: "link", title: "Cross references", text: "Passages related to the selected verses", onClick: () => onTool("crossrefs") },
-    { icon: "list", title: "Chapter overview", text: "A chapter's sections and key verses", onClick: () => onTool("overview") },
     {
       icon: "columns", title: "Parallel Bible", onClick: () => onTool("parallel"), disabled: !canParallel,
       text: canParallel ? "English and Malayalam side by side" : "Import an English and a Malayalam Bible first",

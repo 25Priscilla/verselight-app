@@ -38,7 +38,6 @@ button.plan-main:hover { background: var(--surface-2); }
 .plan-subtitle { font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plan-problem { font-size: var(--text-xs); color: var(--warning); }
 .plan-row.missing .plan-title { color: var(--text-muted); }
-.plan-rename { width: min(260px, 100%); padding: 1px 6px !important; font-size: var(--text-xs); line-height: 18px !important; }
 .plan-more { flex: none; }
 .plan-menu { position: absolute; right: var(--space-2); top: calc(100% - 6px); }
 

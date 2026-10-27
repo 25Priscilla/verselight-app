@@ -231,9 +231,7 @@ export interface Library {
   items: LibraryItem[];
   services: Service[];
   bibles: BibleMeta[];
-  /** Imported cross-reference data (stored separately in crossrefs.json) */
-  crossRefs?: { count: number; credit: string; importedAt: number };
-  /** Verses saved from Word Study, newest first */
+  /** Verses saved on the Bible screen, newest first */
   bookmarks: Bookmark[];
   /** The Default look, used wherever no other look is assigned */
   theme: Theme;

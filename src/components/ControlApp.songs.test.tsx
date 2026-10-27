@@ -49,7 +49,6 @@ describe("presenting a song", () => {
     // Verse 2 is left out, so the chorus comes round again.
     fireEvent.click(panel.getByRole("button", { name: /^Next/ }));
     expect(panel.getByText("Slide 3 of 3")).toBeTruthy();
-    expect(panel.getByText("End of song")).toBeTruthy();
     expect((panel.getByRole("button", { name: /^Next/ }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(panel.getByRole("button", { name: /Previous/ }));
     fireEvent.click(panel.getByRole("button", { name: /Previous/ }));
@@ -95,18 +94,15 @@ describe("presenting a song", () => {
     expect(document.querySelectorAll(".song-editor .mini-wrap.now")).toHaveLength(1);
   });
 
-  it("stops and starts the projector, keeping the place, and closes the presentation", async () => {
+  it("Stop presentation closes the projector window and the presentation, and Present Now opens it again", async () => {
     const panel = await presentSong();
     fireEvent.click(panel.getByRole("button", { name: /^Next/ }));
     await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Stop presentation/ })); });
-    expect(panel.getByText("Projector off")).toBeTruthy();
-    expect(panel.getByText("Slide 2 of 3")).toBeTruthy();
-    await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Start presenting/ })); });
-    expect(window.open).toHaveBeenCalledTimes(2);
-    expect(onScreen()).toBe("Sing along now");
-    await act(async () => { fireEvent.click(panel.getByRole("button", { name: "Close presentation" })); });
     expect(screen.queryByRole("complementary", { name: "Presentation" })).toBeNull();
     expect(projector().slide).toBeNull();
+    await presentSong();
+    expect(window.open).toHaveBeenCalledTimes(2);
+    expect(onScreen()).toBe("Sun is rising");
   });
 
   it("records the song as recently used for Home", async () => {

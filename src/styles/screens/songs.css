@@ -54,9 +54,22 @@
 .song-list .row-present:hover { background: var(--live); filter: brightness(1.1); }
 .song-row:hover .row-present, .row-present:focus-visible, .song-row > button.on + .row-present { opacity: 1; }
 
-/* Song library filters */
-.lang-seg { display: flex; flex-wrap: wrap; }
-.lang-seg button { flex: 1 1 auto; padding: 5px 8px; }
+/* Song library: All across the top, then the four language folders two per row, each with its song count.
+   Kannada and the others are always shown. */
+.song-folders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.song-folder.all { grid-column: 1 / -1; min-height: 34px; }
+.song-folder { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; align-items: baseline; column-gap: 6px; min-height: 44px;
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-soft); text-align: left; }
+.song-folder:hover:not(.on) { background: var(--surface-hover); color: var(--text); }
+.song-folder.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.song-folder-name { min-width: 0; font-size: var(--text-sm); font-weight: var(--weight-bold); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-folder-name:is(:lang(ml), :lang(ta), :lang(kn)) { font-family: var(--font-ui); }
+.song-folder-count { font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.song-folder.on .song-folder-count { color: var(--accent); }
+.song-folder-sub { grid-column: 1 / -1; font-size: 11px; line-height: 1.2; color: var(--text-muted); }
+.song-folder.on .song-folder-sub { color: var(--accent); opacity: 0.8; }
+/* Compact rows: the title and its second line, with no extra space */
+.song-list .song-row > button:first-child { padding-top: 6px; padding-bottom: 6px; }
 .view-tabs { display: flex; gap: 2px; }
 .view-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: 0; background: none; color: var(--mute); font-size: 12px; font-weight: 650; padding: 5px 2px; border-radius: 6px; }
 .view-tabs button:hover { color: var(--ink); background: var(--raise); }
@@ -82,8 +95,10 @@
 .song-actions { flex: 0 0 auto; margin-left: auto; }
 
 /* Song library header: New song + Import, and how many songs are showing */
-.song-new { display: flex; gap: var(--space-2); }
-.song-new > .btn:first-child { flex: 1; }
+/* "New Malayalam song" is long: in a narrow column Import moves under it rather than past the column's edge */
+.song-new { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.song-new .btn { padding-left: 10px; padding-right: 10px; }
+.song-new > .btn:first-child { flex: 1 1 0; min-width: max-content; }
 .song-count { padding: 0 2px; }
 
 /* Empty library */

@@ -1,4 +1,4 @@
-/* Bible screen: reading view, search, parallel view, cross references, chapter overview. */
+/* Bible screen: reading view, search and parallel view. */
 
 .toolbar { padding: 14px 24px; border-bottom: 1px solid var(--line); }
 .toolbar .search { gap: 10px; padding: 6px 6px 6px 7px; }
@@ -84,32 +84,10 @@ mark { background: rgba(163, 177, 255, 0.25); color: #fff; border-radius: 3px; p
 /* Stick to the very top of the scroll area (its top padding is 24px) so nothing shows above the header */
 .parallel-head { top: -24px; padding-top: 30px; box-shadow: none; }
 
-/* ---------- Cross references ---------- */
+/* ---------- reading area ---------- */
 .bible-body { flex: 1; min-height: 0; display: flex; }
 .bible-body > .reading { flex: 1; min-width: 0; }
-.xref { width: 340px; flex: none; border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-.xref-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
-.xref-head h2 { margin: 0; font-size: 14px; font-weight: 750; }
-.xref-empty { padding: 16px 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.xref-empty p { margin: 0; }
-.xref-list { list-style: none; margin: 0; padding: 6px 8px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.xref-item { border-radius: var(--r-sm); padding: 2px 0 6px; }
-.xref-item:hover { background: var(--raise); }
-.xref-main { display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; border: 0; background: none; color: var(--ink); padding: 8px 8px 2px; cursor: pointer; }
-.xref-ref { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 750; font-size: 13.5px; color: var(--accent); }
-.xref-votes { width: 44px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; flex: none; }
-.xref-votes > span { display: block; height: 100%; background: var(--accent); opacity: 0.8; }
-.xref-text { font: 14px/1.5 var(--read); color: var(--ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.xref-second { color: var(--mute); font-size: 13.5px; -webkit-line-clamp: 2; }
-.xref-actions { display: flex; gap: 4px; padding: 0 6px; opacity: 0.55; transition: opacity 0.12s; }
-.xref-item:hover .xref-actions, .xref-item:focus-within .xref-actions { opacity: 1; }
-.xref-actions .btn { padding: 3px 8px; font-size: 12px; }
-.xref-actions .btn.present { box-shadow: none; padding: 3px 10px; }
-.xref-foot { border-top: 1px solid var(--line); padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-.xref-credit { margin: 4px 0 0; font-size: 11px; line-height: 1.45; color: var(--mute); }
-.xref-credit a { color: var(--mute); text-decoration: underline; }
-/* When the reading area is too narrow for two readable columns (e.g. with cross references open),
-   stack each verse: English above Malayalam, under the same verse number. */
+/* When the reading area is too narrow for two readable columns, stack each verse: English above Malayalam, under the same verse number. */
 .bible-body > .reading { container-type: inline-size; }
 @container (max-width: 620px) {
   .parallel-head { display: none; }
@@ -117,48 +95,9 @@ mark { background: rgba(163, 177, 255, 0.25); color: #fff; border-radius: 3px; p
   .prow .ptext + .ptext { grid-column: 2; color: var(--mute); }
 }
 
-/* ---------- Chapter Overview ---------- */
+/* ---------- chapter title ---------- */
 .chapter-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .chapter-title-row .book-title { margin: 0; min-width: 0; }
-.view-switch { flex: none; }
-.overview { flex: 1; overflow-y: auto; padding: 18px 24px 40px; min-width: 0; }
-.ov-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
-.ov-kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); }
-.ov-title h2 { margin: 2px 0 0; font: 600 30px/1.15 var(--read); }
-.ov-alt { display: block; font: 500 17px/1.5 var(--read); color: var(--mute); }
-.ov-facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
-.ov-facts span { font-size: 12.5px; font-weight: 650; color: var(--ink); background: var(--raise); border-radius: 999px; padding: 3px 10px; }
-.ov-nav { display: flex; gap: 8px; flex-wrap: wrap; }
-.ov-nav .btn { gap: 6px; }
-.ov-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-.ov-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 14px 12px; min-width: 0; }
-.ov-card h3 { margin: 0 0 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mute); }
-.ov-h3-2 { margin-top: 16px !important; }
-.ov-related { grid-column: 1 / -1; }
-.ov-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.ov-list button { width: 100%; text-align: left; background: none; border: 0; color: var(--ink); padding: 8px 10px; border-radius: var(--r-sm); display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; row-gap: 2px; cursor: pointer; }
-.ov-list button:hover { background: var(--raise); }
-.ov-list li.sub button { padding-left: 26px; }
-.ov-range { grid-row: 1 / 3; font: 700 12px/1.9 var(--ui); color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 64px; }
-.ov-sec-title { font: 600 16px/1.4 var(--read); }
-.ov-list li.sub .ov-sec-title { font-weight: 500; font-size: 15px; }
-.ov-parallel { grid-column: 2; font-size: 12px; color: var(--mute); }
-.ov-keys .ov-list button { grid-template-columns: minmax(0, 1fr); }
-.ov-ref { font: 700 12.5px var(--ui); color: var(--accent); }
-.ov-verse { font: 15.5px/1.55 var(--read); }
-.ov-verse:lang(ml) { line-height: 1.7; }
-.ov-second { color: var(--mute); font-size: 14.5px; }
-.ov-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.ov-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--ground); color: var(--ink); border-radius: 999px; padding: 5px 12px; font-weight: 650; font-size: 13px; cursor: pointer; }
-.ov-chip:hover { border-color: var(--accent); color: var(--accent); }
-.ov-chip-meta { font-size: 11px; color: var(--mute); }
-.ov-credit { margin: 10px 2px 0; font-size: 11px; line-height: 1.45; color: var(--mute); }
-.ov-credit a { color: var(--mute); text-decoration: underline; }
-.ov-empty { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.ov-empty p { margin: 0; }
-@container (max-width: 760px) { .ov-grid { grid-template-columns: minmax(0, 1fr); } }
-.bible-body > .overview { container-type: inline-size; }
-@media (max-width: 1300px) { .ov-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- Where you are, verse menu, chapter-to-chapter links (Phase 5) ---------- */
 .book-heading { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -174,13 +113,11 @@ mark { background: rgba(163, 177, 255, 0.25); color: #fff; border-radius: 3px; p
 .results-count { margin-left: auto; }
 .addbar-hint { margin-right: auto; }
 .addbar .btn.saved { color: var(--warning); }
-.addbar .btn.saved svg, .ws-saved-actions .btn.saved svg { fill: currentColor; }
-.ov-note { margin: 16px 2px 0; font-size: var(--text-xs); line-height: 1.5; color: var(--text-muted); }
-/* A narrow working area (small windows while presenting): cross references go under the text, not beside it. */
+.addbar .btn.saved svg { fill: currentColor; }
+/* A narrow working area (small windows while presenting): tighter side padding. */
 .work { container: work / inline-size; }
 @container work (max-width: 720px) {
   .bible-body { flex-direction: column; }
-  .bible-body > .xref { width: auto; max-height: 45%; border-left: 0; border-top: 1px solid var(--line); }
   .bible-body > .reading { min-height: 0; }
   .toolbar, .chapter-bar, .addbar { padding-left: 16px; padding-right: 16px; }
   .reading { padding-left: 16px; padding-right: 16px; }

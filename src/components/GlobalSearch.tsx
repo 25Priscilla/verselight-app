@@ -15,8 +15,6 @@ interface Props {
   readingBibleId: string;
   onOpenVerse: (r: BibleResult) => void;
   onOpenSong: (id: string) => void;
-  /** Every verse with these words, in Bible Study */
-  onStudyWord: (word: string) => void;
 }
 
 /** How long typing pauses before searching, so a long Bible isn't searched on every key */
@@ -43,7 +41,7 @@ function Highlight({ text, words, mode }: { text: string; words: string[]; mode:
  * It sits in the sidebar, so it is there on every screen; the results open the verse or song on its own screen,
  * where Present Now works as usual. Keys typed here never reach the presentation controls.
  */
-export function GlobalSearch({ compact, readingBibleId, onOpenVerse, onOpenSong, onStudyWord }: Props) {
+export function GlobalSearch({ compact, readingBibleId, onOpenVerse, onOpenSong }: Props) {
   const { library } = useLibrary();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -189,7 +187,6 @@ export function GlobalSearch({ compact, readingBibleId, onOpenVerse, onOpenSong,
   const words = searchWords(results.query);
   const typed = query.trim().length > 0;
   const pending = typed && query !== searched;
-  const keywordHits = results.bible.filter((r) => !r.reference).length;
   const optionProps = (i: number) => ({
     id: options[i]?.id, role: "option", "aria-selected": i === active, className: cx("gsearch-option", i === active && "on"),
     onMouseDown: (e: ReactMouseEvent) => e.preventDefault(),
@@ -239,12 +236,6 @@ export function GlobalSearch({ compact, readingBibleId, onOpenVerse, onOpenSong,
                         </span>
                       </div>
                     ))}
-                    {keywordHits > 0 && results.bibleTotal > keywordHits && (
-                      <button className="linklike gsearch-more" onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => openResult(() => onStudyWord(results.query))}>
-                        See all {results.bibleTotal} verses in Bible Study
-                      </button>
-                    )}
                   </div>
                 )}
                 {results.songs.length > 0 && (

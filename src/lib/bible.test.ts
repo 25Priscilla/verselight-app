@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fakeEnglish, fakeMalayalam, EPHESIANS, GENESIS, JOHN, ROMANS } from "../test/fakeBible";
-import { alignedVerses, detectBibleLanguage, findBook, forDisplay, getVerses, matchRanges, parseReference, searchBible, searchWords, versesBetween } from "./bible";
+import { alignedVerses, detectBibleLanguage, findBook, forDisplay, getVerses, matchRanges, neighbour, parseReference, searchBible, searchWords, versesBetween } from "./bible";
 
 const en = fakeEnglish();
 const ml = fakeMalayalam();
@@ -115,5 +115,18 @@ describe("KJV brace markup", () => {
     mal.books[GENESIS].chapters[0][0] = "ആദിയിൽ {ദൈവം} ആകാശവും ഭൂമിയും സൃഷ്ടിച്ചു. {x: Heb. y}";
     expect(forDisplay(mal)).toBe(mal);
     expect(mal.books[GENESIS].chapters[0][0]).toBe("ആദിയിൽ {ദൈവം} ആകാശവും ഭൂമിയും സൃഷ്ടിച്ചു. {x: Heb. y}");
+  });
+});
+
+describe("chapter navigation", () => {
+  const perBook = [50, 40, 21, 28];
+  it("moves between chapters and across books", () => {
+    expect(neighbour(perBook, 0, 3, 1)).toEqual({ book: 0, chapter: 4 });
+    expect(neighbour(perBook, 2, 21, 1)).toEqual({ book: 3, chapter: 1 });
+    expect(neighbour(perBook, 3, 1, -1)).toEqual({ book: 2, chapter: 21 });
+  });
+  it("stops at the start and end of the Bible", () => {
+    expect(neighbour(perBook, 0, 1, -1)).toBeNull();
+    expect(neighbour(perBook, 3, 28, 1)).toBeNull();
   });
 });

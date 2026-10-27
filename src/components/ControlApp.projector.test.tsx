@@ -9,7 +9,7 @@ import { songSlideKey } from "../lib/slides";
 import type { BibleMeta, LiveState, Look, Song } from "../lib/types";
 import { DEFAULT_THEME, LibraryProvider } from "../state/library";
 import { fakeEnglish } from "../test/fakeBible";
-import { ControlApp, DISPLAY_POLL_MS, PROJECTOR_TIMEOUT_MS } from "./ControlApp";
+import { ControlApp, DISPLAY_POLL_MS, NOTICE_TIMEOUT_MS, PROJECTOR_TIMEOUT_MS } from "./ControlApp";
 
 const hw = vi.hoisted(() => ({
   displays: [] as DisplayInfo[],
@@ -49,6 +49,8 @@ const bible: BibleMeta = { id: "ten", name: "Test English", abbreviation: "TEN",
 let sent: LiveState[] = [];
 const projector = () => sent[sent.length - 1];
 const onScreen = () => projector()?.slide?.lines.join(" ");
+/** The notice at the bottom of the control window */
+const notice = () => document.querySelector(".app > .toast")?.textContent ?? null;
 
 /** The projector window finishing loading and asking for the current slide, as PresentationView does. */
 async function projectorReportsBack() {
@@ -140,13 +142,37 @@ describe("the projector on a second screen", () => {
     expect(projector().blackout).toBe(false);
   });
 
-  it("stop closes the projector window, and Start presenting reopens it on the same slide", async () => {
+  it("Stop presentation closes the projector window and the presentation, and Present Now opens it again", async () => {
     await start();
     const panel = await presentSong();
     await projectorReportsBack();
     fireEvent.click(panel.getByRole("button", { name: /^Next/ }));
     const closedBefore = hw.closed;
+    expect(panel.queryByRole("button", { name: /Close/ })).toBeNull();
     await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Stop presentation/ })); });
+    expect(hw.closed).toBe(closedBefore + 1);
+    expect(screen.queryByRole("complementary", { name: "Presentation" })).toBeNull();
+    expect(projector().slide).toBeNull();
+    // Presenting again opens one new window on the same screen, from the first slide.
+    const again = await presentSong();
+    expect(hw.opened).toEqual([beamer.id, beamer.id]);
+    sent = [];
+    await projectorReportsBack();
+    expect(onScreen()).toBe("Sun is rising");
+    expect(again.getByText("Slide 1 of 3")).toBeTruthy();
+    // Next and the per-slide background still reach the new window.
+    fireEvent.click(again.getByRole("button", { name: /^Next/ }));
+    expect(onScreen()).toBe("Sing along now");
+    expect(projector().theme.backgroundColor).toBe("#0000ff");
+  });
+
+  it("Esc only turns the projector off, keeping the place, and Start presenting reopens it on the same slide", async () => {
+    await start();
+    const panel = await presentSong();
+    await projectorReportsBack();
+    fireEvent.click(panel.getByRole("button", { name: /^Next/ }));
+    const closedBefore = hw.closed;
+    await act(async () => { fireEvent.keyDown(window, { key: "Escape" }); });
     expect(hw.closed).toBe(closedBefore + 1);
     expect(panel.getByText("Projector off")).toBeTruthy();
     expect(panel.getByText("Slide 2 of 3")).toBeTruthy();
@@ -156,10 +182,6 @@ describe("the projector on a second screen", () => {
     sent = [];
     await projectorReportsBack();
     expect(onScreen()).toBe("Sing along now");
-    // Esc stops it too.
-    await act(async () => { fireEvent.keyDown(window, { key: "Escape" }); });
-    expect(panel.getByText("Projector off")).toBeTruthy();
-    expect(hw.closed).toBe(closedBefore + 2);
   });
 
   it("with only one screen, presents in the preview only and says a second screen is needed", async () => {
@@ -169,7 +191,8 @@ describe("the projector on a second screen", () => {
     expect(hw.opened).toEqual([]);
     expect(panel.getByText("Projector off")).toBeTruthy();
     expect(panel.getByText("Preview only")).toBeTruthy();
-    expect(panel.getByRole("note").textContent).toMatch(/No second screen found/);
+    expect(notice()).toMatch(/No second screen found/);
+    expect(panel.queryByRole("note")).toBeNull();
     // The laptop controls still work.
     fireEvent.click(panel.getByRole("button", { name: /^Next/ }));
     expect(panel.getByText("Slide 2 of 3")).toBeTruthy();
@@ -182,11 +205,29 @@ describe("the projector on a second screen", () => {
     expect(panel.queryByRole("note")).toBeNull();
   });
 
+  it("says what went wrong only in the notice at the bottom, which clears after a few seconds, never above the slide", async () => {
+    hw.displays = [laptop];
+    await start();
+    const panel = await presentSong();
+    expect(notice()).toMatch(/No second screen found/);
+    expect(panel.queryByRole("note")).toBeNull();
+    expect(panel.queryByText(/No second screen found/)).toBeNull();
+    const timeouts = vi.mocked(window.setTimeout).mock.calls.filter((c) => c[1] === NOTICE_TIMEOUT_MS);
+    await act(async () => { (timeouts[timeouts.length - 1][0] as () => void)(); });
+    expect(notice()).toBeNull();
+    // The panel still shows its status, the slide and the controls.
+    expect(panel.getByText("Projector off")).toBeTruthy();
+    expect(panel.getByText("Slide 1 of 3")).toBeTruthy();
+    expect(within(panel.getByRole("region", { name: "Current slide" })).getByText("Sun is rising")).toBeTruthy();
+    expect(panel.getByRole("button", { name: /^Next/ })).toBeTruthy();
+  });
+
   it("says so when the chosen screen isn't connected, instead of using another one", async () => {
     await start({ displayId: "\\\\.\\DISPLAY3" });
     const panel = await presentSong();
     expect(hw.opened).toEqual([]);
-    expect(panel.getByRole("note").textContent).toMatch(/chosen for the projector isn't connected/);
+    expect(notice()).toMatch(/chosen for the projector isn't connected/);
+    expect(panel.queryByRole("note")).toBeNull();
   });
 
   it("turns the projector off, keeping the place, when its screen is unplugged, and starts again when it is back", async () => {
@@ -201,7 +242,8 @@ describe("the projector on a second screen", () => {
     await checkScreens();
     expect(hw.closed).toBeGreaterThan(0);
     expect(panel.getByText("Projector off")).toBeTruthy();
-    expect(panel.getByRole("note").textContent).toMatch(/Display 2 was disconnected/);
+    expect(notice()).toMatch(/Display 2 was disconnected/);
+    expect(panel.queryByRole("note")).toBeNull();
     expect(panel.getByText("Slide 2 of 3")).toBeTruthy();
 
     hw.displays = [laptop, beamer];
@@ -216,7 +258,8 @@ describe("the projector on a second screen", () => {
     await start();
     const panel = await presentSong();
     expect(panel.getByText("Projector off")).toBeTruthy();
-    expect(panel.getByRole("note").textContent).toMatch(/couldn't be opened: the chosen screen isn't connected/);
+    expect(notice()).toMatch(/couldn't be opened: the chosen screen isn't connected/);
+    expect(panel.queryByRole("note")).toBeNull();
     expect(panel.getByText("Slide 1 of 3")).toBeTruthy();
   });
 
@@ -227,7 +270,8 @@ describe("the projector on a second screen", () => {
     const timeouts = vi.mocked(window.setTimeout).mock.calls.filter((c) => c[1] === PROJECTOR_TIMEOUT_MS);
     await act(async () => { (timeouts[timeouts.length - 1][0] as () => void)(); });
     expect(panel.getByText("Projector off")).toBeTruthy();
-    expect(panel.getByRole("note").textContent).toMatch(/didn't respond/);
+    expect(notice()).toMatch(/didn't respond/);
+    expect(panel.queryByRole("note")).toBeNull();
   });
 
   it("presents a Bible passage on the projector screen", async () => {
@@ -293,16 +337,26 @@ describe("the projector window's lifetime", () => {
     expect(panel.getByText("Connecting to projector…")).toBeTruthy();
     const closedBefore = hw.closed;
     await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Stop presentation/ })); });
-    expect(panel.getByText("Projector off")).toBeTruthy();
+    expect(screen.queryByRole("complementary", { name: "Presentation" })).toBeNull();
     // The window finishes opening after Stop: it is closed rather than left on the projector.
     await act(async () => { finish(); });
     expect(hw.closed).toBe(closedBefore + 2);
-    expect(panel.getByText("Projector off")).toBeTruthy();
-    // Start presenting afterwards opens it normally.
+    // Presenting afterwards opens it normally.
     hw.open = async () => undefined;
-    await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Start presenting/ })); });
+    await presentSong();
     await projectorReportsBack();
     expect(hw.opened).toHaveLength(2);
+  });
+
+  it("Stop presentation closes the presentation in preview only, with no projector window open", async () => {
+    hw.displays = [laptop];
+    await start();
+    const panel = await presentSong();
+    expect(panel.getByText("Preview only")).toBeTruthy();
+    expect(panel.getByRole("button", { name: /Start presenting/ })).toBeTruthy();
+    await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Stop presentation/ })); });
+    expect(screen.queryByRole("complementary", { name: "Presentation" })).toBeNull();
+    expect(hw.opened).toEqual([]);
   });
 
   it("remembers the chosen screen after VerseLight is restarted", async () => {

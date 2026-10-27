@@ -137,21 +137,18 @@ describe("Home: recent", () => {
   it("shows the plain empty messages when nothing has been used yet", async () => {
     await openHome({ items: [malayalam], bookmarks: [] });
     expect(screen.getByText("Songs you present will appear here.")).toBeTruthy();
-    expect(screen.getByText("Verses you save in Bible Study will appear here.")).toBeTruthy();
+    expect(screen.getByText("Verses you save on the Bible screen will appear here.")).toBeTruthy();
   });
 });
 
 describe("Home: quick tools", () => {
-  it("opens Chapter overview and Cross references inside the Bible", async () => {
+  it("has no Word study, Cross references or Chapter overview", async () => {
     await openHome();
-    fireEvent.click(tools().getByRole("button", { name: /^Chapter overview/ }));
-    await screen.findByRole("heading", { level: 1, name: "Genesis 1" });
-    expect(screen.getByRole("radio", { name: "Overview" }).getAttribute("aria-checked")).toBe("true");
-
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
-    fireEvent.click(tools().getByRole("button", { name: /^Cross references/ }));
-    await screen.findByRole("heading", { level: 1, name: "Genesis 1" });
-    expect(screen.getByRole("radio", { name: "Reading" }).getAttribute("aria-checked")).toBe("true");
+    for (const name of [/^Word study/, /^Cross references/, /^Chapter overview/]) {
+      expect(tools().queryByRole("button", { name })).toBeNull();
+    }
+    expect(tools().getByRole("button", { name: /^Parallel Bible/ })).toBeTruthy();
+    expect(tools().getByRole("button", { name: /^Malayalam songs/ })).toBeTruthy();
   });
 
   it("offers Parallel Bible only with an English and a Malayalam Bible", async () => {
@@ -166,14 +163,11 @@ describe("Home: quick tools", () => {
   it("lists Malayalam songs, searchable in Manglish", async () => {
     await openHome();
     fireEvent.click(tools().getByRole("button", { name: /^Malayalam songs/ }));
-    expect(screen.getByRole("radio", { name: "മലയാളം" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: "Malayalam" }).getAttribute("aria-checked")).toBe("true");
   });
 
-  it("opens Bible Study and the presentation guide", async () => {
+  it("opens the presentation guide", async () => {
     await openHome();
-    fireEvent.click(tools().getByRole("button", { name: /^Word study/ }));
-    expect(screen.getByRole("tab", { name: "Books" }).getAttribute("aria-selected")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
     fireEvent.click(tools().getByRole("button", { name: /^Presentation guide/ }));
     expect(screen.getByRole("heading", { level: 1, name: "Help" })).toBeTruthy();
   });
@@ -203,15 +197,15 @@ describe("sidebar Tools", () => {
     const nav = within(screen.getByRole("navigation", { name: "Main" }));
     const group = nav.getByRole("button", { name: "Tools" });
     expect(group.getAttribute("aria-expanded")).toBe("true");
-    for (const name of ["Bible Study", "Cross references", "Chapter overview", "Parallel Bible", "Malayalam songs"]) {
+    for (const name of ["Parallel Bible", "Malayalam songs"]) {
       expect(nav.getByRole("button", { name })).toBeTruthy();
     }
-    fireEvent.click(nav.getByRole("button", { name: "Chapter overview" }));
-    await screen.findByRole("heading", { level: 1, name: "Genesis 1" });
-    expect(screen.getByRole("radio", { name: "Overview" }).getAttribute("aria-checked")).toBe("true");
+    for (const name of ["Bible Study", "Cross references", "Chapter overview", "Word Study"]) {
+      expect(nav.queryByRole("button", { name })).toBeNull();
+    }
 
     fireEvent.click(group);
-    expect(nav.queryByRole("button", { name: "Cross references" })).toBeNull();
+    expect(nav.queryByRole("button", { name: "Parallel Bible" })).toBeNull();
     cleanup();
     await openHome();
     expect(within(screen.getByRole("navigation", { name: "Main" })).getByRole("button", { name: "Tools" }).getAttribute("aria-expanded")).toBe("false");

@@ -54,14 +54,11 @@ export function HelpScreen({ onOpen, onSettings }: Props) {
           <p className="muted">Each verse is its own slide. Next keeps going past the verses you selected, and on into the next chapter.</p>
         </Topic>
 
-        <Topic icon="study" title="Study the Bible">
+        <Topic icon="bookmark" title="Save verses">
           <ul>
-            <li><strong>Overview</strong>, next to <strong>Reading</strong> above the chapter, lists that chapter's sections and its most cross-referenced verses.</li>
-            <li><strong>Cross references</strong>, in the bar at the bottom, shows passages related to the verses you selected.</li>
-            <li><strong>Save</strong> keeps the selected verses in <strong>Bible Study</strong>, where you can open, present or remove them.</li>
-            <li>After a keyword search, <strong>Word Study</strong> shows every place the word appears, book by book.</li>
+            <li><strong>Save</strong> keeps the selected verses. The most recent ones are listed on <strong>Home</strong>, ready to open or present.</li>
+            <li>To prepare readings for a service, add them in the <strong>Planner</strong>.</li>
           </ul>
-          <p className="muted">Study tools use only data stored in VerseLight. There are no written chapter summaries, and no Hebrew or Greek word data yet.</p>
         </Topic>
 
         <Topic icon="music" title="Present a song">

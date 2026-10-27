@@ -118,14 +118,15 @@ describe("the Planner screen", () => {
     expect(JSON.stringify(savedEntries())).not.toContain("Grace one");
   });
 
-  it("renames, reorders and removes items", async () => {
+  it("reorders and removes items, with no Rename, keeping each item's existing label", async () => {
     await openPlanner();
     fireEvent.click(screen.getByRole("button", { name: "More for How Great Thou Art" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Rename label" }));
-    const label = screen.getByRole("textbox", { name: "Item label" });
-    fireEvent.change(label, { target: { value: "Closing Song" } });
-    fireEvent.blur(label);
-    expect(rows()[2].querySelector(".plan-label")!.textContent).toBe("Closing Song");
+    const menu = within(screen.getByRole("menu"));
+    expect(menu.queryByRole("menuitem", { name: /Rename/ })).toBeNull();
+    expect(menu.getAllByRole("menuitem").map((m) => m.textContent)).toEqual(["Remove"]);
+    fireEvent.click(screen.getByRole("button", { name: "More for How Great Thou Art" }));
+    expect(screen.queryByRole("textbox", { name: "Item label" })).toBeNull();
+    expect(rows()[2].querySelector(".plan-label")!.textContent).toBe("Worship Song");
 
     fireEvent.keyDown(rows()[0].querySelector(".plan-grip")!, { key: "ArrowDown", altKey: true });
     expect(rowTitles()[1]).toBe("Amazing Grace");
@@ -183,13 +184,13 @@ describe("presenting the service", () => {
     expect(onScreen()).toBe("placeholder love and faith words");
   });
 
-  it("the panel's Next button crosses items, and its preview names the next item", async () => {
+  it("the panel's Next button crosses items, and names the next item", async () => {
     await openPlanner();
     await present();
     const panel = within(screen.getByRole("complementary", { name: "Presentation" }));
     await act(async () => { fireEvent.click(panel.getByRole("button", { name: /^Next/ })); });
-    expect(panel.getByLabelText("Next slide").textContent).toContain("2. John 3:16–17");
     const next = panel.getByRole("button", { name: /^Next/ }) as HTMLButtonElement;
+    expect(next.title).toContain("Next item: 2. John 3:16–17");
     expect(next.disabled).toBe(false);
     await act(async () => { fireEvent.click(next); });
     expect(onScreen()).toBe("placeholder love and faith words");

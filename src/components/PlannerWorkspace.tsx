@@ -31,7 +31,6 @@ export function PlannerWorkspace({ readingBibleId, liveEntryId, live, canJump, o
   const songs = useMemo(() => new Map(library.items.filter((i): i is Song => i.kind === "song").map((s) => [s.id, s])), [library.items]);
   const [adding, setAdding] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
-  const [renaming, setRenaming] = useState<string | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
   const listRef = useRef<HTMLOListElement>(null);
@@ -39,7 +38,6 @@ export function PlannerWorkspace({ readingBibleId, liveEntryId, live, canJump, o
   const change = (fn: (list: PlanEntry[]) => PlanEntry[]) => update((lib) => setEntries(lib, fn));
   const move = (from: number, to: number) => change((list) => moveEntry(list, from, to));
   const add = (entry: NewPlanEntry) => change((list) => [...list, { ...entry, id: newId() } as PlanEntry]);
-  const rename = (id: string, label: string) => change((list) => list.map((e) => (e.id === id ? { ...e, label: label.trim() || undefined } : e)));
   const remove = (id: string) => change((list) => list.filter((e) => e.id !== id));
 
   // Alt+↑ / Alt+↓ on a row's handle moves it, for reordering without a mouse.
@@ -85,12 +83,7 @@ export function PlannerWorkspace({ readingBibleId, liveEntryId, live, canJump, o
                   <span className="plan-num">{i + 1}</span>
                   <span className={cx("plan-kind", on && "on")}><Icon name={entry.kind === "song" ? "music" : "book"} size={18} /></span>
                   <span className="plan-text">
-                    {renaming === entry.id ? (
-                      <input className="plan-rename" autoFocus defaultValue={entry.label ?? ""} placeholder={info.label} aria-label="Item label"
-                        onClick={(e) => e.stopPropagation()}
-                        onBlur={(e) => { rename(entry.id, e.target.value); setRenaming(null); }}
-                        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} />
-                    ) : <span className="plan-label">{info.label}</span>}
+                    <span className="plan-label">{info.label}</span>
                     <span className="plan-title" lang={info.lang}>
                       {info.title}{info.tag && <span className="plan-tag">{info.tag}</span>}
                     </span>
@@ -112,7 +105,7 @@ export function PlannerWorkspace({ readingBibleId, liveEntryId, live, canJump, o
                     onKeyDown={(e) => onGripKey(e, i)}>
                     <Icon name="grip" size={16} />
                   </span>
-                  {canJump && renaming !== entry.id ? (
+                  {canJump ? (
                     <button type="button" className="plan-main" onClick={() => onPresentEntry(i)}
                       title={on ? "On screen now" : "Show this on the projector now"}>{text}</button>
                   ) : <div className="plan-main">{text}</div>}
@@ -120,7 +113,6 @@ export function PlannerWorkspace({ readingBibleId, liveEntryId, live, canJump, o
                     aria-haspopup="menu" aria-expanded={menu === entry.id} onClick={() => setMenu((m) => (m === entry.id ? null : entry.id))} />
                   {menu === entry.id && (
                     <Menu label={`${info.title} actions`} className="plan-menu" ignore="[data-plan-menu]" onClose={() => setMenu(null)}>
-                      <MenuItem icon="edit" onSelect={() => { setMenu(null); setRenaming(entry.id); }}>Rename label</MenuItem>
                       <MenuItem icon="trash" danger onSelect={() => { setMenu(null); remove(entry.id); }}>Remove</MenuItem>
                     </Menu>
                   )}
