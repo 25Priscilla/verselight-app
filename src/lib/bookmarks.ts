@@ -1,5 +1,5 @@
 /**
- * Saved verses and passages ("Bible Study"). A bookmark stores a position (book in the standard 66-book
+ * Saved verses and passages. A bookmark stores a position (book in the standard 66-book
  * order, chapter, first and last verse), never text, so it opens in whichever translation is chosen.
  */
 import { BOOK_NAMES, type BibleData } from "./bible";

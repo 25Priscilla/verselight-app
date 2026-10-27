@@ -1,12 +1,11 @@
 import { useRef, useState, type ReactNode } from "react";
 import { bibleLang } from "../lib/bible";
-import { XREF_LICENSE_URL, XREF_SOURCE_URL } from "../lib/crossrefs";
 import type { DisplayInfo } from "../lib/display";
 import { songLanguage } from "../lib/malayalam";
 import { chooseDisplay, displayDescription, displayLabel, secondDisplays, type DisplayChoice } from "../lib/projector";
 import type { BibleMeta, Song } from "../lib/types";
 import { useLibrary } from "../state/library";
-import { ImportBibleDialog, ImportCrossRefsDialog, RemoveBibleConfirm } from "./BibleDialogs";
+import { ImportBibleDialog, RemoveBibleConfirm } from "./BibleDialogs";
 import { Icon, type IconName } from "./Icon";
 import { Page } from "./Page";
 import type { ProjectorStatus } from "./PresentationPanel";
@@ -176,9 +175,8 @@ function LogoCard({ showLogo, onShowLogo }: Pick<Props, "showLogo" | "onShowLogo
 
 function BibleSettings({ notify }: { notify: (m: string) => void }) {
   const { library } = useLibrary();
-  const [dialog, setDialog] = useState<"import" | "xrefs" | null>(null);
+  const [dialog, setDialog] = useState<"import" | null>(null);
   const [removing, setRemoving] = useState<BibleMeta | null>(null);
-  const x = library.crossRefs;
   return (
     <Section title="Bibles" intro="The translations you can read and present. Bible text is kept on this computer, so it works offline.">
       <Card title="Your Bibles" actions={<Button size="sm" icon="plus" onClick={() => setDialog("import")}>Import a Bible</Button>}>
@@ -207,19 +205,8 @@ function BibleSettings({ notify }: { notify: (m: string) => void }) {
           </p>
         )}
       </Card>
-      <Card title="Cross references" actions={
-        <Button size="sm" icon={x ? "refresh" : "plus"} onClick={() => setDialog("xrefs")}>{x ? "Replace" : "Import"}</Button>
-      }>
-        <p className="muted small">Related verses shown beside the passage you're reading, from OpenBible.info.</p>
-        {x ? (
-          <p className="settings-fact"><Icon name="checkCircle" size={16} />{x.count.toLocaleString()} cross references imported on {new Date(x.importedAt).toLocaleDateString()}</p>
-        ) : (
-          <p className="settings-fact muted">Not imported yet.</p>
-        )}
-      </Card>
 
       {dialog === "import" && <ImportBibleDialog onClose={() => setDialog(null)} onImported={(m) => notify(`${m.name} imported.`)} />}
-      {dialog === "xrefs" && <ImportCrossRefsDialog onClose={() => setDialog(null)} onImported={() => notify("Cross references imported.")} />}
       {removing && <RemoveBibleConfirm bible={removing} onCancel={() => setRemoving(null)}
         onDone={() => { notify(`${removing.name} removed.`); setRemoving(null); }} />}
     </Section>
@@ -298,12 +285,6 @@ function AboutSettings() {
       <Card title="Credits">
         <ul className="settings-credits">
           {library.bibles.map((b) => <li key={b.id}><strong>{b.name}</strong>: {b.license || "No license notice recorded"}</li>)}
-          {library.crossRefs && (
-            <li>
-              <strong>Cross references</strong>: <a href={XREF_SOURCE_URL} target="_blank" rel="noreferrer">OpenBible.info</a>, licensed under{" "}
-              <a href={XREF_LICENSE_URL} target="_blank" rel="noreferrer">CC BY 4.0</a>.
-            </li>
-          )}
           <li><strong>Background gallery</strong>: original artwork made by VerseLight.</li>
           <li><strong>Fonts</strong>: Lora, Crimson Pro, Montserrat, Source Sans 3, Manrope and Noto Malayalam, under the SIL Open Font License.</li>
         </ul>

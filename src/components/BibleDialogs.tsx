@@ -5,7 +5,6 @@ import {
 } from "../lib/esv";
 import { deleteData } from "../lib/storage";
 import type { BibleMeta } from "../lib/types";
-import { parseCrossRefFile, saveCrossRefs, XREF_CHANGES, XREF_LICENSE_URL, XREF_SOURCE_URL, type CrossRefData } from "../lib/crossrefs";
 import { useLibrary } from "../state/library";
 import { Button, ConfirmDialog, Field, Modal } from "./ui";
 
@@ -135,7 +134,7 @@ function ConnectEsv({ onBack, onClose, onConnected }: { onBack: () => void; onCl
       <p className="muted">
         VerseLight reads the ESV from Crossway's <a href={ESV_SITE_URL} target="_blank" rel="noreferrer">ESV API</a> as you read and present,
         so it needs an internet connection. It never saves ESV text: only a few chapters (500 verses at most) are kept in memory, as
-        Crossway's terms require. Bible Study's word counts aren't available for the ESV.
+        Crossway's terms require.
       </p>
       <p className="muted small">
         Create a free key for your church at <a href={ESV_KEY_URL} target="_blank" rel="noreferrer">api.esv.org</a>. The key is kept on this
@@ -173,68 +172,5 @@ export function RemoveBibleConfirm({ bible, onDone, onCancel }: { bible: BibleMe
         ? <>The ESV and your ESV API key will be removed from this computer. To use it again, connect it with your key. Passages already in a presentation keep their text.</>
         : <>{bible.name} will be deleted from this computer. To use it again, you'll need to import the Bible file again. Passages already in a presentation keep their text.</>}
       onCancel={onCancel} onConfirm={() => { remove(bible.id); onDone(); }} />
-  );
-}
-
-/** Imports OpenBible.info cross references (cross_references.txt) and keeps them for offline use. */
-export function ImportCrossRefsDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
-  const { update } = useLibrary();
-  const input = useRef<HTMLInputElement>(null);
-  const [data, setData] = useState<CrossRefData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const onFile = async (file: File) => {
-    setError(null);
-    setBusy(true);
-    try {
-      setData(parseCrossRefFile(await file.text()));
-    } catch (e) {
-      setData(null);
-      setError(`${file.name} couldn't be read: ${e instanceof Error ? e.message : e}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const save = async () => {
-    if (!data) return;
-    setBusy(true);
-    try {
-      await saveCrossRefs(data);
-      update((lib) => ({ ...lib, crossRefs: { count: data.count, credit: data.credit, importedAt: Date.now() } }));
-      onImported();
-      onClose();
-    } catch (e) {
-      setError(`The cross references couldn't be saved: ${e}`);
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal title="Import cross references" onClose={onClose}
-      actions={data && <>
-        <Button variant="primary" disabled={busy} onClick={save}>Import cross references</Button>
-        <Button variant="quiet" onClick={onClose}>Cancel</Button>
-      </>}>
-      <p className="muted small">
-        Choose <code>cross_references.txt</code> from OpenBible.info. Run <code>npm run fetch-crossrefs</code> to download it into the
-        <code> bibles</code> folder. The data is kept on this computer, so cross references work offline.
-      </p>
-      <Button icon="plus" disabled={busy} onClick={() => input.current?.click()}>{busy ? "Reading…" : "Choose file"}</Button>
-      <input ref={input} type="file" accept=".txt,.json,text/plain,application/json" hidden
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
-      {error && <div className="alert">{error}</div>}
-      {data && (
-        <div className="import-summary">
-          <strong>{data.count.toLocaleString()} cross references</strong>
-          <p className="small">
-            From <a href={XREF_SOURCE_URL} target="_blank" rel="noreferrer">OpenBible.info</a>, licensed under{" "}
-            <a href={XREF_LICENSE_URL} target="_blank" rel="noreferrer">CC BY 4.0</a>. Drawn mainly from the public-domain Treasury of Scripture Knowledge.
-          </p>
-          <p className="muted small">{XREF_CHANGES} Verse text always comes from your own Bibles.</p>
-        </div>
-      )}
-    </Modal>
   );
 }

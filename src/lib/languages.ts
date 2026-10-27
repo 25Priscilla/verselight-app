@@ -15,6 +15,8 @@ export interface LanguageInfo {
 export const LANGUAGES: LanguageInfo[] = [
   { code: "en", name: "English", native: "English" },
   { code: "ml", name: "Malayalam", native: "മലയാളം" },
+  // Malayalam written in English letters
+  { code: "ml-Latn", name: "Manglish", native: "Manglish" },
   { code: "ta", name: "Tamil", native: "தமிழ்" },
   { code: "kn", name: "Kannada", native: "ಕನ್ನಡ" },
   { code: "te", name: "Telugu", native: "తెలుగు" },

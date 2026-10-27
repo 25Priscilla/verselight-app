@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // The ESV read online, end to end: the translation selector, reading, reference and keyword search, the bilingual view,
-// Word Study, and presenting through to what the projector is sent. The ESV API is a stand-in and every "verse" is
+// and presenting through to what the projector is sent. The ESV API is a stand-in and every "verse" is
 // made-up placeholder text: VerseLight never contains ESV text, and tests never reach the real API.
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -166,12 +166,6 @@ describe("ESV navigation and search", () => {
     expect(row.textContent).toContain("മലയാളം 0.1.1");
   });
 
-  it("explains that Word Study isn't available for the ESV", async () => {
-    await openBible();
-    await chooseEsv();
-    fireEvent.click(screen.getByRole("button", { name: "Bible Study" }));
-    expect(await screen.findByText(/Word Study isn't available for the ESV/)).toBeTruthy();
-  });
 });
 
 describe("presenting the ESV", () => {

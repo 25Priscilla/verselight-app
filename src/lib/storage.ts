@@ -2,10 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "./env";
 
 /**
- * Offline key/value storage for VerseLight's data files (library, Bibles, cross references).
+ * Offline key/value storage for VerseLight's data files (library, Bibles).
  * Desktop: JSON files in the OS app-data folder (via Rust commands).
- * Browser (dev preview): IndexedDB, which holds tens of megabytes. A Bible is about 4–8 million characters and the
- * cross references about 7 million, far beyond localStorage's quota of roughly 5 MB per site, so localStorage is
+ * Browser (dev preview): IndexedDB, which holds tens of megabytes. A Bible is about 4–8 million characters, far beyond
+ * localStorage's quota of roughly 5 MB per site, so localStorage is
  * only a fallback where IndexedDB is missing (e.g. the jsdom test environment).
  * Files saved to localStorage by earlier versions are moved into IndexedDB the first time they are read.
  */

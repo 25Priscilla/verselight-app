@@ -4,9 +4,9 @@ import { Icon, type IconName } from "./Icon";
 import type { ProjectorStatus } from "./PresentationPanel";
 import { cx } from "./ui";
 
-export type Mode = "home" | "bible" | "study" | "songs" | "planner" | "backgrounds" | "settings" | "help";
+export type Mode = "home" | "bible" | "songs" | "planner" | "backgrounds" | "settings" | "help";
 
-/** The study and song tools that live inside the Bible and Songs screens, opened directly from Tools or Home */
+/** The Bible and song tools that live inside the Bible and Songs screens, opened directly from Tools or Home */
 export type Tool = BibleTool | "malayalam-songs";
 
 interface Props {
@@ -72,16 +72,13 @@ export function Sidebar({ mode, onMode, onTool, canParallel, onProjector, projec
           {item("planner", "calendar", "Planner")}
           {item("backgrounds", "image", "Backgrounds")}
           <li>
-            <button className={cx("nav-item", "nav-group", !toolsOpen && mode === "study" && "on")} onClick={toggleTools}
+            <button className="nav-item nav-group" onClick={toggleTools}
               aria-expanded={toolsOpen} aria-controls="nav-tools" title="Tools">
               <Icon name="grid" size={20} /><span className="nav-label">Tools</span>
               <span className="nav-chevron" aria-hidden><Icon name={toolsOpen ? "up" : "down"} size={14} /></span>
             </button>
             {toolsOpen && (
               <ul className="nav nav-sub" id="nav-tools" aria-label="Tools">
-                {item("study", "study", "Bible Study", true)}
-                {tool("crossrefs", "link", "Cross references", "Cross references: passages related to the selected verses")}
-                {tool("overview", "list", "Chapter overview", "Chapter overview: the chapter's sections and key verses")}
                 {tool("parallel", "columns", "Parallel Bible",
                   canParallel ? "Parallel Bible: English and Malayalam side by side" : "Parallel Bible: import an English and a Malayalam Bible to read side by side",
                   !canParallel)}

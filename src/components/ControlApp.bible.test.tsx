@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
-// The Bible, end to end: navigation, search, selection, saved verses, cross references, Chapter Overview,
-// Word Study, English and Malayalam, and presenting a passage through to what the projector is sent.
+// The Bible, end to end: navigation, search, selection, saved verses, English and Malayalam,
+// and presenting a passage through to what the projector is sent.
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { verseId } from "../lib/crossrefs";
 import type { BibleMeta, LiveState } from "../lib/types";
-import { fakeEnglish, fakeMalayalam, JOHN } from "../test/fakeBible";
+import { fakeEnglish, fakeMalayalam } from "../test/fakeBible";
 import { LibraryProvider } from "../state/library";
 import { ControlApp } from "./ControlApp";
 
@@ -33,17 +32,8 @@ beforeEach(() => {
   localStorage.setItem("verselight:bible-tml.json", JSON.stringify(fakeMalayalam()));
 });
 
-async function openBible({ xrefs = true, bibles = metas } = {}) {
-  localStorage.setItem("verselight:library.json", JSON.stringify({
-    items: [], services: [], bibles, bookmarks: [],
-    ...(xrefs ? { crossRefs: { count: 2, credit: "test", importedAt: 1 } } : {}),
-  }));
-  if (xrefs) {
-    localStorage.setItem("verselight:crossrefs.json", JSON.stringify({
-      format: "verselight-xrefs", credit: "", license: "", source: "", changes: "", count: 2,
-      refs: { [verseId(JOHN, 3, 16)]: [verseId(44, 5, 8), verseId(44, 5, 8), 40, verseId(61, 4, 9), verseId(61, 4, 10), 30] },
-    }));
-  }
+async function openBible({ bibles = metas } = {}) {
+  localStorage.setItem("verselight:library.json", JSON.stringify({ items: [], services: [], bibles, bookmarks: [] }));
   render(<LibraryProvider><ControlApp /></LibraryProvider>);
   fireEvent.click(await screen.findByRole("button", { name: "Bible" }));
   await screen.findByRole("heading", { level: 1, name: "Genesis 1" });
@@ -160,121 +150,47 @@ describe("selecting and saving verses", () => {
     expect(selectionBar().textContent).toContain("No verses selected");
   });
 
-  it("saves a passage, lists it in Bible Study, opens, presents and removes it", async () => {
+  it("saves a passage, lists it on Home, and unsaves it when chosen again", async () => {
     await openBible();
     await search("John 3:16-17");
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(screen.getByRole("button", { name: "Saved" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
-    fireEvent.click(screen.getByRole("button", { name: /Saved verses · 1/ }));
+    // With nothing selected the bar only says so: there is no Bible Study screen to open.
+    expect(selectionBar().textContent).toBe("No verses selected");
 
-    const saved = await screen.findByRole("list", { name: "Saved verses" });
-    expect(within(saved).getByText("John 3:16–17")).toBeTruthy();
-    expect(within(saved).getByText(/placeholder love and faith words/)).toBeTruthy();
-
-    fireEvent.click(within(saved).getByRole("button", { name: "Open John 3:16–17" }));
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    const recent = within(await screen.findByRole("list", { name: "Recently saved verses" }));
+    expect(await recent.findByText("John 3:16–17")).toBeTruthy();
+    fireEvent.click(recent.getByTitle("Open in the Bible"));
     await screen.findByRole("heading", { level: 1, name: "John 3" });
     expect(selectionBar().textContent).toContain("John 3:16–17");
 
-    fireEvent.click(screen.getByRole("button", { name: "Bible Study" }));
-    await act(async () => { fireEvent.click(within(saved).getByRole("button", { name: "Present John 3:16–17" })); });
-    const panel = within(screen.getByRole("complementary", { name: "Presentation" }));
-    expect(panel.getByText("Slide 16 of 18")).toBeTruthy();
-    expect(onScreen()).toBe("placeholder love and faith words");
-
-    fireEvent.click(within(saved).getByRole("button", { name: /Remove John 3:16–17/ }));
-    expect(screen.getByText(/No saved verses yet/)).toBeTruthy();
-  });
-
-  it("shows a saved verse in another translation, and says when that translation lacks it", async () => {
-    await openBible();
-    await search("John 3:18");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    // Word Study follows the translation being read on the Bible screen.
-    fireEvent.click(screen.getByRole("radio", { name: "മലയാളം" }));
-    await screen.findByRole("heading", { level: 1, name: "യോഹന്നാൻ 3" });
-    fireEvent.click(screen.getByRole("button", { name: "Bible Study" }));
-    fireEvent.click(screen.getByRole("tab", { name: /Saved/ }));
-    const saved = await screen.findByRole("list", { name: "Saved verses" });
-    await waitFor(() => expect(within(saved).getByText("Not in TML")).toBeTruthy());
-    expect(within(saved).getByText("യോഹന്നാൻ 3:18")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Saved" }));
+    expect(screen.getByRole("button", { name: "Save" }).getAttribute("aria-pressed")).toBe("false");
   });
 });
 
-describe("cross references", () => {
-  it("lists related passages for the selected verse and opens one", async () => {
+describe("removed study tools", () => {
+  it("has no Word Study, Cross references or Chapter Overview, and reading still works", async () => {
     await openBible();
+    // No Overview / Reading switch above the chapter.
+    expect(screen.queryByRole("radiogroup", { name: "Chapter view" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Overview" })).toBeNull();
+    // Selecting verses offers Save and Present Now, but no Cross references.
     await search("John 3:16");
-    fireEvent.click(within(selectionBar() as HTMLElement).getByRole("button", { name: /Cross references/ }));
-    const panel = within(await screen.findByRole("complementary", { name: "Cross references" }));
-    await panel.findByText("Romans 5:8");
-    expect(panel.getByText("1 John 4:9–10")).toBeTruthy();
-    fireEvent.click(panel.getAllByRole("button", { name: "Open" })[0]);
-    expect(heading()).toBe("Romans 5");
-    expect(verse(8).getAttribute("aria-pressed")).toBe("true");
-  });
-
-  it("shows a clean empty state for a verse without references", async () => {
-    await openBible();
-    await search("John 3:17");
-    fireEvent.click(within(selectionBar() as HTMLElement).getByRole("button", { name: /Cross references/ }));
-    const panel = within(await screen.findByRole("complementary", { name: "Cross references" }));
-    expect(await panel.findByText("No cross references for John 3:17.")).toBeTruthy();
-  });
-
-  it("offers to import cross references when there are none", async () => {
-    await openBible({ xrefs: false });
-    await search("John 3:16");
-    fireEvent.click(within(selectionBar() as HTMLElement).getByRole("button", { name: /Cross references/ }));
-    const panel = within(screen.getByRole("complementary", { name: "Cross references" }));
-    expect(panel.getByText("Cross references aren't imported yet.")).toBeTruthy();
-    expect(panel.getByRole("button", { name: /Import cross references/ })).toBeTruthy();
-  });
-});
-
-describe("Chapter Overview", () => {
-  it("shows this chapter's own sections and key verses, and switches back to reading", async () => {
-    await openBible();
-    await search("John 3");
-    fireEvent.click(screen.getByRole("radio", { name: "Overview" }));
-    const ov = within(screen.getByLabelText("John 3 overview"));
-    expect(await ov.findByText("Jesus and Nicodemus")).toBeTruthy();
-    expect(await ov.findByText("John 3:16")).toBeTruthy();
-    expect(ov.getByRole("note").textContent).toContain("doesn't include written summaries");
-
-    fireEvent.click(ov.getByRole("button", { name: /Chapter 4/ }));
-    const ov4 = within(screen.getByLabelText("John 4 overview"));
-    expect(await ov4.findByText(/Samaritan/)).toBeTruthy();
-    expect(ov4.queryByText("Jesus and Nicodemus")).toBeNull();
-
-    fireEvent.click(screen.getByRole("radio", { name: "Reading" }));
-    expect(document.querySelectorAll(".verses .verse")).toHaveLength(6);
-  });
-
-  it("goes to a section's first verse in the reading view", async () => {
-    await openBible();
-    await search("Genesis 1");
-    fireEvent.click(screen.getByRole("radio", { name: "Overview" }));
-    fireEvent.click(await screen.findByRole("button", { name: /The First Day/ }));
-    expect(verse(3).getAttribute("aria-pressed")).toBe("true");
-  });
-});
-
-describe("Word Study", () => {
-  it("studies a word from a keyword search, with counts and every occurrence", async () => {
-    await openBible();
+    const bar = within(selectionBar() as HTMLElement);
+    expect(bar.getByRole("button", { name: "Save" })).toBeTruthy();
+    expect(bar.getByRole("button", { name: /Present Now/ })).toBeTruthy();
+    expect(bar.queryByRole("button", { name: /Cross references/ })).toBeNull();
+    expect(screen.queryByRole("complementary", { name: "Cross references" })).toBeNull();
+    // A keyword search lists its verses, with no Word Study button.
     await search("faith", "Keyword");
-    fireEvent.click(screen.getByRole("button", { name: /Word Study/ }));
-    const status = await screen.findByText(/Found 2 occurrences/);
-    expect(status).toBeTruthy();
-    const facts = within(screen.getByLabelText("Word facts"));
-    expect(facts.getByText("New Testament").nextElementSibling!.textContent).toBe("2 verses");
-    expect(screen.getByRole("note").textContent).toContain("Hebrew and Greek:");
-    expect(screen.getByRole("note").textContent).toContain("not available");
-    // Open an occurrence in the Bible.
-    fireEvent.click(screen.getAllByRole("button", { name: /Open in Bible/ })[1]);
-    await screen.findByRole("heading", { level: 1, name: "Ephesians 2" });
-    expect(verse(8).getAttribute("aria-pressed")).toBe("true");
+    expect(await screen.findByText("2 verses")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Word Study/ })).toBeNull();
+    // There is no Bible Study screen any more.
+    expect(screen.queryByRole("button", { name: "Bible Study" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Saved verses/ })).toBeNull();
   });
 });
 
@@ -288,7 +204,8 @@ describe("presenting from the Bible", () => {
     expect(projector().slide?.footer).toBe("John 3:17 (TEN)");
     fireEvent.click(panel.getByRole("button", { name: /^Next/ }));
     expect(onScreen()).toBe("filler 42.3.18");
-    expect(panel.getByText("John 4 (next chapter)")).toBeTruthy();
+    // The slide list offers the next chapter after the last verse.
+    expect(panel.getByRole("button", { name: /^John 4/ })).toBeTruthy();
     await act(async () => { fireEvent.click(panel.getByRole("button", { name: /^Next/ })); });
     expect(projector().slide?.label).toBe("John 4:1");
     fireEvent.click(panel.getByRole("button", { name: /Previous/ }));
@@ -322,12 +239,12 @@ describe("presenting from the Bible", () => {
     fireEvent.keyDown(window, { key: "ArrowLeft" }); // moving on shows the screen again
     expect(projector()).toMatchObject({ blackout: false, slide: { label: "John 3:1" } });
     fireEvent.keyDown(window, { key: "ArrowRight" });
-    await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Stop presentation/ })); });
+    await act(async () => { fireEvent.keyDown(window, { key: "Escape" }); });
     expect(panel.getByText("Projector off")).toBeTruthy();
     expect(panel.getByText("Slide 2 of 18")).toBeTruthy();
     await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Start presenting/ })); });
     expect(onScreen()).toBe("filler 42.3.2");
-    await act(async () => { fireEvent.click(panel.getByRole("button", { name: "Close presentation" })); });
+    await act(async () => { fireEvent.click(panel.getByRole("button", { name: /Stop presentation/ })); });
     expect(screen.queryByRole("complementary", { name: "Presentation" })).toBeNull();
     expect(projector().slide).toBeNull();
   });

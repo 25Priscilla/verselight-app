@@ -22,15 +22,13 @@ interface Props {
   blackout: boolean;
   projector: ProjectorStatus;
   displayName: string;
-  /** Why the projector isn't showing the slides (no second screen, screen unplugged, …), or null */
-  problem?: string | null;
   onGoto: (index: number) => void;
   onPrev: () => void;
   onNext: () => void;
   onBlackout: () => void;
   onStart: () => void;
+  /** End the presentation: close the projector window and these controls */
   onStop: () => void;
-  onEnd: () => void;
   /** The Default look, shown in the per-slide background picker */
   defaultTheme: Theme;
   lookFor: (slide: Slide | null) => { id: string; theme: Theme; source: LookSource };
@@ -43,7 +41,7 @@ interface Props {
 
 /**
  * The laptop's live controls. The projector shows only the slide; everything else lives here:
- *   status · current slide and its position · Previous / Next / Blank · what's next · Start or Stop, and Close · all slides
+ *   status · current slide and its position · Previous / Next / Blank · Start and Stop · all slides
  */
 export function PresentationPanel(p: Props) {
   const [picker, setPicker] = useState<{ key: string; anchor: HTMLElement } | null>(null);
@@ -80,7 +78,6 @@ export function PresentationPanel(p: Props) {
       : p.projector === "opening" ? { cls: "opening", text: "Connecting to projector…" }
         : { cls: "off", text: "Projector off" };
   const stageTag = p.projector === "live" ? (p.blackout ? "Blank screen" : "On screen now") : p.projector === "opening" ? "Connecting…" : "Preview only";
-  const endText = p.kind === "song" ? "End of song" : "End of passage";
 
   return (
     <aside className="present" aria-label="Presentation">
@@ -88,7 +85,6 @@ export function PresentationPanel(p: Props) {
         <h2>Presentation</h2>
         <span className={`status ${status.cls}`} role="status"><span className="dot" aria-hidden />{status.text}</span>
       </div>
-      {p.problem && <p className="present-note" role="note"><Icon name="info" size={14} /><span>{p.problem}</span></p>}
 
       {has ? (
         <>
@@ -124,27 +120,14 @@ export function PresentationPanel(p: Props) {
             </div>
           )}
 
-          <div className="up-next" aria-label="Next slide">
-            <div className="up-next-frame">
-              {next ? <SlideRenderer slide={next} theme={p.lookFor(next).theme} />
-                : <span className="up-next-end">{p.neighbours.after ? "Next chapter" : nextItem ? "Next item" : "End"}</span>}
-            </div>
-            <span className="up-next-label">Next</span>
-            <span className="up-next-title">{next?.label ?? (p.neighbours.after ? `${p.neighbours.after} (next chapter)` : nextItem ?? endText)}</span>
-          </div>
-
           <div className="session-actions">
-            {p.projector === "off" ? (
+            {p.projector === "off" && (
               <button className="btn present" onClick={p.onStart} title="Show this on the projector">
                 <Icon name="play" size={13} />Start presenting
               </button>
-            ) : (
-              <button className="btn stop" onClick={p.onStop} title="Turn the projector screen off and keep your place (Esc)">
-                <Icon name="stop" size={13} />Stop presentation
-              </button>
             )}
-            <button className="btn close" onClick={p.onEnd} aria-label="Close presentation" title="Close the presentation: clear the slides and hide these controls">
-              <Icon name="x" size={15} />Close
+            <button className="btn stop" onClick={p.onStop} title="Close the projector screen and end the presentation">
+              <Icon name="stop" size={13} />Stop presentation
             </button>
           </div>
 
@@ -199,10 +182,7 @@ export function PresentationPanel(p: Props) {
             <p className="muted small">Select a Bible passage or a song, then choose <strong>▶ Present Now</strong>. Every verse and every song section becomes its own slide.</p>
           </div>
           <div className="session-actions">
-            {p.projector !== "off" && (
-              <button className="btn stop" onClick={p.onStop} title="Turn the projector screen off (Esc)"><Icon name="stop" size={13} />Stop presentation</button>
-            )}
-            <button className="btn close" onClick={p.onEnd} aria-label="Close presentation" title="Hide these controls"><Icon name="x" size={15} />Close</button>
+            <button className="btn stop" onClick={p.onStop} title="Close the projector screen and end the presentation"><Icon name="stop" size={13} />Stop presentation</button>
           </div>
         </>
       )}

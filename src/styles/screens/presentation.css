@@ -1,5 +1,5 @@
 /* Presentation panel: the laptop's live controls while presenting.
-   Top to bottom: status · current slide · Previous / Next / Blank · next slide · Start or Stop, and Close · all slides.
+   Top to bottom: status · current slide · Previous / Next / Blank · Start and Stop · all slides.
    Everything above the slide list stays put; only the slide list scrolls. */
 
 .present { background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
@@ -15,10 +15,6 @@
 .present .status.opening { color: var(--accent); }
 @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(255, 93, 108, 0); } }
 @media (prefers-reduced-motion: reduce) { .present .status.live .dot { animation: none; } }
-/* Why the projector is off (no second screen, screen unplugged). Short, so the controls below stay in view. */
-.present-note { display: flex; gap: 7px; align-items: flex-start; margin: -2px 16px 10px; font-size: 12px; line-height: 1.4; color: var(--mute); }
-.present-note svg { flex: none; margin-top: 2px; }
-.present-note span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* ---------- current slide ---------- */
 .stage { margin: 0 16px; display: flex; flex-direction: column; gap: 6px; }
@@ -34,26 +30,19 @@
 .stage-title { font-weight: 750; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- Previous / Next / Blank ---------- */
-.controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, auto); gap: 8px; padding: 12px 16px 0; }
-.controls .ctl { min-height: var(--control-lg); padding: 0 10px; font-size: 14px; gap: 5px; }
-.controls .ctl.next { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 15px; }
+/* Compact but still easy to hit during a service: 34px tall, a little above the shared small control height. */
+.controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, auto); gap: 5px; padding: 10px 16px 0; }
+.controls .ctl { min-height: 34px; padding: 0 8px; line-height: 18px; font-size: 13px; gap: 4px; }
+.controls .ctl.next { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 14px; }
 .controls .ctl.next:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 .controls .ctl.black-on { background: #fff; color: #000; border-color: #fff; }
 .controls .ctl.black-on:hover:not(:disabled) { background: #fff; filter: brightness(0.92); }
 
-/* ---------- next slide ---------- */
-.up-next { display: grid; grid-template-columns: 88px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; margin: 12px 16px 0; }
-.up-next-frame { grid-column: 1; grid-row: 1 / 3; }
-.up-next-frame .slide { border-radius: 5px; outline: 1px solid var(--line); }
-.up-next-label { grid-column: 2; grid-row: 1; align-self: end; font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); }
-.up-next-end { display: grid; place-items: center; aspect-ratio: 16 / 9; border: 1px dashed var(--line); border-radius: 5px; font-size: 11px; color: var(--mute); }
-.up-next-title { grid-column: 2; grid-row: 2; align-self: start; font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* ---------- Start or Stop, and Close ---------- */
-.session-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin: 14px 16px 0; }
-.session-actions .btn { min-width: 0; }
-.session-actions .btn.present { box-shadow: none; }
-.btn.close { background: transparent; }
+/* ---------- Start and Stop ---------- */
+/* 30px tall. Start takes the spare width; when both can't fit on one line (the slimmest panel), Stop wraps to a full-width line of its own. */
+.session-actions { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 16px 0; }
+.session-actions .btn { flex: 1 1 auto; min-height: 30px; padding: 0 9px; line-height: 18px; font-size: var(--text-sm); gap: 5px; }
+.session-actions .btn.present { flex: 999 1 auto; box-shadow: none; padding-left: 11px; padding-right: 13px; }
 .slides-empty + .session-actions { margin-top: 0; }
 
 /* ---------- all slides ---------- */
@@ -88,7 +77,7 @@
 @media (max-height: 820px) {
   .present-head { padding-top: 10px; padding-bottom: 8px; }
   .controls { padding-top: 10px; }
-  .up-next, .session-actions { margin-top: 10px; }
+  .session-actions { margin-top: 10px; }
   .slides-head { margin-top: 12px; padding-top: 10px; }
 }
 

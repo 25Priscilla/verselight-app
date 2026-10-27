@@ -14,7 +14,7 @@ function setup(over: Partial<Parameters<typeof PresentationPanel>[0]> = {}) {
   const props = {
     title: "Genesis 1", kind: "scripture" as const, slides, index: 2, selectionKeys: new Set<string>(),
     neighbours: { before: null, after: "Genesis 2" }, blackout: false, projector: "live" as const, displayName: "Projector",
-    onGoto: vi.fn(), onPrev: vi.fn(), onNext: vi.fn(), onBlackout: vi.fn(), onStart: vi.fn(), onStop: vi.fn(), onEnd: vi.fn(),
+    onGoto: vi.fn(), onPrev: vi.fn(), onNext: vi.fn(), onBlackout: vi.fn(), onStart: vi.fn(), onStop: vi.fn(),
     defaultTheme: DEFAULT_THEME, lookFor: () => ({ id: "default", theme: DEFAULT_THEME, source: "default" as const }),
     looks: [], slideLook: () => null, onSlideLook: vi.fn(),
     ...over,
@@ -24,23 +24,28 @@ function setup(over: Partial<Parameters<typeof PresentationPanel>[0]> = {}) {
 }
 
 describe("PresentationPanel", () => {
-  it("shows the current slide, its position and the next slide", () => {
+  it("shows the current slide and its position, with no separate next-slide preview", () => {
     setup();
     expect(screen.getByText("Slide 3 of 12")).toBeTruthy();
     expect(screen.getByText("On screen now")).toBeTruthy();
-    const next = screen.getByLabelText("Next slide");
-    expect(within(next).getByText("Genesis 1:4")).toBeTruthy();
+    const stage = screen.getByRole("region", { name: "Current slide" });
+    expect(within(stage).getByText("Genesis 1:3")).toBeTruthy();
+    expect(within(stage).getByText("Text 3")).toBeTruthy();
+    expect(screen.queryByLabelText("Next slide")).toBeNull();
+    expect(document.querySelector(".up-next")).toBeNull();
+    // The slide list still shows what comes next, with the current slide marked.
     expect(screen.getByRole("button", { name: /Slide 3: Genesis 1:3 \(showing now\)/ }).getAttribute("aria-current")).toBe("true");
+    expect(screen.getByRole("button", { name: /^Slide 4: Genesis 1:4$/ })).toBeTruthy();
   });
 
-  it("runs Previous, Next, Blank, Stop and Close", () => {
+  it("runs Previous, Next, Blank and Stop, with no separate Close", () => {
     const p = setup();
     fireEvent.click(screen.getByRole("button", { name: /Previous/ }));
     fireEvent.click(screen.getByRole("button", { name: /^Next/ }));
     fireEvent.click(screen.getByRole("button", { name: /Blank/ }));
     fireEvent.click(screen.getByRole("button", { name: /Stop presentation/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Close presentation" }));
-    expect([p.onPrev, p.onNext, p.onBlackout, p.onStop, p.onEnd].map((f) => vi.mocked(f).mock.calls.length)).toEqual([1, 1, 1, 1, 1]);
+    expect([p.onPrev, p.onNext, p.onBlackout, p.onStop].map((f) => vi.mocked(f).mock.calls.length)).toEqual([1, 1, 1, 1]);
+    expect(screen.queryByRole("button", { name: /Close/ })).toBeNull();
   });
 
   it("shows a slide at once when it is clicked in the list", () => {
@@ -54,7 +59,9 @@ describe("PresentationPanel", () => {
     expect(screen.getByText("Preview only")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Start presenting/ }));
     expect(p.onStart).toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: /Stop presentation/ })).toBeNull();
+    // Stop still ends the presentation when nothing is on the projector.
+    fireEvent.click(screen.getByRole("button", { name: /Stop presentation/ }));
+    expect(p.onStop).toHaveBeenCalled();
   });
 
   it("switches Blank to Show while the screen is blank", () => {
@@ -68,15 +75,17 @@ describe("PresentationPanel", () => {
     expect((screen.getByRole("button", { name: /Previous/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("says the next chapter comes after the last verse", () => {
-    setup({ index: 11 });
-    expect(screen.getByText("Genesis 2 (next chapter)")).toBeTruthy();
-    expect((screen.getByRole("button", { name: /^Next/ }) as HTMLButtonElement).disabled).toBe(false);
+  it("offers the next chapter after the last verse", () => {
+    const p = setup({ index: 11 });
+    const next = screen.getByRole("button", { name: /^Next/ }) as HTMLButtonElement;
+    expect(next.disabled).toBe(false);
+    fireEvent.click(next);
+    expect(p.onNext).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: /^Genesis 2/ })).toBeTruthy();
   });
 
   it("ends a song on its last slide", () => {
     setup({ kind: "song", index: 11, neighbours: { before: null, after: null } });
-    expect(screen.getByText("End of song")).toBeTruthy();
     expect((screen.getByRole("button", { name: /^Next/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -102,7 +111,8 @@ describe("PresentationPanel", () => {
   it("explains what to do when nothing is loaded", () => {
     setup({ slides: [], index: 0, projector: "off" });
     expect(screen.getByText("Nothing is loaded to present.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Close presentation" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Stop presentation/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Close/ })).toBeNull();
   });
 });
 

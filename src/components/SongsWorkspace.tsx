@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { newId } from "../lib/id";
-import { LANGUAGES, languageLabel, languageName } from "../lib/languages";
+import { LANGUAGES, languageLabel } from "../lib/languages";
 import { displayChoices, hasTranslation, nextLabel, parseLyrics, sectionTags, songDisplay, songOrder, translationPairing, unusedSections } from "../lib/lyrics";
 import { songSlidesAll } from "../lib/slides";
-import { songLanguage, songLanguages, songMatches, songRank } from "../lib/malayalam";
+import { songLanguage, songMatches, songRank } from "../lib/malayalam";
+import { folderCounts, folderInfo, folderOf, SONG_FOLDERS, songFolders, type SongFolder } from "../lib/songFolders";
 import { findDuplicateSong } from "../lib/songImport";
 import type { Slide, Song, SongLanguage, Theme } from "../lib/types";
 import { useLibrary } from "../state/library";
@@ -13,12 +14,6 @@ import { SongImportDialog } from "./SongImportDialog";
 import { Button, EmptyState, Segmented, cx } from "./ui";
 
 const collator = new Intl.Collator(["ml", "en"], { sensitivity: "base", numeric: true });
-
-/** The languages the song list can be filtered by. */
-const FILTER_LANGS: SongLanguage[] = ["en", "ml", "ta"];
-/** Which of those a song is listed under: its languages, counting a transliteration ("ml-Latn") as its base language. */
-const filterGroups = (s: Song) =>
-  [...new Set(songLanguages(s).map((l) => l.replace(/-Latn$/i, "")))].filter((l) => FILTER_LANGS.includes(l));
 
 interface Props {
   active: boolean;
@@ -40,7 +35,8 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
   const songs = library.items.filter((i): i is Song => i.kind === "song");
   const [selectedId, setSelectedId] = useState<string | null>(songs[0]?.id ?? null);
   const [query, setQuery] = useState("");
-  const [lang, setLang] = useState<"all" | SongLanguage>("all");
+  /** The language folder being browsed. Browsing only filters the list; it never changes a song. */
+  const [lang, setLang] = useState<"all" | SongFolder>("all");
   const [view, setView] = useState<"all" | "fav" | "recent">("all");
   const [importing, setImporting] = useState(false);
   const song = songs.find((s) => s.id === selectedId) ?? null;
@@ -67,12 +63,12 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
     if (!showLanguage) return;
     setQuery("");
     setView("all");
-    setLang(showLanguage.lang);
+    setLang(folderOf(showLanguage.lang) ?? "all");
     requestAnimationFrame(() => searchRef.current?.focus());
   }, [showLanguage?.nonce]);
 
   const filtered = useMemo(() => {
-    let list = songs.filter((s) => lang === "all" || filterGroups(s).includes(lang));
+    let list = songs.filter((s) => lang === "all" || songFolders(s).includes(lang));
     if (view === "fav") list = list.filter((s) => s.favorite);
     if (view === "recent") list = list.filter((s) => s.lastUsedAt);
     if (query.trim()) list = list.filter((s) => songMatches(s, query));
@@ -81,13 +77,9 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
   }, [songs, query, lang, view]);
 
   const toggleFavorite = (s: Song) => save({ ...s, favorite: !s.favorite });
-  // English, Malayalam and Tamil are always offered; songs in other languages are listed under All.
-  const counts = useMemo(() => {
-    const n = new Map<SongLanguage, number>(FILTER_LANGS.map((l) => [l, 0]));
-    for (const s of songs) for (const l of filterGroups(s)) n.set(l, (n.get(l) ?? 0) + 1);
-    return n;
-  }, [songs]);
-  const filterLangs = FILTER_LANGS;
+  // All five folders are always shown, even an empty one; songs in other languages are listed under All.
+  const counts = useMemo(() => folderCounts(songs), [songs]);
+  const folder = lang === "all" ? null : folderInfo(lang);
 
   const save = (s: Song) =>
     update((lib) => ({ ...lib, items: lib.items.map((i) => (i.id === s.id ? { ...s, updatedAt: Date.now() } : i)) }));
@@ -95,7 +87,7 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
   const create = () => {
     const s: Song = {
       kind: "song", id: newId(), title: "", artist: "", copyright: "", ccli: "",
-      language: lang === "all" ? "en" : lang, altTitle: "",
+      language: folder?.language ?? "en", altTitle: "",
       lyrics: "[Verse 1]\n", linesPerSlide: 0, arrangement: [], hidden: [], updatedAt: Date.now(),
     };
     update((lib) => ({ ...lib, items: [...lib.items, s] }));
@@ -135,14 +127,23 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
               onKeyDown={(e) => { if (e.key === "Enter" && filtered[0]) setSelectedId(filtered[0].id); }} title="Type a title or some words, then press Enter to open the first song" />
             {query && <button className="icon-btn" onClick={() => setQuery("")} aria-label="Clear search"><Icon name="x" size={14} /></button>}
           </div>
-          <div className="seg lang-seg" role="radiogroup" aria-label="Language">
-            <button role="radio" aria-checked={lang === "all"} className={lang === "all" ? "on" : ""} onClick={() => setLang("all")}>All</button>
-            {filterLangs.map((l) => (
-              <button key={l} role="radio" aria-checked={lang === l} className={lang === l ? "on" : ""} onClick={() => setLang(l)}
-                title={`${counts.get(l) ?? 0} ${languageName(l)} songs, including songs translated into ${languageName(l)}`} lang={l}>
-                {LANGUAGES.find((x) => x.code === l)?.native ?? l}
-              </button>
-            ))}
+          <div className="song-folders" role="radiogroup" aria-label="Language">
+            <button role="radio" aria-checked={lang === "all"} aria-label="All" className={cx("song-folder all", lang === "all" && "on")} onClick={() => setLang("all")}
+              title={`Every song: ${songs.length.toLocaleString()}`}>
+              <span className="song-folder-name">All</span>
+              <span className="song-folder-count">{songs.length.toLocaleString()}</span>
+            </button>
+            {SONG_FOLDERS.map((f) => {
+              const n = counts.get(f.id) ?? 0;
+              return (
+                <button key={f.id} role="radio" aria-checked={lang === f.id} aria-label={f.name} className={cx("song-folder", lang === f.id && "on")}
+                  onClick={() => setLang(f.id)} title={`${n.toLocaleString()} ${f.name} ${n === 1 ? "song" : "songs"}, including songs with a ${f.name} translation`}>
+                  <span className="song-folder-name" lang={f.language}>{f.native}</span>
+                  <span className="song-folder-count">{n.toLocaleString()}</span>
+                  {f.native !== f.name && <span className="song-folder-sub">{f.name}</span>}
+                </button>
+              );
+            })}
           </div>
           <div className="view-tabs" role="tablist" aria-label="Show">
             <button role="tab" aria-selected={view === "all"} className={view === "all" ? "on" : ""} onClick={() => setView("all")}>All songs</button>
@@ -150,7 +151,7 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
             <button role="tab" aria-selected={view === "recent"} className={view === "recent" ? "on" : ""} onClick={() => setView("recent")}><Icon name="clock" size={13} />Recent</button>
           </div>
           <div className="song-new">
-            <button className="btn" onClick={create}><Icon name="plus" />{lang === "all" || lang === "en" ? "New song" : `New ${languageName(lang)} song`}</button>
+            <button className="btn" onClick={create}><Icon name="plus" />{!folder || folder.id === "en" ? "New song" : `New ${folder.name} song`}</button>
             <Button variant="quiet" icon="upload" onClick={() => setImporting(true)} title="Add songs from OpenLyrics (.xml) or VerseLight (.json) files">Import</Button>
           </div>
           <div className="song-count muted small" aria-live="polite">
@@ -182,8 +183,8 @@ export function SongsWorkspace({ active, themeFor, onPresent, focusSearch, openS
               {query ? <>No songs match “{query}”. Try fewer words, or part of a line from the song. <button className="linklike" onClick={() => setQuery("")}>Show all songs</button></>
                 : view === "fav" ? "No favorites yet. Tap the star on a song to keep it here."
                 : view === "recent" ? "Songs you present will appear here."
-                : lang === "en" ? "No English songs yet."
-                : `No ${languageName(lang)} songs yet. Add one with New ${languageName(lang)} song, or import OpenLyrics files.`}
+                : !folder || folder.id === "en" ? "No English songs yet."
+                : `No ${folder.name} songs yet. Add one with New ${folder.name} song, or import OpenLyrics files.`}
             </li>
           )}
           {songs.length === 0 && (

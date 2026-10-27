@@ -26,7 +26,6 @@ import { SettingsScreen, type SettingsSection } from "./SettingsScreen";
 import { Sidebar, type Mode, type Tool } from "./Sidebar";
 import { SongsWorkspace } from "./SongsWorkspace";
 import { ConfirmDialog, Toast, cx } from "./ui";
-import { WordStudyWorkspace, type StudyRequest, type VerseTarget } from "./WordStudyWorkspace";
 
 function useMediaQuery(query: string) {
   const [match, setMatch] = useState(() => matchMedia(query).matches);
@@ -43,6 +42,8 @@ function useMediaQuery(query: string) {
 export const DISPLAY_POLL_MS = 2000;
 /** How long the projector window has to load and report back before it is given up on */
 export const PROJECTOR_TIMEOUT_MS = 15000;
+/** How long a notice stays at the bottom of the window before it goes away by itself */
+export const NOTICE_TIMEOUT_MS = 3000;
 
 const isTyping = (el: EventTarget | null) =>
   el instanceof HTMLElement && !!el.closest("input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, [contenteditable]");
@@ -52,19 +53,15 @@ export function ControlApp() {
   const [mode, setMode] = useState<Mode>("home");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("projector");
   const [notice, setNotice] = useState<string | null>(null);
+  // Stable, so the notice's timer restarts only when the message changes, not on every render.
+  const dismissNotice = useCallback(() => setNotice(null), []);
 
-  // ---- Word Study ↔ Bible: which translation is being read, and "open this verse" requests ----
+  // ---- other screens ↔ Bible: which translation is being read, and "open this verse" requests ----
   const [readingBibleId, setReadingBibleId] = useState(library.bibles[0]?.id ?? "");
   const [openRequest, setOpenRequest] = useState<OpenVerseRequest | null>(null);
-  const openInBible = useCallback((t: VerseTarget) => {
+  const openInBible = useCallback((t: Omit<OpenVerseRequest, "nonce">) => {
     setOpenRequest({ ...t, nonce: Date.now() });
     setMode("bible");
-  }, []);
-  // Bible → Bible Study: study a word from a keyword search, or see the saved verses.
-  const [studyRequest, setStudyRequest] = useState<StudyRequest | null>(null);
-  const openStudy = useCallback((r: Omit<StudyRequest, "nonce">) => {
-    setStudyRequest({ ...r, nonce: Date.now() });
-    setMode("study");
   }, []);
 
   // ---- Home's shortcuts into the Bible and Songs screens ----
@@ -72,11 +69,10 @@ export function ControlApp() {
   const [songSearch, setSongSearch] = useState(0);
   const [openSong, setOpenSong] = useState<{ id: string; nonce: number } | null>(null);
   const openSettings = (section: SettingsSection) => { setSettingsSection(section); setMode("settings"); };
-  // Global Quick Search opens results through the same requests as Home and Word Study.
+  // Global Quick Search opens results through the same requests as Home.
   const openSongById = useCallback((id: string) => { setOpenSong({ id, nonce: Date.now() }); setMode("songs"); }, []);
   const openSearchVerse = useCallback((r: BibleResult) =>
     openInBible({ bibleId: r.bibleId, book: r.book, chapter: r.chapter, verse: r.verse, to: r.to }), [openInBible]);
-  const studyWord = useCallback((word: string) => openStudy({ word }), [openStudy]);
 
   // ---- Tools (sidebar and Home): open a view inside the Bible or Songs screen ----
   const [bibleTool, setBibleTool] = useState<BibleToolRequest | null>(null);
@@ -200,6 +196,13 @@ export function ControlApp() {
     setProjector("off");
     await closePresentation().catch(() => undefined);
   }, []);
+
+  /** Stop presentation: close the projector window and the session. Esc and an unplugged screen keep the place instead. */
+  const endPresentation = useCallback(() => {
+    void stopPresenting();
+    setProjectorProblem(null);
+    dispatch({ type: "end" });
+  }, [stopPresenting]);
 
   // A projector window that never reports back (it failed to load) is closed rather than left "Connecting…" forever.
   useEffect(() => {
@@ -504,14 +507,12 @@ export function ControlApp() {
     <div className={cx("app", presenting && "presenting", (presenting || narrow) && "nav-compact")}>
       <Sidebar mode={mode} onMode={setMode} onTool={openTool} canParallel={canParallel} onProjector={() => openSettings("projector")} projector={projector} displayName={displayName}
         search={<GlobalSearch compact={presenting || narrow} readingBibleId={readingBibleId}
-          onOpenVerse={openSearchVerse} onOpenSong={openSongById} onStudyWord={studyWord} />} />
+          onOpenVerse={openSearchVerse} onOpenSong={openSongById} />} />
 
 
       <BibleWorkspace active={mode === "bible"} onPresent={presentScripture} onTranslation={setReadingBibleId} openRequest={openRequest}
         onManageBibles={() => openSettings("bibles")} focusSearch={bibleSearch}
-        onStudyWord={(word) => openStudy({ word })} onSaved={() => openStudy({ tab: "saved" })} toolRequest={bibleTool} />
-      <WordStudyWorkspace active={mode === "study"} currentBibleId={readingBibleId} onOpenInBible={openInBible}
-        request={studyRequest} onPresent={presentScripture} />
+        toolRequest={bibleTool} />
       <SongsWorkspace active={mode === "songs"} themeFor={themeFor} onPresent={presentSong} focusSearch={songSearch} openSong={openSong} showLanguage={songLanguageRequest}
         liveKey={state.session?.kind === "song" && liveSlide ? liveSlide.key : null} notify={setNotice} />
       {mode === "planner" && (
@@ -531,7 +532,6 @@ export function ControlApp() {
           onProjector={() => openSettings("projector")}
           onRefreshDisplays={refreshDisplays}
           onManage={() => openSettings("bibles")}
-          onStudy={() => openStudy({ tab: "books" })}
           onTool={openTool}
           onHelp={() => setMode("help")}
           onOpenSong={openSongById}
@@ -567,14 +567,12 @@ export function ControlApp() {
         blackout={state.blackout}
         projector={projector}
         displayName={displayName}
-        problem={projector === "off" ? projectorProblem : null}
         onGoto={gotoSlide}
         onPrev={() => nav(-1)}
         onNext={() => nav(1)}
         onBlackout={() => dispatch({ type: "blackout" })}
         onStart={openProjector}
-        onStop={stopPresenting}
-        onEnd={() => { stopPresenting(); setProjectorProblem(null); dispatch({ type: "end" }); }}
+        onStop={endPresentation}
         defaultTheme={library.theme}
         lookFor={lookFor}
         looks={library.looks}
@@ -584,7 +582,7 @@ export function ControlApp() {
       />}
 
       {(notice || saveError) && (
-        <Toast message={saveError ?? notice} onDismiss={saveError ? undefined : () => setNotice(null)} />
+        <Toast message={saveError ?? notice} onDismiss={saveError ? undefined : dismissNotice} timeout={NOTICE_TIMEOUT_MS} />
       )}
     </div>
   );

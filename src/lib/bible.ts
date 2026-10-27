@@ -381,3 +381,13 @@ export function versesBetween(bible: BibleData, bookIndex: number, c1: number, v
   }
   return out;
 }
+
+/** Previous/next chapter across book boundaries (John 21 → Acts 1). */
+export function neighbour(chaptersPerBook: number[], book: number, chapter: number, delta: 1 | -1): { book: number; chapter: number } | null {
+  if (delta > 0) {
+    if (chapter < chaptersPerBook[book]) return { book, chapter: chapter + 1 };
+    return book + 1 < chaptersPerBook.length ? { book: book + 1, chapter: 1 } : null;
+  }
+  if (chapter > 1) return { book, chapter: chapter - 1 };
+  return book > 0 ? { book: book - 1, chapter: chaptersPerBook[book - 1] } : null;
+}

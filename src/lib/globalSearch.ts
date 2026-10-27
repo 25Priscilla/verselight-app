@@ -45,7 +45,7 @@ export interface SongResult {
 export interface GlobalResults {
   query: string;
   bible: BibleResult[];
-  /** Verses containing the words in the translation being read (for "see them all in Bible Study") */
+  /** How many verses contain the words in the translation being read */
   bibleTotal: number;
   songs: SongResult[];
 }

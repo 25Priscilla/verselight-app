@@ -1,43 +1,35 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import type { ScriptureSpec } from "../lib/session";
-import { splitId } from "../lib/crossrefs";
-import { bibleLang, BOOK_NAMES, detectBibleLanguage, ensureChapter, getVerses, loadBible, parseReference, searchBible, type BibleData, type SearchHit } from "../lib/bible";
+import { bibleLang, BOOK_NAMES, detectBibleLanguage, ensureChapter, getVerses, loadBible, neighbour, parseReference, searchBible, type BibleData, type SearchHit } from "../lib/bible";
 import { ESV_SITE_URL, isOnlineBible, searchEsv } from "../lib/esv";
 import { addBookmark, findBookmark, removeBookmark } from "../lib/bookmarks";
-import { neighbour } from "../lib/overview";
 import { rangeLabel } from "../lib/slides";
 
 import { useLibrary } from "../state/library";
-import { ImportBibleDialog, ImportCrossRefsDialog } from "./BibleDialogs";
-import { ChapterOverview } from "./ChapterOverview";
-import { CrossRefPanel } from "./CrossRefPanel";
+import { ImportBibleDialog } from "./BibleDialogs";
 import { Icon } from "./Icon";
 import { EmptyState } from "./ui";
 
 interface Selection { anchor: number; from: number; to: number }
 
-/** A request from another screen (Word Study, Home) to open a verse or passage in a given translation. */
+/** A request from another screen (Home, Quick Search) to open a verse or passage in a given translation. */
 export interface OpenVerseRequest { bibleId: string; book: number; chapter: number; verse: number; to?: number; nonce: number }
 
-/** A request from Home or the sidebar's Tools to open one of the Bible's own study views. */
-export type BibleTool = "overview" | "crossrefs" | "parallel";
+/** A request from Home or the sidebar's Tools to open one of the Bible's own views. */
+export type BibleTool = "parallel";
 export interface BibleToolRequest { tool: BibleTool; nonce: number }
 
-export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, onManageBibles, focusSearch, onStudyWord, onSaved, toolRequest }: {
+export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, onManageBibles, focusSearch, toolRequest }: {
   active: boolean;
   onPresent: (spec: ScriptureSpec) => void;
-  /** Reports the translation being read, so Word Study can search the same one */
+  /** Reports the translation being read, so Home, Quick Search and the Planner offer the same one */
   onTranslation?: (bibleId: string) => void;
   openRequest?: OpenVerseRequest | null;
-  /** Opens Settings → Bibles, where Bibles and cross references are imported and removed */
+  /** Opens Settings → Bibles, where Bibles are imported and removed */
   onManageBibles: () => void;
   /** Changes when another screen (Home) asks for the search box to be ready for typing */
   focusSearch?: number;
-  /** Opens Bible Study with a word search */
-  onStudyWord?: (word: string) => void;
-  /** Opens Bible Study's saved verses */
-  onSaved?: () => void;
-  /** Changes when another screen asks for Overview, Cross references or English + Malayalam side by side */
+  /** Changes when another screen asks for English + Malayalam side by side */
   toolRequest?: BibleToolRequest | null;
 }) {
   const { library, update } = useLibrary();
@@ -57,16 +49,13 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   const [sel, setSel] = useState<Selection | null>(null);
   /** In the bilingual view: which languages go on the projector */
   const [onScreen, setOnScreen] = useState<"both" | "first" | "second">("both");
-  const [xrOpen, setXrOpen] = useState(false);
-  /** Chapter Overview instead of the verse-by-verse reading view (study only; never presents) */
-  const [overview, setOverview] = useState(false);
   const [mode, setMode] = useState<"reference" | "keyword">("reference");
   const [query, setQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
   /** A search that worked, but not quite as typed (e.g. "John 30" opened John 21) */
   const [searchNote, setSearchNote] = useState<string | null>(null);
   const [results, setResults] = useState<{ query: string; hits: SearchHit[]; total: number } | null>(null);
-  const [dialog, setDialog] = useState<"import" | "xrefs" | null>(null);
+  const [dialog, setDialog] = useState<"import" | null>(null);
   const [scrollTo, setScrollTo] = useState<number | null>(null);
   const verseRefs = useRef(new Map<number, HTMLElement>());
   const readingRef = useRef<HTMLDivElement>(null);
@@ -131,7 +120,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
     requestAnimationFrame(() => searchRef.current?.focus());
   }, [focusSearch]);
 
-  // Open a verse sent from Word Study, in the translation it was found in.
+  // Open a verse sent from Home or Quick Search, in the translation it was saved or found in.
   useEffect(() => {
     if (!openRequest) return;
     const target = library.bibles.find((b) => b.id === openRequest.bibleId);
@@ -139,16 +128,13 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
       if (bibleLang(target) === "ml") { setMlId(target.id); if (view === "en") setView("ml"); }
       else { setEnId(target.id); if (view === "ml") setView("en"); }
     }
-    setOverview(false);
     openChapter(openRequest.book, openRequest.chapter, { from: openRequest.verse, to: openRequest.to ?? openRequest.verse });
   }, [openRequest?.nonce]);
 
   // Home or the sidebar's Tools: switch to the same view the buttons on this screen switch to.
   useEffect(() => {
     if (!toolRequest) return;
-    if (toolRequest.tool === "overview") setOverview(true);
-    else if (toolRequest.tool === "crossrefs") { setOverview(false); setXrOpen(true); }
-    else if (enBibles.length && mlBibles.length) { setOverview(false); setView("both"); }
+    if (enBibles.length && mlBibles.length) setView("both");
   }, [toolRequest?.nonce]);
 
   // Keep the current chapter chip visible in the scrolling strip.
@@ -212,7 +198,6 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
     } else if (ref.adjusted === "verse") {
       setSearchNote(`${found.name} ${ref.chapter} has ${found.chapters[ref.chapter - 1].length} verses in ${meta?.abbreviation || "this Bible"}.`);
     }
-    setOverview(false);
     openChapter(ref.bookIndex, ref.chapter, ref.from ? { from: ref.from, to: ref.to ?? ref.from } : undefined);
   };
 
@@ -236,7 +221,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
     setResults({ query, hits, total: a.total + extra.length + Math.max(0, b.total - b.hits.length) });
   };
 
-  // ---- saved verses (Bible Study) ----
+  // ---- saved verses ----
   const selTo = sel ? Math.min(sel.to, verses.length) : 0;
   const savedSel = sel ? findBookmark(library.bookmarks, book, chapter, sel.from, selTo) : undefined;
   const toggleSaved = () => {
@@ -261,18 +246,6 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
   const specFor = (b: number, c: number, from: number, to: number): ScriptureSpec | null =>
     bibleId ? { primaryId: bibleId, secondId: second && meta2 ? secondId : undefined, onScreen, book: b, chapter: c, from, to } : null;
 
-  // ---- cross references (panel shared with Word Study) ----
-  const openRef = (start: number, end: number) => {
-    const a = splitId(start), z = splitId(end);
-    const last = a.chapter === z.chapter ? z.verse : bible?.books[a.book]?.chapters[a.chapter - 1]?.length ?? a.verse;
-    openChapter(a.book, a.chapter, { from: a.verse, to: last });
-  };
-  const refSpec = (start: number, end: number) => {
-    const a = splitId(start), z = splitId(end);
-    const last = a.chapter === z.chapter ? z.verse : bible?.books[a.book]?.chapters[a.chapter - 1]?.length ?? a.verse;
-    return specFor(a.book, a.chapter, a.verse, last);
-  };
-
   const present = () => {
     const spec = sel ? specFor(book, chapter, sel.from, Math.min(sel.to, verses.length)) : null;
     if (spec) onPresent(spec);
@@ -281,7 +254,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
 
   // Enter presents the selected passage (when not typing).
   useEffect(() => {
-    if (!active || overview) return;
+    if (!active) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || (e.target as HTMLElement).closest("input, textarea, select, button, .modal")) return;
       if (selected.length) { e.preventDefault(); present(); }
@@ -395,11 +368,6 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
               <div className="results">
                 <div className="results-head">
                   <button className="btn ghost small" onClick={() => setResults(null)}><Icon name="prev" />Back to {bookData?.name} {chapter}</button>
-                  {onStudyWord && results.total > 0 && (
-                    <button className="btn ghost small" onClick={() => onStudyWord(results.query)} title="Every occurrence, grouped by book, in Bible Study">
-                      <Icon name="study" size={14} />Word Study
-                    </button>
-                  )}
                   <span className="muted small results-count" role="status">
                     {results.total === 0 ? "No verses found" : results.total > results.hits.length
                       ? `Showing ${results.hits.length} of ${results.total} verses` : `${results.total} verses`}
@@ -435,12 +403,8 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                         {meta?.abbreviation}{meta2 ? ` + ${meta2.abbreviation}` : ""}
                       </span>
                       <span>Chapter {chapter} of {bookData.chapters.length}</span>
-                      {!overview && selected.length > 0 && <span className="where-sel">Selected: {reference}</span>}
+                      {selected.length > 0 && <span className="where-sel">Selected: {reference}</span>}
                     </p>
-                  </div>
-                  <div className="seg view-switch" role="radiogroup" aria-label="Chapter view">
-                    <button role="radio" aria-checked={!overview} className={!overview ? "on" : ""} onClick={() => setOverview(false)}>Reading</button>
-                    <button role="radio" aria-checked={overview} className={overview ? "on" : ""} onClick={() => setOverview(true)}>Overview</button>
                   </div>
                   </div>
                   <div className="chapter-nav">
@@ -460,7 +424,7 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                       aria-label="Next chapter" title={nextCh ? `Next chapter: ${chName(nextCh)}` : "Next chapter"}>
                       <Icon name="next" size={15} />
                     </button>
-                    {!overview && verses.length > 0 && (
+                    {verses.length > 0 && (
                       <select className="verse-select" aria-label="Go to verse" title="Go to verse"
                         value={sel && sel.from === sel.to ? String(sel.from) : ""} onChange={(e) => e.target.value && gotoVerse(Number(e.target.value))}>
                         <option value="">Verse…</option>
@@ -470,20 +434,6 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                   </div>
                 </div>
 
-                {overview ? (
-                  <div className="bible-body">
-                    <ChapterOverview
-                      bible={bible}
-                      meta={meta}
-                      second={second}
-                      book={book}
-                      chapter={chapter}
-                      onRead={(select) => { setOverview(false); openChapter(book, chapter, select); }}
-                      onChapter={(b, c) => openChapter(b, c)}
-                      onImportXrefs={() => setDialog("xrefs")}
-                    />
-                  </div>
-                ) : (
                 <div className="bible-body">
                 <div className="reading" ref={readingRef}>
                   <p className="reading-hint muted small">Click a verse to select it. Shift-click another verse to select the passage between.</p>
@@ -564,25 +514,10 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                   )}
                   {meta2?.license && <p className="reading-license" lang="ml">{meta2.license}</p>}
                 </div>
-                {xrOpen && (
-                  <CrossRefPanel
-                    passage={sel ? { book, chapter, from: sel.from, to: sel.to } : null}
-                    reference={reference}
-                    bible={bible}
-                    meta={meta}
-                    second={second}
-                    onOpen={openRef}
-                    onPresent={(start, end) => { const sp = refSpec(start, end); if (sp) onPresent(sp); }}
-                    onImport={() => setDialog("xrefs")}
-                    onClose={() => setXrOpen(false)}
-                  />
-                )}
                 </div>
-                )}
               </>
             ) : !loadError ? <p className="muted pad">Opening Bible…</p> : null}
 
-            {!overview && (
             <div className={`addbar ${selected.length ? "has-sel" : ""}`}>
               {selected.length ? (
                 <>
@@ -602,27 +537,17 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
                   )}
                   <button className="btn ghost small" onClick={() => setSel(null)}>Clear</button>
                   <button className={`btn small ${savedSel ? "saved" : ""}`} aria-pressed={!!savedSel} onClick={toggleSaved}
-                    title={savedSel ? "Remove from saved verses" : "Save to Bible Study"}>
+                    title={savedSel ? "Remove from saved verses" : "Save these verses"}>
                     <Icon name="bookmark" size={14} />{savedSel ? "Saved" : "Save"}
                   </button>
-                  <button className={`btn small ${xrOpen ? "on-soft" : ""}`} aria-pressed={xrOpen} onClick={() => setXrOpen((o) => !o)}
-                    title="Show related passages"><Icon name="link" size={14} />Cross references</button>
                   <button className="btn present" onClick={present} title="Show it on the projector now, one verse per slide (Enter)">
                     <Icon name="play" size={14} />Present Now
                   </button>
                 </>
               ) : (
-                <>
-                  <span className="muted small addbar-hint">No verses selected</span>
-                  {onSaved && (
-                    <button className="btn ghost small" onClick={onSaved}>
-                      <Icon name="bookmark" size={14} />Saved verses{library.bookmarks.length ? ` · ${library.bookmarks.length}` : ""}
-                    </button>
-                  )}
-                </>
+                <span className="muted small addbar-hint">No verses selected</span>
               )}
             </div>
-            )}
           </>
         )}
       </main>
@@ -630,7 +555,6 @@ export function BibleWorkspace({ active, onPresent, onTranslation, openRequest, 
       {dialog === "import" && (
         <ImportBibleDialog onClose={() => setDialog(null)} onImported={(m) => { if (bibleLang(m) === "ml") { setMlId(m.id); setView(enBibles.length ? "both" : "ml"); } else { setEnId(m.id); setView("en"); } openChapter(0, 1); }} />
       )}
-      {dialog === "xrefs" && <ImportCrossRefsDialog onClose={() => setDialog(null)} onImported={() => setXrOpen(true)} />}
     </div>
   );
 }

@@ -67,34 +67,109 @@ describe("Songs: finding a song", () => {
     expect(title.lang).toBe("ml");
     expect((screen.getByLabelText("Lyrics language") as HTMLSelectElement).value).toBe("ml");
     fireEvent.change(screen.getByLabelText("Search songs"), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("radio", { name: "മലയാളം" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Malayalam" }));
     expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പ്രഭാത ഗാനം"]);
     expect(screen.getByText("1 of 3 songs")).toBeTruthy();
   });
 
-  it("filters by English, Malayalam and Tamil only, counting transliterations as their language", async () => {
+  it("shows All and four language folders, Kannada on its own, with how many songs are in each", async () => {
     const items = [
       song({ id: "e1", title: "English Song" }),
-      song({ id: "m2", title: "മലയാളം പാട്ട്", language: "ml", lyrics: "[Slide 1]\nവരി", translation: "[Slide 1]\nvari", translationLanguage: "ml-Latn" }),
+      song({ id: "m2", title: "മലയാളം പാട്ട്", altTitle: "Malayalam Paattu", language: "ml", lyrics: "[Slide 1]\nവരി", translation: "[Slide 1]\nvari", translationLanguage: "ml-Latn" }),
       song({ id: "m3", title: "Manglish Paattu", language: "ml-Latn", lyrics: "[Slide 1]\nvari" }),
+      song({ id: "m4", title: "മറ്റൊരു പാട്ട്", altTitle: "Mattoru Paattu", language: "ml", lyrics: "[Slide 1]\nവരി" }),
       song({ id: "t1", title: "தமிழ் பாடல்", language: "ta", lyrics: "[Slide 1]\nவரி", translation: "[Slide 1]\nvari", translationLanguage: "ta-Latn" }),
-      song({ id: "k1", title: "ಕನ್ನಡ ಹಾಡು", language: "kn", lyrics: "[Slide 1]\nಸಾಲು", translation: "[Slide 1]\nsaalu", translationLanguage: "kn-Latn" }),
+      song({ id: "k1", title: "ಕನ್ನಡ ಹಾಡು", language: "kn", lyrics: "[Slide 1]\nಸಾಲು", translation: "[Slide 1]\nline", translationLanguage: "en" }),
       song({ id: "x1", title: "Canto", language: "es", lyrics: "[Slide 1]\nCantad" }),
     ];
     await setup(items);
+    const before = JSON.stringify(current.items);
     const group = within(screen.getByRole("radiogroup", { name: "Language" }));
-    expect(group.getAllByRole("radio").map((r) => r.textContent)).toEqual(["All", "English", "മലയാളം", "தமிழ்"]);
+    const folders = group.getAllByRole("radio");
+    expect(folders.map((r) => r.getAttribute("aria-label"))).toEqual(["All", "English", "Malayalam", "Tamil", "Kannada"]);
+    expect(group.queryByRole("radio", { name: "Manglish" })).toBeNull();
+    // Each folder shows its count; a Kannada song with an English translation counts in both.
+    expect(folders.map((r) => r.querySelector(".song-folder-count")!.textContent)).toEqual(["7", "2", "3", "1", "1"]);
+    expect(group.getByRole("radio", { name: "Kannada" }).textContent).toContain("ಕನ್ನಡ");
+
     const titles = () => [...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent);
-    fireEvent.click(group.getByRole("radio", { name: "മലയാളം" }));
-    expect(titles()).toEqual(["മലയാളം പാട്ട്", "Manglish Paattu"]);
-    fireEvent.click(group.getByRole("radio", { name: "தமிழ்" }));
+    // Malayalam holds Malayalam lyrics, Manglish lyrics and Malayalam songs with their Manglish translation.
+    fireEvent.click(group.getByRole("radio", { name: "Malayalam" }));
+    expect(titles().sort()).toEqual(["Manglish Paattu", "മലയാളം പാട്ട്", "മറ്റൊരു പാട്ട്"].sort());
+    fireEvent.click(group.getByRole("radio", { name: "Kannada" }));
+    expect(titles()).toEqual(["ಕನ್ನಡ ಹಾಡು"]);
+    fireEvent.click(group.getByRole("radio", { name: "Tamil" }));
     expect(titles()).toEqual(["தமிழ் பாடல்"]);
     fireEvent.click(group.getByRole("radio", { name: "English" }));
-    expect(titles()).toEqual(["English Song"]);
+    expect(titles()).toEqual(["English Song", "ಕನ್ನಡ ಹಾಡು"]);
     fireEvent.click(group.getByRole("radio", { name: "All" }));
-    expect(titles()).toHaveLength(6);
-    // Nothing about the songs changes
+    expect(titles()).toHaveLength(7);
+    // Browsing the folders changes nothing about any song.
+    expect(JSON.stringify(current.items)).toBe(before);
     for (const s of items) expect(songOf(s.id)).toEqual(s);
+  });
+
+  it("keeps an empty Kannada folder visible", async () => {
+    await setup([song()]);
+    const kannada = within(screen.getByRole("radiogroup", { name: "Language" })).getByRole("radio", { name: "Kannada" });
+    expect(kannada.querySelector(".song-folder-count")!.textContent).toBe("0");
+    fireEvent.click(kannada);
+    expect(screen.getByText(/No Kannada songs yet/)).toBeTruthy();
+  });
+
+  it("searches, and shows Favorites and Recent, inside the folder being browsed", async () => {
+    const items = [
+      song({ id: "e1", title: "Grace Song", favorite: true, lastUsedAt: 10 }),
+      song({ id: "e2", title: "Peace Song", lastUsedAt: 20 }),
+      song({ id: "m1", title: "കൃപ പാട്ട്", altTitle: "Grace Paattu", language: "ml", lyrics: "[Slide 1]\nവരി", favorite: true, lastUsedAt: 30 }),
+    ];
+    await setup(items);
+    const before = JSON.stringify(current.items);
+    const titles = () => [...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent);
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    fireEvent.change(screen.getByLabelText("Search songs"), { target: { value: "grace" } });
+    expect(titles()).toEqual(["Grace Song"]);
+    fireEvent.click(screen.getByRole("radio", { name: "Malayalam" }));
+    expect(titles()).toEqual(["കൃപ പാട്ട്"]);
+    fireEvent.change(screen.getByLabelText("Search songs"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("tab", { name: /Favorites/ }));
+    expect(titles()).toEqual(["കൃപ പാട്ട്"]);
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    expect(titles()).toEqual(["Grace Song"]);
+    fireEvent.click(screen.getByRole("tab", { name: /Recent/ }));
+    expect(titles()).toEqual(["Peace Song", "Grace Song"]);
+    expect(JSON.stringify(current.items)).toBe(before);
+  });
+
+  it("starts a new song in the folder's language, named in words, never as a code", async () => {
+    await setup([song()]);
+    const newIn = (folder: string, button: string) => {
+      fireEvent.click(screen.getByRole("radio", { name: folder }));
+      fireEvent.click(screen.getByRole("button", { name: button }));
+      return screen.getByLabelText("Lyrics language") as HTMLSelectElement;
+    };
+    expect(newIn("Kannada", "New Kannada song").value).toBe("kn");
+    expect(newIn("Malayalam", "New Malayalam song").value).toBe("ml");
+    expect(newIn("Tamil", "New Tamil song").value).toBe("ta");
+    expect(newIn("All", "New song").value).toBe("en");
+    // The song that was already there keeps its language.
+    expect(songOf("s1").language).toBe("en");
+  });
+
+  it("still names Manglish in words in the language menu, with no Manglish folder", async () => {
+    const manglish = song({ id: "g1", title: "Manglish Paattu", language: "ml-Latn", lyrics: "[Slide 1]\nvari" });
+    await setup([manglish]);
+    const select = screen.getByLabelText("Lyrics language") as HTMLSelectElement;
+    expect(select.value).toBe("ml-Latn");
+    expect(select.selectedOptions[0].textContent).toBe("Manglish");
+    expect(screen.queryByRole("radio", { name: "Manglish" })).toBeNull();
+    expect(songOf("g1")).toEqual(manglish);
+  });
+
+  it("opens the Malayalam folder when Home or Tools asks for Malayalam songs", async () => {
+    await setup(undefined, { showLanguage: { lang: "ml", nonce: 1 } });
+    expect(screen.getByRole("radio", { name: "Malayalam" }).getAttribute("aria-checked")).toBe("true");
+    expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പ്രഭാത ഗാനം"]);
   });
 });
 
@@ -318,7 +393,7 @@ describe("Songs: a song with a translation", () => {
 
   it("lists the song under both its languages, and finds it by words in either", async () => {
     await setup([song(), bilingual]);
-    fireEvent.click(screen.getByRole("radio", { name: "മലയാളം" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Malayalam" }));
     expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പാട്ട്"]);
     fireEvent.click(screen.getByRole("radio", { name: "English" }));
     expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പാട്ട്", "Morning Song"]);
@@ -327,12 +402,12 @@ describe("Songs: a song with a translation", () => {
     expect([...document.querySelectorAll(".song-list .song-title")].map((el) => el.textContent)).toEqual(["പാട്ട്"]);
   });
 
-  it("keeps the same three language filters whatever languages the songs use", async () => {
+  it("keeps the same language folders whatever languages the songs use", async () => {
     await setup([song()]);
-    const filters = () => within(screen.getByRole("radiogroup", { name: "Language" })).getAllByRole("radio").map((r) => r.textContent);
-    expect(filters()).toEqual(["All", "English", "മലയാളം", "தமிழ்"]);
+    const folders = () => within(screen.getByRole("radiogroup", { name: "Language" })).getAllByRole("radio").map((r) => r.getAttribute("aria-label"));
+    expect(folders()).toEqual(["All", "English", "Malayalam", "Tamil", "Kannada"]);
     fireEvent.change(screen.getByLabelText("Lyrics language"), { target: { value: "kn" } });
     expect(songOf("s1").language).toBe("kn");
-    expect(filters()).toEqual(["All", "English", "മലയാളം", "தமிழ்"]);
+    expect(folders()).toEqual(["All", "English", "Malayalam", "Tamil", "Kannada"]);
   });
 });
